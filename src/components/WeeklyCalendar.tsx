@@ -96,7 +96,7 @@ export function WeeklyCalendar() {
       {/* Calendar */}
       <div className="flex-1 flex overflow-hidden">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex-1 flex overflow-auto">
+          <div id="calendar-container" className="flex-1 flex overflow-auto">
             <TimeSlots />
             {weekDays.map((day) => (
               <DayColumn
@@ -111,7 +111,7 @@ export function WeeklyCalendar() {
           <DragOverlay>
             {activeEvent && (
               <div
-                className="rounded-lg border border-white/20 text-white text-sm shadow-lg"
+                className="rounded-lg border border-white/20 text-white text-sm shadow-lg cursor-grabbing"
                 style={{
                   backgroundColor: activeEvent.color,
                   width: '200px', // Fixed width to match day column

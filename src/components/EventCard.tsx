@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { CalendarEvent } from '@/types/events';
-import { formatTime } from '@/utils/calendar';
+import { formatTime, snapToQuarterHour, calculateTimeFromMousePosition, HOUR_HEIGHT } from '@/utils/calendar';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, X } from 'lucide-react';
@@ -13,7 +13,11 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const { deleteEvent } = useEvents();
+  const { deleteEvent, resizeEvent } = useEvents();
+  const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
+  const [initialMouseY, setInitialMouseY] = useState(0);
+  const [initialTime, setInitialTime] = useState<Date | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const {
     attributes,
@@ -26,6 +30,7 @@ export function EventCard({ event }: EventCardProps) {
     data: {
       event,
     },
+    disabled: isResizing !== null, // Disable dragging when resizing
   });
 
   const style = {
@@ -33,9 +38,101 @@ export function EventCard({ event }: EventCardProps) {
     opacity: isDragging ? 0 : 1, // Completely hide original during drag
   };
 
+  const handleResizeStart = (e: React.MouseEvent, direction: 'top' | 'bottom') => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsResizing(direction);
+    setInitialMouseY(e.clientY);
+    setInitialTime(direction === 'top' ? event.startTime : event.endTime);
+    
+    // Get the calendar container for position calculations
+    const calendarContainer = document.getElementById('calendar-container');
+    if (!calendarContainer) return;
+    
+    const containerRect = calendarContainer.getBoundingClientRect();
+    
+    // Add global cursor style
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!calendarContainer) return;
+      
+      // Recalculate container rect in case the window was scrolled
+      const currentContainerRect = calendarContainer.getBoundingClientRect();
+      
+      // Calculate the mouse position relative to the calendar container
+      const scrollTop = calendarContainer.scrollTop;
+      const mouseY = moveEvent.clientY - currentContainerRect.top + scrollTop;
+      
+      // Account for the header height (sticky header is about 64px)
+      const adjustedMouseY = mouseY - 64;
+      
+      // Convert mouse position to time using HOUR_HEIGHT constant
+      const hourDecimal = adjustedMouseY / HOUR_HEIGHT;
+      const totalMinutes = Math.max(0, hourDecimal * 60);
+      
+      // Snap to 15-minute intervals
+      const snappedMinutes = Math.round(totalMinutes / 15) * 15;
+      const hours = Math.floor(snappedMinutes / 60);
+      const minutes = snappedMinutes % 60;
+      
+      // Create the new time based on the event's date
+      const eventDate = direction === 'top' ? event.startTime : event.endTime;
+      const newTime = new Date(eventDate);
+      newTime.setHours(Math.max(0, Math.min(23, hours)));
+      newTime.setMinutes(Math.max(0, Math.min(59, minutes)));
+      newTime.setSeconds(0);
+      newTime.setMilliseconds(0);
+      
+      // Clamp to day boundaries
+      const dayStart = new Date(eventDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(eventDate);
+      dayEnd.setHours(23, 45, 0, 0);
+      
+      let clampedTime = new Date(newTime);
+      if (clampedTime < dayStart) clampedTime = new Date(dayStart);
+      if (clampedTime > dayEnd) clampedTime = new Date(dayEnd);
+      
+      if (direction === 'top') {
+        // Resizing start time - ensure it doesn't go past end time
+        const maxStartTime = new Date(event.endTime.getTime() - 15 * 60 * 1000);
+        if (clampedTime > maxStartTime) clampedTime = maxStartTime;
+        resizeEvent(event.id, clampedTime, undefined);
+      } else {
+        // Resizing end time - ensure it doesn't go before start time
+        const minEndTime = new Date(event.startTime.getTime() + 15 * 60 * 1000);
+        if (clampedTime < minEndTime) clampedTime = minEndTime;
+        resizeEvent(event.id, undefined, clampedTime);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(null);
+      setInitialMouseY(0);
+      setInitialTime(null);
+      
+      // Reset global cursor style
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        if (containerRef.current !== node) {
+          containerRef.current = node;
+        }
+      }}
       style={{
         ...style,
         top: event.position.top,
@@ -46,11 +143,33 @@ export function EventCard({ event }: EventCardProps) {
         right: '4px',
         minHeight: '40px',
       }}
-      className="rounded-lg border border-white/20 text-white text-sm cursor-move shadow-sm hover:shadow-md transition-shadow"
-      {...listeners}
-      {...attributes}
+      className="rounded-lg border border-white/20 text-white text-sm shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]"
     >
-      <div className="p-2 h-full flex flex-col justify-between">
+      {/* Top resize handle */}
+      <div
+        className={`absolute top-0 left-0 right-0 h-2 cursor-ns-resize transition-opacity z-10 flex items-center justify-center ${
+          isResizing === 'top' 
+            ? 'opacity-100 bg-blue-500/40' 
+            : 'opacity-0 group-hover:opacity-100 hover:!opacity-100'
+        }`}
+        style={{ 
+          backgroundColor: isResizing === 'top' ? undefined : 'rgba(255,255,255,0.3)' 
+        }}
+        onMouseDown={(e) => handleResizeStart(e, 'top')}
+      >
+        <div className={`w-8 h-0.5 rounded ${
+          isResizing === 'top' ? 'bg-blue-200' : 'bg-white/60'
+        }`} />
+      </div>
+      
+      {/* Event content */}
+      <div
+        className={`p-2 h-full flex flex-col justify-between ${
+          isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
+        {...(isResizing ? {} : listeners)}
+        {...(isResizing ? {} : attributes)}
+      >
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <div className="font-medium text-white truncate">{event.title}</div>
@@ -74,6 +193,23 @@ export function EventCard({ event }: EventCardProps) {
             {event.description}
           </div>
         )}
+      </div>
+      
+      {/* Bottom resize handle */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize transition-opacity z-10 flex items-center justify-center ${
+          isResizing === 'bottom' 
+            ? 'opacity-100 bg-blue-500/40' 
+            : 'opacity-0 group-hover:opacity-100 hover:!opacity-100'
+        }`}
+        style={{ 
+          backgroundColor: isResizing === 'bottom' ? undefined : 'rgba(255,255,255,0.3)' 
+        }}
+        onMouseDown={(e) => handleResizeStart(e, 'bottom')}
+      >
+        <div className={`w-8 h-0.5 rounded ${
+          isResizing === 'bottom' ? 'bg-blue-200' : 'bg-white/60'
+        }`} />
       </div>
     </div>
   );

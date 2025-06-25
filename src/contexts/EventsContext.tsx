@@ -11,6 +11,7 @@ interface EventsContextType {
   updateEvent: (id: string, updates: Partial<Event>) => void;
   deleteEvent: (id: string) => void;
   moveEvent: (id: string, newStartTime: Date) => void;
+  resizeEvent: (id: string, newStartTime?: Date, newEndTime?: Date) => void;
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
@@ -94,6 +95,39 @@ export function EventsProvider({ children }: EventsProviderProps) {
     );
   };
 
+  const resizeEvent = (id: string, newStartTime?: Date, newEndTime?: Date) => {
+    setEvents(prev => 
+      prev.map(event => {
+        if (event.id === id) {
+          let updatedEvent = { ...event };
+          
+          if (newStartTime) {
+            updatedEvent.startTime = newStartTime;
+            updatedEvent.dayOfWeek = newStartTime.getDay();
+            
+            // If new start time is after current end time, adjust end time
+            if (newStartTime >= event.endTime) {
+              updatedEvent.endTime = new Date(newStartTime.getTime() + 15 * 60 * 1000);
+            }
+          }
+          
+          if (newEndTime) {
+            updatedEvent.endTime = newEndTime;
+            
+            // If new end time is before current start time, adjust start time
+            if (newEndTime <= event.startTime) {
+              updatedEvent.startTime = new Date(newEndTime.getTime() - 15 * 60 * 1000);
+              updatedEvent.dayOfWeek = updatedEvent.startTime.getDay();
+            }
+          }
+          
+          return updatedEvent;
+        }
+        return event;
+      })
+    );
+  };
+
   return (
     <EventsContext.Provider value={{
       events,
@@ -101,6 +135,7 @@ export function EventsProvider({ children }: EventsProviderProps) {
       updateEvent,
       deleteEvent,
       moveEvent,
+      resizeEvent,
     }}>
       {children}
     </EventsContext.Provider>

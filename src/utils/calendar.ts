@@ -91,3 +91,37 @@ export function generateQuarterHourSlots(): { hour: number; minute: number; labe
   }
   return slots;
 }
+
+// Snap time to nearest 15-minute interval
+export function snapToQuarterHour(date: Date): Date {
+  const minutes = date.getMinutes();
+  const snappedMinutes = Math.round(minutes / 15) * 15;
+  const result = new Date(date);
+  result.setMinutes(snappedMinutes, 0, 0);
+  
+  // Handle hour overflow
+  if (snappedMinutes === 60) {
+    result.setHours(result.getHours() + 1);
+    result.setMinutes(0);
+  }
+  
+  return result;
+}
+
+// Calculate new time from mouse position during resize
+export function calculateTimeFromMousePosition(
+  mouseY: number,
+  containerTop: number,
+  scrollTop: number = 0
+): Date {
+  const relativeY = mouseY - containerTop + scrollTop;
+  const hourDecimal = relativeY / HOUR_HEIGHT;
+  const hour = Math.floor(hourDecimal);
+  const minutes = (hourDecimal - hour) * 60;
+  
+  const date = new Date();
+  date.setHours(Math.max(0, Math.min(23, hour)));
+  date.setMinutes(Math.max(0, Math.min(59, minutes)));
+  
+  return snapToQuarterHour(date);
+}
