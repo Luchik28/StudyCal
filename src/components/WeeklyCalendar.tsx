@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock } from 'lucide-react';
 import { addWeeks, subWeeks, format } from 'date-fns';
-import { getWeekDays, createTimeSlot } from '@/utils/calendar';
+import { getWeekDays, createTimeSlot, calculateEventPosition } from '@/utils/calendar';
 import { useEvents } from '@/contexts/EventsContext';
 import { Event } from '@/types/events';
 import { TimeSlots } from './TimeSlots';
@@ -36,11 +36,11 @@ export function WeeklyCalendar() {
     const eventData = active.data.current?.event as Event;
     const overData = over.data.current;
 
-    if (overData && overData.date) {
-      // Calculate the hour based on the drop position
-      // For now, we'll place the event at a default time (current hour)
-      const currentHour = new Date().getHours();
-      const newStartTime = createTimeSlot(overData.date, currentHour);
+    if (overData && overData.date && overData.type === 'timeSlot') {
+      // Create new start time from the drop position (snapped to 15-minute intervals)
+      const newStartTime = createTimeSlot(overData.date, overData.hour, overData.minute);
+      
+      // Move the event to the new time slot
       moveEvent(eventData.id, newStartTime);
     }
   };
@@ -96,9 +96,8 @@ export function WeeklyCalendar() {
       {/* Calendar */}
       <div className="flex-1 flex overflow-hidden">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <TimeSlots />
-          
-          <div className="flex-1 flex overflow-x-auto">
+          <div className="flex-1 flex overflow-auto">
+            <TimeSlots />
             {weekDays.map((day) => (
               <DayColumn
                 key={day.toISOString()}
@@ -112,17 +111,30 @@ export function WeeklyCalendar() {
           <DragOverlay>
             {activeEvent && (
               <div
-                className="rounded-lg text-white text-sm shadow-lg"
+                className="rounded-lg border border-white/20 text-white text-sm shadow-lg"
                 style={{
                   backgroundColor: activeEvent.color,
-                  width: '200px',
-                  height: '60px',
-                  padding: '8px',
+                  width: '200px', // Fixed width to match day column
+                  height: calculateEventPosition(activeEvent).height,
+                  minHeight: '40px',
+                  position: 'relative',
                 }}
               >
-                <div className="font-medium truncate">{activeEvent.title}</div>
-                <div className="text-xs opacity-80 mt-1">
-                  {format(activeEvent.startTime, 'HH:mm')} - {format(activeEvent.endTime, 'HH:mm')}
+                <div className="p-2 h-full flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium text-white truncate">{activeEvent.title}</div>
+                      <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                        <Clock size={10} />
+                        <span>{format(activeEvent.startTime, 'HH:mm')} - {format(activeEvent.endTime, 'HH:mm')}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {activeEvent.description && calculateEventPosition(activeEvent).height > 60 && (
+                    <div className="text-white/80 text-xs truncate mt-1">
+                      {activeEvent.description}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

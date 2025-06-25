@@ -63,3 +63,31 @@ export function createTimeSlot(date: Date, hour: number, minute: number = 0): Da
 export function getRandomColor(): string {
   return EVENT_COLORS[Math.floor(Math.random() * EVENT_COLORS.length)];
 }
+
+// Calculate time from pixel position
+export function getTimeFromPosition(position: number): { hour: number; minute: number } {
+  const totalMinutes = (position / HOUR_HEIGHT) * 60;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = Math.round((totalMinutes % 60) / 15) * 15; // Snap to 15-minute intervals
+  
+  return {
+    hour: Math.max(0, Math.min(23, hour)),
+    minute: Math.max(0, Math.min(45, minute))
+  };
+}
+
+// Generate 15-minute time slots for a day
+export function generateQuarterHourSlots(): { hour: number; minute: number; label: string }[] {
+  const slots = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 15) {
+      const date = setMinutes(setHours(new Date(), hour), minute);
+      slots.push({
+        hour,
+        minute,
+        label: format(date, 'HH:mm')
+      });
+    }
+  }
+  return slots;
+}

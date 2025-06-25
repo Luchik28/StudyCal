@@ -7,9 +7,11 @@ export function TimeSlots() {
   const timeSlots = generateTimeSlots();
 
   return (
-    <div className="w-16 flex-shrink-0">
-      {/* Header spacer */}
-      <div className="h-16 border-b border-gray-200"></div>
+    <div className="w-16 flex-shrink-0 border-r border-gray-200 sticky left-0 bg-white z-20">
+      {/* Header spacer - matches day column headers */}
+      <div className="sticky top-0 bg-white border-b border-gray-200 p-3 text-center z-10">
+        <div className="font-semibold text-gray-900 text-xs">Time</div>
+      </div>
       
       {/* Time slots */}
       <div className="relative">
