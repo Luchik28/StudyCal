@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { ChevronLeft, ChevronRight, Plus, Clock } from 'lucide-react';
 import { addWeeks, subWeeks, format } from 'date-fns';
@@ -10,6 +10,7 @@ import { Event } from '@/types/events';
 import { TimeSlots } from './TimeSlots';
 import { DayColumn } from './DayColumn';
 import { CreateEventModal } from './CreateEventModal';
+import { InlineEventCreator } from './InlineEventCreator';
 
 export function WeeklyCalendar() {
   const { events, moveEvent } = useEvents();
@@ -18,6 +19,19 @@ export function WeeklyCalendar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
   const [modalInitialHour, setModalInitialHour] = useState<number>();
+  
+  // Inline event creation state
+  const [inlineEvent, setInlineEvent] = useState<{
+    date: Date;
+    hour: number;
+    minute: number;
+    dayColumnRef: HTMLElement | null;
+    title: string;
+    startTime: Date;
+    endTime: Date;
+  } | null>(null);
+  
+  const dayColumnRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const weekDays = getWeekDays(currentWeek);
 
@@ -45,10 +59,33 @@ export function WeeklyCalendar() {
     }
   };
 
-  const handleTimeSlotClick = (date: Date, hour: number) => {
-    setModalInitialDate(date);
-    setModalInitialHour(hour);
-    setIsModalOpen(true);
+  const handleTimeSlotClick = (date: Date, hour: number, minute: number) => {
+    // Find the day column ref for this date
+    const dayIndex = weekDays.findIndex(day => 
+      day.toDateString() === date.toDateString()
+    );
+    const dayColumnRef = dayColumnRefs.current[dayIndex];
+    
+    const startTime = new Date(date);
+    startTime.setHours(hour, minute, 0, 0);
+    const endTime = new Date(startTime);
+    endTime.setHours(hour + 1, minute, 0, 0);
+    
+    setInlineEvent({
+      date,
+      hour,
+      minute,
+      dayColumnRef,
+      title: '',
+      startTime,
+      endTime
+    });
+  };
+
+  const updateInlineEvent = (updates: Partial<{ title: string; startTime: Date; endTime: Date }>) => {
+    if (inlineEvent) {
+      setInlineEvent(prev => prev ? { ...prev, ...updates } : null);
+    }
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -98,12 +135,20 @@ export function WeeklyCalendar() {
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div id="calendar-container" className="flex-1 flex overflow-auto">
             <TimeSlots />
-            {weekDays.map((day) => (
+            {weekDays.map((day, index) => (
               <DayColumn
                 key={day.toISOString()}
+                ref={(el) => {
+                  dayColumnRefs.current[index] = el;
+                }}
                 date={day}
                 events={events}
                 onTimeSlotClick={handleTimeSlotClick}
+                inlineEvent={inlineEvent?.date.toDateString() === day.toDateString() ? {
+                  startTime: inlineEvent.startTime,
+                  endTime: inlineEvent.endTime,
+                  title: inlineEvent.title
+                } : null}
               />
             ))}
           </div>
@@ -141,6 +186,21 @@ export function WeeklyCalendar() {
           </DragOverlay>
         </DndContext>
       </div>
+
+      {/* Inline Event Creator */}
+      {inlineEvent && (
+        <InlineEventCreator
+          date={inlineEvent.date}
+          initialHour={inlineEvent.hour}
+          initialMinute={inlineEvent.minute}
+          dayColumnRef={inlineEvent.dayColumnRef}
+          onCancel={() => setInlineEvent(null)}
+          onUpdate={updateInlineEvent}
+          initialTitle={inlineEvent.title}
+          initialStartTime={inlineEvent.startTime}
+          initialEndTime={inlineEvent.endTime}
+        />
+      )}
 
       <CreateEventModal
         isOpen={isModalOpen}

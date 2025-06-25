@@ -1,16 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { Clock } from 'lucide-react';
 import { formatDay, getEventsForDay, generateTimeSlots, HOUR_HEIGHT } from '@/utils/calendar';
 import { Event } from '@/types/events';
 import { EventCard } from './EventCard';
-
-interface DayColumnProps {
-  date: Date;
-  events: Event[];
-  onTimeSlotClick: (date: Date, hour: number) => void;
-}
 
 // Individual time slot component with its own drop zone
 function TimeSlotDropZone({ 
@@ -22,7 +17,7 @@ function TimeSlotDropZone({
   date: Date; 
   hour: number; 
   minute?: number; 
-  onTimeSlotClick: (date: Date, hour: number) => void;
+  onTimeSlotClick: (date: Date, hour: number, minute: number) => void;
 }) {
   const slotId = `slot-${date.toISOString()}-${hour}-${minute}`;
   
@@ -48,7 +43,7 @@ function TimeSlotDropZone({
         top: (hour + minute / 60) * HOUR_HEIGHT,
         height: HOUR_HEIGHT / 4 // 15-minute slots
       }}
-      onClick={() => onTimeSlotClick(date, hour)}
+      onClick={() => onTimeSlotClick(date, hour, minute)}
     />
   );
 }
@@ -56,15 +51,25 @@ function TimeSlotDropZone({
 interface DayColumnProps {
   date: Date;
   events: Event[];
-  onTimeSlotClick: (date: Date, hour: number) => void;
+  onTimeSlotClick: (date: Date, hour: number, minute: number) => void;
+  inlineEvent?: {
+    startTime: Date;
+    endTime: Date;
+    title: string;
+  } | null;
 }
 
-export function DayColumn({ date, events, onTimeSlotClick }: DayColumnProps) {
-  const dayEvents = getEventsForDay(events, date);
-  const timeSlots = generateTimeSlots();
+export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
+  ({ date, events, onTimeSlotClick, inlineEvent }, ref) => {
+    const dayEvents = getEventsForDay(events, date);
+    const timeSlots = generateTimeSlots();
 
-  return (
-    <div className="flex-1 min-w-0 border-r border-gray-200 last:border-r-0">
+    // Check if inline event should be shown for this day
+    const showInlineEvent = inlineEvent && 
+      inlineEvent.startTime.toDateString() === date.toDateString();
+
+    return (
+      <div ref={ref} className="flex-1 min-w-0 border-r border-gray-200 last:border-r-0">
       {/* Day Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 p-3 text-center z-10">
         <div className="font-semibold text-gray-900">{formatDay(date)}</div>
@@ -110,7 +115,36 @@ export function DayColumn({ date, events, onTimeSlotClick }: DayColumnProps) {
         {dayEvents.map((event) => (
           <EventCard key={event.id} event={event} />
         ))}
+        
+        {/* Inline Event Preview */}
+        {showInlineEvent && (
+          <div
+            className="absolute left-1 right-1 bg-blue-500/40 border-2 border-blue-500 rounded-md z-20"
+            style={{
+              top: (inlineEvent.startTime.getHours() + inlineEvent.startTime.getMinutes() / 60) * HOUR_HEIGHT,
+              height: Math.max(
+                ((inlineEvent.endTime.getTime() - inlineEvent.startTime.getTime()) / (1000 * 60 * 60)) * HOUR_HEIGHT,
+                HOUR_HEIGHT / 4
+              ),
+            }}
+          >
+            <div className="p-2 text-white text-sm">
+              <div className="font-medium truncate">
+                {inlineEvent.title || 'New Event'}
+              </div>
+              <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                <Clock size={10} />
+                <span>
+                  {inlineEvent.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                  {inlineEvent.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+});
+
+DayColumn.displayName = 'DayColumn';

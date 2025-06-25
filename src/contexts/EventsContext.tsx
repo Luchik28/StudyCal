@@ -7,7 +7,7 @@ import { getRandomColor } from '@/utils/calendar';
 
 interface EventsContextType {
   events: Event[];
-  addEvent: (title: string, startTime: Date, endTime?: Date) => void;
+  addEvent: (title: string, startTime: Date, endTime?: Date, description?: string) => void;
   updateEvent: (id: string, updates: Partial<Event>) => void;
   deleteEvent: (id: string) => void;
   moveEvent: (id: string, newStartTime: Date) => void;
@@ -51,10 +51,11 @@ export function EventsProvider({ children }: EventsProviderProps) {
     },
   ]);
 
-  const addEvent = (title: string, startTime: Date, endTime?: Date) => {
+  const addEvent = (title: string, startTime: Date, endTime?: Date, description?: string) => {
     const newEvent: Event = {
       id: Date.now().toString(),
       title,
+      description,
       startTime,
       endTime: endTime || addHours(startTime, 1),
       color: getRandomColor(),
