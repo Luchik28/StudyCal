@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { WeeklyCalendar } from './WeeklyCalendar';
 
 // Import with explicit file extensions to help TypeScript
@@ -8,6 +8,100 @@ import { DayCalendar } from './DayCalendar';
 import { MonthlyCalendar } from './MonthlyCalendar';
 
 export type CalendarView = 'day' | 'week' | 'month';
+
+function SidebarList({
+  title,
+  placeholder,
+  addButtonLabel,
+  showBelowButton,
+  belowButtonLabel,
+}: {
+  title: string;
+  placeholder: string;
+  addButtonLabel: string;
+  showBelowButton?: boolean;
+  belowButtonLabel?: string;
+}) {
+  const [items, setItems] = useState<string[]>([]);
+  const [input, setInput] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const handleAdd = () => {
+    if (input.trim()) {
+      setItems([...items, input.trim()]);
+      setInput('');
+      inputRef.current?.focus();
+    }
+  };
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleAdd();
+  };
+  const handleEdit = (idx: number) => {
+    setEditingIndex(idx);
+    setEditValue(items[idx]);
+  };
+  const handleEditSave = (idx: number) => {
+    setItems(items.map((item, i) => (i === idx ? editValue : item)));
+    setEditingIndex(null);
+    setEditValue('');
+  };
+  return (
+    <div className="flex flex-col h-full">
+      <h3 className="text-lg font-bold mb-2">{title}</h3>
+      <div className="flex-1 overflow-y-auto mb-2">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex items-center mb-1">
+            {editingIndex === idx ? (
+              <>
+                <input
+                  className="flex-1 border rounded px-2 py-1 text-sm mr-2"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onBlur={() => handleEditSave(idx)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleEditSave(idx); }}
+                  autoFocus
+                />
+                <button
+                  className="text-xs px-2 py-1 bg-blue-100 rounded hover:bg-blue-200"
+                  onClick={() => handleEditSave(idx)}
+                >Save</button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm">{item}</span>
+                <button
+                  className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+                  onClick={() => handleEdit(idx)}
+                >Edit</button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center mt-auto">
+        <input
+          ref={inputRef}
+          className="flex-1 border rounded px-2 py-1 text-sm mr-2"
+          placeholder={placeholder}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleInputKeyDown}
+        />
+        <button
+          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          onClick={handleAdd}
+        >{addButtonLabel}</button>
+      </div>
+      {showBelowButton && belowButtonLabel && (
+        <button className="mt-4 w-full py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm font-medium">
+          {belowButtonLabel}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function Layout() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
@@ -39,7 +133,7 @@ export function Layout() {
     <div className="h-screen flex bg-gray-50">
       {/* Left Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200">          
+        <div className="p-6 border-b border-gray-200 h-28 flex flex-col justify-between">
           {/* Dynamic View Switching Buttons */}
           <div className="flex items-center justify-between">
             <button
@@ -74,27 +168,50 @@ export function Layout() {
             </button>
           </div>
         </div>
-        
-        {/* Additional left sidebar content will go here */}
         <div className="flex-1 p-6">
-          {/* Placeholder for future content */}
+          {currentView === 'day' && (
+            <SidebarList
+              title="Todo today"
+              placeholder="Add a task..."
+              addButtonLabel="Add"
+              showBelowButton
+              belowButtonLabel="Add to my day"
+            />
+          )}
+          {currentView === 'week' && (
+            <SidebarList
+              title="My goals for the week"
+              placeholder="Add a goal..."
+              addButtonLabel="Add"
+              showBelowButton
+              belowButtonLabel="Implement throughout the week."
+            />
+          )}
+          {currentView === 'month' && (
+            <SidebarList
+              title="My goals"
+              placeholder="Add a goal..."
+              addButtonLabel="Add"
+            />
+          )}
         </div>
       </div>
-
       {/* Main Calendar Area */}
       <div className="flex-1 flex flex-col">
         {renderCalendar()}
       </div>
-
       {/* Right Sidebar */}
       <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Details</h2>
+        <div className="p-6 border-b border-gray-200 h-28 flex flex-col justify-between">
+          <h3 className="text-lg font-bold mb-2">Analytics</h3>
+          {/* Placeholder for Pie Chart */}
+          <div className="w-full h-24 flex items-center justify-center bg-gray-100 rounded mb-2">
+            <span className="text-gray-400">[Pie Chart]</span>
+          </div>
         </div>
-        
-        {/* Additional right sidebar content will go here */}
-        <div className="flex-1 p-6">
-          {/* Placeholder for future content */}
+        <div className="p-6">
+          <h4 className="text-md font-semibold mb-2">Suggestions for your schedule</h4>
+          <div className="bg-gray-50 rounded p-4 text-gray-500 text-sm">[Suggestions go here]</div>
         </div>
       </div>
     </div>

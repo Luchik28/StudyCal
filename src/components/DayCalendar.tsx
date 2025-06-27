@@ -96,32 +96,22 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => navigateDay('prev')}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <span className="font-medium text-gray-700 min-w-[200px] text-center">
-              {format(currentDate, 'EEEE, MMMM d, yyyy')}
-            </span>
-            <button
-              onClick={() => navigateDay('next')}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-          
+      <div className="bg-white shadow-sm border-b border-gray-200 p-4 h-28 flex items-center">
+        <div className="flex items-center space-x-2 mx-auto">
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            onClick={() => navigateDay('prev')}
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
           >
-            <Plus size={20} />
-            <span>New Event</span>
+            <ChevronLeft size={20} />
+          </button>
+          <span className="font-medium text-gray-700 min-w-[200px] text-center">
+            {format(currentDate, 'EEEE, MMMM d, yyyy')}
+          </span>
+          <button
+            onClick={() => navigateDay('next')}
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <ChevronRight size={20} />
           </button>
         </div>
       </div>
