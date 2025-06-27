@@ -1,5 +1,5 @@
-import { WeeklyCalendar } from "@/components/WeeklyCalendar";
+import { Layout } from "@/components/Layout";
 
 export default function Home() {
-  return <WeeklyCalendar />;
+  return <Layout />;
 }
