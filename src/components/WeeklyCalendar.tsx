@@ -99,25 +99,22 @@ export function WeeklyCalendar() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">Week Planner</h1>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => navigateWeek('prev')}
-                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <span className="font-medium text-gray-700 min-w-[200px] text-center">
-                {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
-              </span>
-              <button
-                onClick={() => navigateWeek('next')}
-                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => navigateWeek('prev')}
+              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <span className="font-medium text-gray-700 min-w-[200px] text-center">
+              {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
+            </span>
+            <button
+              onClick={() => navigateWeek('next')}
+              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
           
           <button

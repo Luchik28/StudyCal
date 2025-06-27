@@ -38,38 +38,36 @@ export function Layout() {
   return (
     <div className="h-screen flex bg-gray-50">
       {/* Left Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Calendar</h2>
-          
-          {/* View Switching Buttons */}
-          <div className="space-y-1">
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-6 border-b border-gray-200">          
+          {/* Dynamic View Switching Buttons */}
+          <div className="flex items-center justify-between">
             <button
               onClick={() => handleViewChange('day')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`text-lg font-semibold transition-all duration-300 ease-out group ${
                 currentView === 'day'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'font-bold text-gray-900 scale-105 px-6'
+                  : 'text-gray-400 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold'
               }`}
             >
               Today
             </button>
             <button
               onClick={() => handleViewChange('week')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`text-lg font-semibold transition-all duration-300 ease-out whitespace-nowrap group ${
                 currentView === 'week'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'font-bold text-gray-900 scale-105 px-6'
+                  : 'text-gray-400 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold'
               }`}
             >
               This Week
             </button>
             <button
               onClick={() => handleViewChange('month')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`text-lg font-semibold transition-all duration-300 ease-out group ${
                 currentView === 'month'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'font-bold text-gray-900 scale-105 px-6'
+                  : 'text-gray-400 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold'
               }`}
             >
               Later
@@ -78,7 +76,7 @@ export function Layout() {
         </div>
         
         {/* Additional left sidebar content will go here */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-6">
           {/* Placeholder for future content */}
         </div>
       </div>
@@ -89,13 +87,13 @@ export function Layout() {
       </div>
 
       {/* Right Sidebar */}
-      <div className="w-64 bg-white border-l border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
+      <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+        <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Details</h2>
         </div>
         
         {/* Additional right sidebar content will go here */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-6">
           {/* Placeholder for future content */}
         </div>
       </div>
