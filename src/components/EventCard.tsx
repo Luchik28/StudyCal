@@ -13,7 +13,7 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const { deleteEvent, resizeEvent } = useEvents();
+  const { deleteEvent, resizeEvent, showClassification } = useEvents();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
   const [initialMouseY, setInitialMouseY] = useState(0);
   const [initialTime, setInitialTime] = useState<Date | null>(null);
@@ -172,7 +172,18 @@ export function EventCard({ event }: EventCardProps) {
       >
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <div className="font-medium text-white truncate">{event.title}</div>
+            <div className="font-medium text-white truncate">
+              {showClassification && event.category ? (
+                <div>
+                  <div>{event.category}</div>
+                  {event.subcategory && (
+                    <div className="text-xs text-white/80">{event.subcategory}</div>
+                  )}
+                </div>
+              ) : (
+                event.title
+              )}
+            </div>
             <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
               <Clock size={10} />
               <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
@@ -183,7 +194,7 @@ export function EventCard({ event }: EventCardProps) {
               e.stopPropagation();
               deleteEvent(event.id);
             }}
-            className="text-white/70 hover:text-white transition-colors p-1"
+            className="text-white/70 hover:text-white transition-colors p-1 z-10 relative"
           >
             <X size={12} />
           </button>

@@ -6,6 +6,8 @@ export interface Event {
   endTime: Date;
   color: string;
   dayOfWeek: number; // 0 = Sunday, 1 = Monday, etc.
+  category?: string;
+  subcategory?: string;
 }
 
 export interface TimeSlot {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Brain } from 'lucide-react';
 import { addMonths, subMonths, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import { useEvents } from '@/contexts/EventsContext';
 import { Event } from '@/types/events';
@@ -109,7 +109,7 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick }: {
 StaticMonthCard.displayName = 'StaticMonthCard';
 
 export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date) => void }) {
-  const { events } = useEvents();
+  const { events, classifyEvents, showClassification, setShowClassification, isClassifying } = useEvents();
   const [headerMonth, setHeaderMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
@@ -321,8 +321,8 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 p-4 h-28 flex items-center">
-        <div className="flex items-center space-x-2 mx-auto">
+      <div className="bg-white shadow-sm border-b border-gray-200 p-4 h-28 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
           <button
             onClick={() => navigateMonth('prev')}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors"
@@ -345,6 +345,36 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
             Today
           </button>
         </div>
+        
+        {/* Classification Button */}
+        <button
+          onClick={async () => {
+            if (showClassification) {
+              setShowClassification(false);
+            } else {
+              await classifyEvents();
+              setShowClassification(true);
+            }
+          }}
+          disabled={isClassifying}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+            showClassification 
+              ? 'bg-purple-600 text-white' 
+              : isClassifying
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+          }`}
+        >
+          <Brain size={16} />
+          <span>
+            {isClassifying 
+              ? 'Classifying...' 
+              : showClassification 
+              ? 'Hide Categories' 
+              : 'Classify Events'
+            }
+          </span>
+        </button>
       </div>
 
       {/* Calendar Scroll Container */}

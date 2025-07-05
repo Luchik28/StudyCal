@@ -69,10 +69,10 @@ export function InlineEventCreator({
     }
   }, [dayColumnRef, initialHour, initialMinute]);
 
-  // Update parent component when title or times change
+  // Update parent component when title or times change (without onUpdate dependency)
   useEffect(() => {
     onUpdate({ title, startTime, endTime });
-  }, [title, startTime, endTime, onUpdate]);
+  }, [title, startTime, endTime]); // Removed onUpdate dependency
 
   // Calculate event block dimensions
   const eventTop = (startTime.getHours() + startTime.getMinutes() / 60) * HOUR_HEIGHT;

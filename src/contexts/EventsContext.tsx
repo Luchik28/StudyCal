@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { Event } from '@/types/events';
 import { addHours } from 'date-fns';
 import { getRandomColor } from '@/utils/calendar';
+import { classifyAllEvents, isModelLoaded, classifyEvent } from '@/utils/eventClassification';
 
 interface EventsContextType {
   events: Event[];
@@ -12,6 +13,10 @@ interface EventsContextType {
   deleteEvent: (id: string) => void;
   moveEvent: (id: string, newStartTime: Date) => void;
   resizeEvent: (id: string, newStartTime?: Date, newEndTime?: Date) => void;
+  classifyEvents: () => Promise<void>;
+  showClassification: boolean;
+  setShowClassification: (show: boolean) => void;
+  isClassifying: boolean;
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
@@ -51,7 +56,10 @@ export function EventsProvider({ children }: EventsProviderProps) {
     },
   ]);
 
-  const addEvent = (title: string, startTime: Date, endTime?: Date, description?: string) => {
+  const [showClassification, setShowClassification] = useState(false);
+  const [isClassifying, setIsClassifying] = useState(false);
+
+  const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string) => {
     const newEvent: Event = {
       id: Date.now().toString(),
       title,
@@ -61,6 +69,19 @@ export function EventsProvider({ children }: EventsProviderProps) {
       color: getRandomColor(),
       dayOfWeek: startTime.getDay(),
     };
+
+    // Try to automatically classify the event if model is already loaded
+    if (isModelLoaded()) {
+      try {
+        const classification = await classifyEvent(newEvent);
+        newEvent.category = classification.category;
+        newEvent.subcategory = classification.subcategory;
+      } catch (error) {
+        console.warn('Failed to auto-classify new event:', error);
+        // Event will be added without classification
+      }
+    }
+
     setEvents(prev => [...prev, newEvent]);
   };
 
@@ -129,6 +150,18 @@ export function EventsProvider({ children }: EventsProviderProps) {
     );
   };
 
+  const classifyEvents = useCallback(async () => {
+    try {
+      setIsClassifying(true);
+      const classifiedEvents = await classifyAllEvents(events);
+      setEvents(classifiedEvents);
+    } catch (error) {
+      console.error('Failed to classify events:', error);
+    } finally {
+      setIsClassifying(false);
+    }
+  }, [events]);
+
   return (
     <EventsContext.Provider value={{
       events,
@@ -137,6 +170,10 @@ export function EventsProvider({ children }: EventsProviderProps) {
       deleteEvent,
       moveEvent,
       resizeEvent,
+      classifyEvents,
+      showClassification,
+      setShowClassification,
+      isClassifying,
     }}>
       {children}
     </EventsContext.Provider>
