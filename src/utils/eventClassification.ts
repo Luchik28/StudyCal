@@ -167,9 +167,6 @@ export const loadClassificationModel = async (): Promise<void> => {
     console.log('TensorFlow.js graph model loaded successfully!');
     
     // Test the model with a simple prediction to ensure it works
-    console.log('Testing model with dummy input...');
-    
-    // Create test inputs for graph model - use object format with correct input names
     const testInputs = {
       'inputs': tf.zeros([1, 15], 'int32'),
       'inputs_1': tf.zeros([1, 4], 'float32'),
@@ -179,14 +176,11 @@ export const loadClassificationModel = async (): Promise<void> => {
     try {
       // Test with object format for graph model
       const testPrediction = model.predict(testInputs) as {[key: string]: tf.Tensor};
-      console.log('Model test successful!');
-      console.log('Prediction outputs:', Object.keys(testPrediction));
       
       // Clean up test tensors
       Object.values(testInputs).forEach(tensor => tensor.dispose());
       Object.values(testPrediction).forEach(tensor => tensor.dispose());
     } catch (testError) {
-      console.error('Model test failed:', testError);
       // Clean up test tensors even on error
       Object.values(testInputs).forEach(tensor => tensor.dispose());
       throw new Error(`Model test failed: ${testError}`);
@@ -231,19 +225,11 @@ export const classifyEvent = async (event: Event): Promise<{ category: string; s
     // Make prediction using object format for graph model
     predictions = (model as tf.GraphModel).predict(modelInputs) as {[key: string]: tf.Tensor};
 
-    // Graph model outputs might be named differently - check available keys
-    const outputKeys = Object.keys(predictions);
-    console.log('Available prediction outputs:', outputKeys);
-    
-    // Debug: Check output shapes to determine which is category vs subcategory
+    // Determine which output is category (6 classes) vs subcategory (15 classes)
     const outputs = Object.values(predictions);
     const output0Shape = outputs[0].shape;
     const output1Shape = outputs[1].shape;
     
-    console.log('Output 0 shape:', output0Shape); // Should be [1, 6] or [1, 15]
-    console.log('Output 1 shape:', output1Shape); // Should be [1, 6] or [1, 15]
-    
-    // Determine which output is category (6 classes) vs subcategory (15 classes)
     let categoryOutput: tf.Tensor;
     let subcategoryOutput: tf.Tensor;
     
@@ -251,14 +237,12 @@ export const classifyEvent = async (event: Event): Promise<{ category: string; s
       // Output 0 is category (6), Output 1 is subcategory (15)
       categoryOutput = outputs[0];
       subcategoryOutput = outputs[1];
-      console.log('Detected: Output 0 = Category (6), Output 1 = Subcategory (15)');
     } else if (output0Shape[1] === 15 && output1Shape[1] === 6) {
       // Output 0 is subcategory (15), Output 1 is category (6)
       categoryOutput = outputs[1];
       subcategoryOutput = outputs[0];
-      console.log('Detected: Output 0 = Subcategory (15), Output 1 = Category (6)');
     } else {
-      console.warn('Unexpected output shapes! Using outputs in order...');
+      // Fallback: use outputs in order
       categoryOutput = outputs[0];
       subcategoryOutput = outputs[1];
     }
@@ -266,20 +250,16 @@ export const classifyEvent = async (event: Event): Promise<{ category: string; s
     // Extract category predictions
     const categoryPredictionArray = await categoryOutput.data();
     const categoryArray = Array.from(categoryPredictionArray) as number[];
-    console.log('Category predictions:', categoryArray);
     const predictedCategoryIndex = categoryArray.indexOf(Math.max(...categoryArray));
     const predictedCategory = reverseCategoryMap[predictedCategoryIndex];
     const categoryConfidence = Math.max(...categoryArray);
-    console.log(`Category: ${predictedCategory} (index: ${predictedCategoryIndex}, confidence: ${categoryConfidence})`);
 
     // Extract subcategory predictions
     const subcategoryPredictionArray = await subcategoryOutput.data();
     const subcategoryArray = Array.from(subcategoryPredictionArray) as number[];
-    console.log('Subcategory predictions:', subcategoryArray);
     const predictedSubcategoryIndex = subcategoryArray.indexOf(Math.max(...subcategoryArray));
     const predictedSubcategory = reverseSubcategoryMap[predictedSubcategoryIndex];
     const subcategoryConfidence = Math.max(...subcategoryArray);
-    console.log(`Subcategory: ${predictedSubcategory} (index: ${predictedSubcategoryIndex}, confidence: ${subcategoryConfidence})`);
 
     return {
       category: predictedCategory,
