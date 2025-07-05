@@ -113,7 +113,10 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick }: {
 
 StaticMonthCard.displayName = 'StaticMonthCard';
 
-export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date) => void }) {
+export function MonthlyCalendar({ onDaySelected, onMonthChange }: { 
+  onDaySelected?: (date: Date) => void; 
+  onMonthChange?: (monthDate: Date) => void;
+}) {
   const { events } = useEvents();
   const [headerMonth, setHeaderMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -138,6 +141,7 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
     
     setLoadedMonths(monthsToLoad);
     setHeaderMonth(today);
+    onMonthChange?.(addMonths(today, 1)); // Add one month for analytics
     
     // Scroll to current month after initial load
     setTimeout(() => {
@@ -149,7 +153,7 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
           currentMonthElement.scrollIntoView({ behavior: 'auto', block: 'center' });
         }
       }
-    }, 100);
+    }, 200);
   }, []);
 
   // Handle scroll to update header and load more months
@@ -157,35 +161,113 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    let scrollTimeout: NodeJS.Timeout | null = null;
+
     const handleScroll = () => {
       if (isLoadingRef.current || isNavigatingRef.current) return;
 
-      // Find the month currently in the center of the viewport
-      const containerRect = container.getBoundingClientRect();
-      const containerCenter = containerRect.top + containerRect.height / 2;
+      // Immediate check: if current header month is no longer visible, switch immediately
+      const currentMonthKey = format(headerMonth, 'yyyy-MM');
+      const currentMonthElement = container.querySelector(`[data-month="${currentMonthKey}"]`);
       
-      const monthElements = container.querySelectorAll('[data-month]');
-      let centerMonth: string | null = null;
-      let minDistance = Infinity;
-
-      monthElements.forEach((element) => {
-        const rect = element.getBoundingClientRect();
-        const elementCenter = rect.top + rect.height / 2;
-        const distance = Math.abs(elementCenter - containerCenter);
-
-        if (distance < minDistance && rect.bottom > containerRect.top && rect.top < containerRect.bottom) {
-          minDistance = distance;
-          centerMonth = element.getAttribute('data-month');
-        }
-      });
-
-      // Update header month
-      if (centerMonth) {
-        const centerDate = new Date(centerMonth + '-01');
-        if (format(centerDate, 'yyyy-MM') !== format(headerMonth, 'yyyy-MM')) {
-          setHeaderMonth(centerDate);
+      if (currentMonthElement) {
+        const rect = currentMonthElement.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const containerTop = containerRect.top;
+        const containerBottom = containerRect.bottom;
+        
+        const visibleTop = Math.max(rect.top, containerTop);
+        const visibleBottom = Math.min(rect.bottom, containerBottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        
+        // If current month is barely visible (less than 30px), immediately switch
+        if (visibleHeight < 30) {
+          const monthElements = container.querySelectorAll('[data-month]');
+          for (const element of monthElements) {
+            const elementRect = element.getBoundingClientRect();
+            const elementVisibleTop = Math.max(elementRect.top, containerTop);
+            const elementVisibleBottom = Math.min(elementRect.bottom, containerBottom);
+            const elementVisibleHeight = Math.max(0, elementVisibleBottom - elementVisibleTop);
+            
+            if (elementVisibleHeight > 100) {
+              const monthKey = element.getAttribute('data-month');
+              if (monthKey && monthKey !== currentMonthKey) {
+                const detectedMonthDate = new Date(monthKey + '-01');
+                const analyticsMonthDate = addMonths(detectedMonthDate, 1); // Add one month for analytics
+                setHeaderMonth(detectedMonthDate);
+                onMonthChange?.(analyticsMonthDate);
+                return; // Exit early, skip throttled update
+              }
+            }
+          }
         }
       }
+
+      // Throttle the more comprehensive month detection
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+
+      scrollTimeout = setTimeout(() => {
+        // Find the first month that has significant content visible in the viewport
+        const containerRect = container.getBoundingClientRect();
+        const containerTop = containerRect.top;
+        const containerBottom = containerRect.bottom;
+        const viewportHeight = containerBottom - containerTop;
+        
+        const monthElements = container.querySelectorAll('[data-month]');
+        let selectedMonth: string | null = null;
+
+        // Find the first month that has substantial content visible
+        for (const element of monthElements) {
+          const rect = element.getBoundingClientRect();
+          
+          // Calculate visible area
+          const visibleTop = Math.max(rect.top, containerTop);
+          const visibleBottom = Math.min(rect.bottom, containerBottom);
+          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+          
+          // If the month has any significant content visible (more than 20% of viewport or 100px)
+          const minVisibleHeight = Math.min(viewportHeight * 0.2, 100);
+          
+          if (visibleHeight >= minVisibleHeight) {
+            // If this month takes up the majority of the visible space, select it
+            const visibilityRatio = visibleHeight / viewportHeight;
+            
+            // Select this month if it's the first substantially visible one
+            if (visibilityRatio > 0.25 || visibleHeight > 150) {
+              selectedMonth = element.getAttribute('data-month');
+              break;
+            }
+          }
+        }
+
+        // If no month meets the substantial visibility criteria, fall back to the most visible one
+        if (!selectedMonth) {
+          let maxVisibleHeight = 0;
+          monthElements.forEach((element) => {
+            const rect = element.getBoundingClientRect();
+            const visibleTop = Math.max(rect.top, containerTop);
+            const visibleBottom = Math.min(rect.bottom, containerBottom);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            
+            if (visibleHeight > maxVisibleHeight && visibleHeight > 50) {
+              maxVisibleHeight = visibleHeight;
+              selectedMonth = element.getAttribute('data-month');
+            }
+          });
+        }
+
+        // Update header month
+        if (selectedMonth) {
+          const detectedMonthDate = new Date(selectedMonth + '-01');
+          const analyticsMonthDate = addMonths(detectedMonthDate, 1); // Add one month for analytics
+          if (format(detectedMonthDate, 'yyyy-MM') !== format(headerMonth, 'yyyy-MM')) {
+            setHeaderMonth(detectedMonthDate);
+            onMonthChange?.(analyticsMonthDate);
+          }
+        }
+      }, 50); // Reduced delay for more responsive updates
 
       // Load more months when approaching edges
       const scrollTop = container.scrollTop;
@@ -258,7 +340,12 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
   }, [headerMonth]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -277,6 +364,10 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
       if (targetElement) {
         isNavigatingRef.current = true;
         targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Update header immediately for better UX
+        setHeaderMonth(targetMonth);
+        onMonthChange?.(addMonths(targetMonth, 1)); // Add one month for analytics
         
         setTimeout(() => {
           isNavigatingRef.current = false;
@@ -301,6 +392,10 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
       if (todayElement) {
         isNavigatingRef.current = true;
         todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Update header immediately for better UX
+        setHeaderMonth(today);
+        onMonthChange?.(addMonths(today, 1)); // Add one month for analytics
         
         setTimeout(() => {
           isNavigatingRef.current = false;

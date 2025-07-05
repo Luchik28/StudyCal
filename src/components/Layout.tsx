@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { WeeklyCalendar } from './WeeklyCalendar';
+import { EventAnalytics } from './EventAnalytics';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
@@ -106,6 +107,8 @@ function SidebarList({
 export function Layout() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentWeek, setCurrentWeek] = useState<Date>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   const handleViewChange = (view: CalendarView) => {
     setCurrentView(view);
@@ -116,16 +119,24 @@ export function Layout() {
     setCurrentView('day');
   };
 
+  const handleWeekChange = (weekDate: Date) => {
+    setCurrentWeek(weekDate);
+  };
+
+  const handleMonthChange = (monthDate: Date) => {
+    setCurrentMonth(monthDate);
+  };
+
   const renderCalendar = () => {
     switch (currentView) {
       case 'day':
         return <DayCalendar selectedDate={selectedDate} />;
       case 'week':
-        return <WeeklyCalendar />;
+        return <WeeklyCalendar onWeekChange={handleWeekChange} />;
       case 'month':
-        return <MonthlyCalendar onDaySelected={handleDaySelected} />;
+        return <MonthlyCalendar onDaySelected={handleDaySelected} onMonthChange={handleMonthChange} />;
       default:
-        return <WeeklyCalendar />;
+        return <WeeklyCalendar onWeekChange={handleWeekChange} />;
     }
   };
 
@@ -202,13 +213,12 @@ export function Layout() {
       </div>
       {/* Right Sidebar */}
       <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200 h-28 flex flex-col justify-between">
-          <h3 className="text-lg font-bold mb-2">Analytics</h3>
-          {/* Placeholder for Pie Chart */}
-          <div className="w-full h-24 flex items-center justify-center bg-gray-100 rounded mb-2">
-            <span className="text-gray-400">[Pie Chart]</span>
-          </div>
-        </div>
+        <EventAnalytics 
+          currentView={currentView}
+          selectedDate={selectedDate}
+          currentWeek={currentWeek}
+          currentMonth={currentMonth}
+        />
         <div className="p-6">
           <h4 className="text-md font-semibold mb-2">Suggestions for your schedule</h4>
           <div className="bg-gray-50 rounded p-4 text-gray-500 text-sm">[Suggestions go here]</div>

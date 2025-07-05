@@ -12,7 +12,7 @@ import { DayColumn } from './DayColumn';
 import { CreateEventModal } from './CreateEventModal';
 import { InlineEventCreator } from './InlineEventCreator';
 
-export function WeeklyCalendar() {
+export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Date) => void }) {
   const { events, moveEvent } = useEvents();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
@@ -87,10 +87,15 @@ export function WeeklyCalendar() {
   }, []); // Empty dependency array - function never changes
 
   const navigateWeek = (direction: 'prev' | 'next') => {
-    setCurrentWeek(prev => 
-      direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1)
-    );
+    const newWeek = direction === 'prev' ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1);
+    setCurrentWeek(newWeek);
+    onWeekChange?.(newWeek);
   };
+
+  // Call onWeekChange with initial week
+  React.useEffect(() => {
+    onWeekChange?.(currentWeek);
+  }, [currentWeek, onWeekChange]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
