@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Brain } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { addMonths, subMonths, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import { useEvents } from '@/contexts/EventsContext';
 import { Event } from '@/types/events';
@@ -81,14 +81,19 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick }: {
                   {dayEvents.slice(0, 3).map((event) => (
                     <div
                       key={event.id}
-                      className="text-xs p-1 rounded truncate"
+                      className="text-xs p-1 rounded"
                       style={{
                         backgroundColor: event.color,
                         color: 'white',
                       }}
-                      title={`${event.title} - ${format(event.startTime, 'HH:mm')} to ${format(event.endTime, 'HH:mm')}`}
+                      title={`${event.title} - ${format(event.startTime, 'HH:mm')} to ${format(event.endTime, 'HH:mm')}${event.category ? ` (${event.category}${event.subcategory ? ` - ${event.subcategory}` : ''})` : ''}`}
                     >
-                      {format(event.startTime, 'HH:mm')} {event.title}
+                      <div className="truncate">{format(event.startTime, 'HH:mm')} {event.title}</div>
+                      {event.category && (
+                        <div className="text-xs opacity-75 truncate">
+                          {event.category}{event.subcategory && ` - ${event.subcategory}`}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {dayEvents.length > 3 && (
@@ -109,7 +114,7 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick }: {
 StaticMonthCard.displayName = 'StaticMonthCard';
 
 export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date) => void }) {
-  const { events, classifyEvents, showClassification, setShowClassification, isClassifying } = useEvents();
+  const { events } = useEvents();
   const [headerMonth, setHeaderMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
@@ -345,36 +350,6 @@ export function MonthlyCalendar({ onDaySelected }: { onDaySelected?: (date: Date
             Today
           </button>
         </div>
-        
-        {/* Classification Button */}
-        <button
-          onClick={async () => {
-            if (showClassification) {
-              setShowClassification(false);
-            } else {
-              await classifyEvents();
-              setShowClassification(true);
-            }
-          }}
-          disabled={isClassifying}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-            showClassification 
-              ? 'bg-purple-600 text-white' 
-              : isClassifying
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-          }`}
-        >
-          <Brain size={16} />
-          <span>
-            {isClassifying 
-              ? 'Classifying...' 
-              : showClassification 
-              ? 'Hide Categories' 
-              : 'Classify Events'
-            }
-          </span>
-        </button>
       </div>
 
       {/* Calendar Scroll Container */}

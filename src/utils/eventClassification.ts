@@ -200,6 +200,14 @@ export const loadClassificationModel = async (): Promise<void> => {
 // Classify a single event
 export const classifyEvent = async (event: Event): Promise<{ category: string; subcategory: string; categoryConfidence: number; subcategoryConfidence: number }> => {
   if (!model || !wordIndex) {
+    try {
+      await loadClassificationModel();
+    } catch {
+      throw new Error('Model or vocabulary not loaded yet.');
+    }
+  }
+  
+  if (!model || !wordIndex) {
     throw new Error('Model or vocabulary not loaded yet.');
   }
 

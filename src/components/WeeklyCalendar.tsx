@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight, Plus, Clock, Brain } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { addWeeks, subWeeks, format } from 'date-fns';
 import { getWeekDays, createTimeSlot, calculateEventPosition } from '@/utils/calendar';
 import { useEvents } from '@/contexts/EventsContext';
@@ -13,7 +13,7 @@ import { CreateEventModal } from './CreateEventModal';
 import { InlineEventCreator } from './InlineEventCreator';
 
 export function WeeklyCalendar() {
-  const { events, moveEvent, classifyEvents, showClassification, setShowClassification, isClassifying } = useEvents();
+  const { events, moveEvent } = useEvents();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -113,36 +113,6 @@ export function WeeklyCalendar() {
             <ChevronRight size={20} />
           </button>
         </div>
-        
-        {/* Classification Button */}
-        <button
-          onClick={async () => {
-            if (showClassification) {
-              setShowClassification(false);
-            } else {
-              await classifyEvents();
-              setShowClassification(true);
-            }
-          }}
-          disabled={isClassifying}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-            showClassification 
-              ? 'bg-purple-600 text-white' 
-              : isClassifying
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-          }`}
-        >
-          <Brain size={16} />
-          <span>
-            {isClassifying 
-              ? 'Classifying...' 
-              : showClassification 
-              ? 'Hide Categories' 
-              : 'Classify Events'
-            }
-          </span>
-        </button>
       </div>
 
       {/* Calendar */}

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { CalendarEvent } from '@/types/events';
-import { formatTime, snapToQuarterHour, calculateTimeFromMousePosition, HOUR_HEIGHT } from '@/utils/calendar';
+import { formatTime, HOUR_HEIGHT } from '@/utils/calendar';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, X } from 'lucide-react';
@@ -13,10 +13,8 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const { deleteEvent, resizeEvent, showClassification } = useEvents();
+  const { deleteEvent, resizeEvent } = useEvents();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
-  const [initialMouseY, setInitialMouseY] = useState(0);
-  const [initialTime, setInitialTime] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const {
@@ -42,14 +40,9 @@ export function EventCard({ event }: EventCardProps) {
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(direction);
-    setInitialMouseY(e.clientY);
-    setInitialTime(direction === 'top' ? event.startTime : event.endTime);
-    
     // Get the calendar container for position calculations
     const calendarContainer = document.getElementById('calendar-container');
     if (!calendarContainer) return;
-    
-    const containerRect = calendarContainer.getBoundingClientRect();
     
     // Add global cursor style
     document.body.style.cursor = 'ns-resize';
@@ -110,8 +103,6 @@ export function EventCard({ event }: EventCardProps) {
     
     const handleMouseUp = () => {
       setIsResizing(null);
-      setInitialMouseY(0);
-      setInitialTime(null);
       
       // Reset global cursor style
       document.body.style.cursor = '';
@@ -173,21 +164,21 @@ export function EventCard({ event }: EventCardProps) {
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <div className="font-medium text-white truncate">
-              {showClassification && event.category ? (
-                <div>
-                  <div>{event.category}</div>
-                  {event.subcategory && (
-                    <div className="text-xs text-white/80">{event.subcategory}</div>
-                  )}
-                </div>
-              ) : (
-                event.title
-              )}
+              {event.title}
             </div>
             <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
               <Clock size={10} />
               <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
             </div>
+            {/* Always show classification if available */}
+            {event.category && (
+              <div className="text-white/90 text-xs mt-1">
+                <div className="font-medium">{event.category}</div>
+                {event.subcategory && (
+                  <div className="text-white/70 text-xs">{event.subcategory}</div>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={(e) => {

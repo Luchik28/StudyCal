@@ -3,7 +3,7 @@
 import React, { forwardRef, useState, useEffect, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Clock } from 'lucide-react';
-import { formatDay, getEventsForDay, generateTimeSlots, HOUR_HEIGHT } from '@/utils/calendar';
+import { getEventsForDay, generateTimeSlots, HOUR_HEIGHT } from '@/utils/calendar';
 import { Event } from '@/types/events';
 import { EventCard } from './EventCard';
 import { format } from 'date-fns';

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Clock } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
-import { formatTime, HOUR_HEIGHT } from '@/utils/calendar';
+import { HOUR_HEIGHT } from '@/utils/calendar';
 
 interface InlineEventCreatorProps {
   date: Date;
@@ -18,7 +18,6 @@ interface InlineEventCreatorProps {
 }
 
 export function InlineEventCreator({ 
-  date, 
   initialHour, 
   initialMinute, 
   dayColumnRef, 
@@ -52,7 +51,6 @@ export function InlineEventCreator({
   useEffect(() => {
     if (dayColumnRef && formRef.current) {
       const dayRect = dayColumnRef.getBoundingClientRect();
-      const formRect = formRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       
       // Calculate vertical position based on the click time
@@ -69,17 +67,10 @@ export function InlineEventCreator({
     }
   }, [dayColumnRef, initialHour, initialMinute]);
 
-  // Update parent component when title or times change (without onUpdate dependency)
+  // Update parent component when title or times change
   useEffect(() => {
     onUpdate({ title, startTime, endTime });
-  }, [title, startTime, endTime]); // Removed onUpdate dependency
-
-  // Calculate event block dimensions
-  const eventTop = (startTime.getHours() + startTime.getMinutes() / 60) * HOUR_HEIGHT;
-  const eventHeight = Math.max(
-    ((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)) * HOUR_HEIGHT,
-    HOUR_HEIGHT / 4 // Minimum 15 minutes
-  );
+  }, [title, startTime, endTime, onUpdate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
