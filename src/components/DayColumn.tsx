@@ -1,11 +1,97 @@
 'use client';
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useEffect, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Clock } from 'lucide-react';
 import { formatDay, getEventsForDay, generateTimeSlots, HOUR_HEIGHT } from '@/utils/calendar';
 import { Event } from '@/types/events';
 import { EventCard } from './EventCard';
+import { format } from 'date-fns';
+
+// Responsive day header component
+function ResponsiveDayHeader({ date }: { date: Date }) {
+  const [displayFormat, setDisplayFormat] = useState('full');
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateFormat = () => {
+      if (!headerRef.current) return;
+      
+      const containerWidth = headerRef.current.offsetWidth;
+      
+      // Test different formats to see what fits
+      const testElement = document.createElement('div');
+      testElement.style.visibility = 'hidden';
+      testElement.style.position = 'absolute';
+      testElement.style.whiteSpace = 'nowrap';
+      testElement.style.fontSize = window.getComputedStyle(headerRef.current).fontSize;
+      testElement.style.fontWeight = window.getComputedStyle(headerRef.current).fontWeight;
+      document.body.appendChild(testElement);
+
+      // Full format: "Monday, Jul 8"
+      testElement.textContent = format(date, 'EEEE, MMM d');
+      if (testElement.offsetWidth <= containerWidth - 16) { // 16px padding
+        setDisplayFormat('full');
+        document.body.removeChild(testElement);
+        return;
+      }
+
+      // Abbreviated format: "Mon 8"
+      testElement.textContent = format(date, 'EEE d');
+      if (testElement.offsetWidth <= containerWidth - 16) {
+        setDisplayFormat('abbreviated');
+        document.body.removeChild(testElement);
+        return;
+      }
+
+      // Single letter format: "M 8"
+      testElement.textContent = format(date, 'EEEEE d');
+      if (testElement.offsetWidth <= containerWidth - 16) {
+        setDisplayFormat('single');
+        document.body.removeChild(testElement);
+        return;
+      }
+
+      // Just date number: "8"
+      setDisplayFormat('number');
+      document.body.removeChild(testElement);
+    };
+
+    // Initial check
+    updateFormat();
+
+    // Check on resize
+    const resizeObserver = new ResizeObserver(updateFormat);
+    if (headerRef.current) {
+      resizeObserver.observe(headerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [date]);
+
+  const getDisplayText = () => {
+    switch (displayFormat) {
+      case 'full':
+        return format(date, 'EEEE, MMM d');
+      case 'abbreviated':
+        return format(date, 'EEE d');
+      case 'single':
+        return format(date, 'EEEEE d');
+      case 'number':
+        return format(date, 'd');
+      default:
+        return format(date, 'EEE d');
+    }
+  };
+
+  return (
+    <div ref={headerRef} className="font-semibold text-gray-900 truncate">
+      {getDisplayText()}
+    </div>
+  );
+}
 
 // Individual time slot component with its own drop zone
 function TimeSlotDropZone({ 
@@ -69,17 +155,17 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
       inlineEvent.startTime.toDateString() === date.toDateString();
 
     return (
-      <div ref={ref} className="flex-1 min-w-0 border-r border-gray-200 last:border-r-0">
-      {/* Day Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-3 text-center z-10">
-        <div className="font-semibold text-gray-900">{formatDay(date)}</div>
-      </div>
-      
-      {/* Time Slots */}
-      <div 
-        className="relative"
-        style={{ height: `${timeSlots.length * HOUR_HEIGHT}px` }}
-      >
+      <div ref={ref} className="border-r border-gray-200 last:border-r-0 flex flex-col h-full">
+        {/* Day Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-2 text-center z-10 flex-shrink-0">
+          <ResponsiveDayHeader date={date} />
+        </div>
+        
+        {/* Time Slots */}
+        <div 
+          className="relative flex-1"
+          style={{ minHeight: `${timeSlots.length * HOUR_HEIGHT}px` }}
+        >
         {/* Hour time slots for visual grid */}
         {timeSlots.map((_, hourIndex) => (
           <div

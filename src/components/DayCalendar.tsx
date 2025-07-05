@@ -94,7 +94,7 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 p-4 h-28 flex items-center justify-between">
+      <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-2">
           <button
             onClick={() => navigateDay('prev')}
@@ -147,7 +147,7 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
       {/* Calendar */}
       <div className="flex-1 flex overflow-hidden">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div id="calendar-container" className="flex-1 flex overflow-auto">
+          <div id="calendar-container" className="flex-1 grid overflow-auto" style={{ gridTemplateColumns: '64px 1fr' }}>
             <TimeSlots />
             <DayColumn
               ref={dayColumnRef}

@@ -133,7 +133,7 @@ export function Layout() {
     <div className="h-screen flex bg-gray-50">
       {/* Left Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200 h-28 flex flex-col justify-between">
+        <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center">
           {/* Dynamic View Switching Buttons */}
           <div className="flex items-center justify-between">
             <button
