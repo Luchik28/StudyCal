@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 
@@ -10,9 +10,26 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { timeFormat, setTimeFormat } = useSettings();
+  const { timeFormat, setTimeFormat, saveSettings } = useSettings();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   
   if (!isOpen) return null;
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      await saveSettings();
+      onClose();
+    } catch (error) {
+      setSaveError('Failed to save settings. Please try again.');
+      console.error('Error saving settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -71,6 +88,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </label>
                 </div>
               </div>
+
+              {/* Error message */}
+              {saveError && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <p className="text-sm text-red-700">{saveError}</p>
+                </div>
+              )}
             </div>
           </div>
           
@@ -79,14 +103,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              disabled={isSaving}
             >
               Cancel
             </button>
             <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save
+              {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>

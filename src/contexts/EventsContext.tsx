@@ -1,10 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Event } from '@/types/events';
 import { addHours } from 'date-fns';
 import { getRandomColor } from '@/utils/calendar';
 import { classifyEvent } from '@/utils/eventClassification';
+import { dbManager, initDB } from '@/utils/indexedDB';
 
 interface EventsContextType {
   events: Event[];
@@ -30,42 +31,85 @@ interface EventsProviderProps {
 }
 
 export function EventsProvider({ children }: EventsProviderProps) {
-  const [events, setEvents] = useState<Event[]>([
-    // Sample events for demonstration
-    {
-      id: '1',
-      title: 'Team Meeting',
-      description: 'Weekly team sync',
-      startTime: new Date(2025, 6, 7, 9, 0), // July 7, 2025 at 9:00 AM (Monday)
-      endTime: new Date(2025, 6, 7, 10, 0), // July 7, 2025 at 10:00 AM
-      color: '#3B82F6',
-      dayOfWeek: 1,
-      category: 'Work',
-      subcategory: 'Meeting',
-    },
-    {
-      id: '2',
-      title: 'Lunch Break',
-      description: 'Time to eat',
-      startTime: new Date(2025, 6, 8, 12, 0), // July 8, 2025 at 12:00 PM (Tuesday)
-      endTime: new Date(2025, 6, 8, 13, 0), // July 8, 2025 at 1:00 PM
-      color: '#10B981',
-      dayOfWeek: 2,
-      category: 'Personal',
-      subcategory: 'Activity',
-    },
-    {
-      id: '3',
-      title: 'Doctor Appointment',
-      description: 'Annual checkup',
-      startTime: new Date(2025, 6, 9, 14, 0), // July 9, 2025 at 2:00 PM (Wednesday)
-      endTime: new Date(2025, 6, 9, 15, 0), // July 9, 2025 at 3:00 PM
-      color: '#EF4444',
-      dayOfWeek: 3,
-      category: 'Health',
-      subcategory: 'Appointment',
-    },
-  ]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize IndexedDB and load events on component mount
+  useEffect(() => {
+    const initializeDB = async () => {
+      try {
+        await initDB();
+        const savedEvents = await dbManager.getAllEvents();
+        
+        if (savedEvents.length > 0) {
+          setEvents(savedEvents);
+        } else {
+          // Load sample events if no saved events exist
+          const sampleEvents: Event[] = [
+            {
+              id: '1',
+              title: 'Team Meeting',
+              description: 'Weekly team sync',
+              startTime: new Date(2025, 6, 7, 9, 0), // July 7, 2025 at 9:00 AM (Monday)
+              endTime: new Date(2025, 6, 7, 10, 0), // July 7, 2025 at 10:00 AM
+              color: '#3B82F6',
+              dayOfWeek: 1,
+              category: 'Work',
+              subcategory: 'Meeting',
+            },
+            {
+              id: '2',
+              title: 'Lunch Break',
+              description: 'Time to eat',
+              startTime: new Date(2025, 6, 8, 12, 0), // July 8, 2025 at 12:00 PM (Tuesday)
+              endTime: new Date(2025, 6, 8, 13, 0), // July 8, 2025 at 1:00 PM
+              color: '#10B981',
+              dayOfWeek: 2,
+              category: 'Personal',
+              subcategory: 'Activity',
+            },
+            {
+              id: '3',
+              title: 'Doctor Appointment',
+              description: 'Annual checkup',
+              startTime: new Date(2025, 6, 9, 14, 0), // July 9, 2025 at 2:00 PM (Wednesday)
+              endTime: new Date(2025, 6, 9, 15, 0), // July 9, 2025 at 3:00 PM
+              color: '#EF4444',
+              dayOfWeek: 3,
+              category: 'Health',
+              subcategory: 'Appointment',
+            },
+          ];
+          
+          setEvents(sampleEvents);
+          // Save sample events to IndexedDB
+          for (const event of sampleEvents) {
+            await dbManager.saveEvent(event);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+        // Fallback to sample events if database fails
+        setEvents([
+          {
+            id: '1',
+            title: 'Team Meeting',
+            description: 'Weekly team sync',
+            startTime: new Date(2025, 6, 7, 9, 0),
+            endTime: new Date(2025, 6, 7, 10, 0),
+            color: '#3B82F6',
+            dayOfWeek: 1,
+            category: 'Work',
+            subcategory: 'Meeting',
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeDB();
+  }, []);
 
   const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string) => {
     const newEvent: Event = {
@@ -112,44 +156,77 @@ export function EventsProvider({ children }: EventsProviderProps) {
       newEvent.subcategory = simpleClassification.subcategory;
     }
 
+    // Save to IndexedDB
+    try {
+      await dbManager.saveEvent(newEvent);
+    } catch (error) {
+      console.error('Failed to save event to database:', error);
+    }
+
     setEvents(prev => [...prev, newEvent]);
   };
 
-  const updateEvent = (id: string, updates: Partial<Event>) => {
-    setEvents(prev => 
-      prev.map(event => 
+  const updateEvent = async (id: string, updates: Partial<Event>) => {
+    setEvents(prev => {
+      const updatedEvents = prev.map(event => 
         event.id === id 
           ? { ...event, ...updates, dayOfWeek: updates.startTime?.getDay() ?? event.dayOfWeek }
           : event
-      )
-    );
+      );
+      
+      // Save updated event to IndexedDB
+      const updatedEvent = updatedEvents.find(event => event.id === id);
+      if (updatedEvent) {
+        dbManager.saveEvent(updatedEvent).catch(error => {
+          console.error('Failed to update event in database:', error);
+        });
+      }
+      
+      return updatedEvents;
+    });
   };
 
-  const deleteEvent = (id: string) => {
+  const deleteEvent = async (id: string) => {
+    // Delete from IndexedDB
+    try {
+      await dbManager.deleteEvent(id);
+    } catch (error) {
+      console.error('Failed to delete event from database:', error);
+    }
+
     setEvents(prev => prev.filter(event => event.id !== id));
   };
 
-  const moveEvent = (id: string, newStartTime: Date) => {
-    setEvents(prev => 
-      prev.map(event => {
+  const moveEvent = async (id: string, newStartTime: Date) => {
+    setEvents(prev => {
+      const updatedEvents = prev.map(event => {
         if (event.id === id) {
           const duration = event.endTime.getTime() - event.startTime.getTime();
           const newEndTime = new Date(newStartTime.getTime() + duration);
-          return {
+          const updatedEvent = {
             ...event,
             startTime: newStartTime,
             endTime: newEndTime,
             dayOfWeek: newStartTime.getDay(),
           };
+          
+          // Save to IndexedDB
+          dbManager.saveEvent(updatedEvent).catch(error => {
+            console.error('Failed to save moved event to database:', error);
+          });
+          
+          return updatedEvent;
         }
         return event;
-      })
-    );
+      });
+      
+      return updatedEvents;
+    });
   };
 
-  const resizeEvent = (id: string, newStartTime?: Date, newEndTime?: Date) => {
-    setEvents(prev => 
-      prev.map(event => {
+  const resizeEvent = async (id: string, newStartTime?: Date, newEndTime?: Date) => {
+    setEvents(prev => {
+      const updatedEvents = prev.map(event => {
         if (event.id === id) {
           const updates: Partial<Event> = {};
           
@@ -173,11 +250,20 @@ export function EventsProvider({ children }: EventsProviderProps) {
             }
           }
           
-          return { ...event, ...updates };
+          const updatedEvent = { ...event, ...updates };
+          
+          // Save to IndexedDB
+          dbManager.saveEvent(updatedEvent).catch(error => {
+            console.error('Failed to save resized event to database:', error);
+          });
+          
+          return updatedEvent;
         }
         return event;
-      })
-    );
+      });
+      
+      return updatedEvents;
+    });
   };
 
   return (
