@@ -6,6 +6,7 @@ import { addHours } from 'date-fns';
 import { getRandomColor } from '@/utils/calendar';
 import { classifyEvent } from '@/utils/eventClassification';
 import { dbManager, initDB } from '@/utils/indexedDB';
+import { googleCalendarSyncService } from '@/utils/googleCalendarSync';
 
 interface EventsContextType {
   events: Event[];
@@ -14,6 +15,8 @@ interface EventsContextType {
   deleteEvent: (id: string) => void;
   moveEvent: (id: string, newStartTime: Date) => void;
   resizeEvent: (id: string, newStartTime?: Date, newEndTime?: Date) => void;
+  syncWithGoogleCalendar: () => Promise<void>;
+  isSyncing: boolean;
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
@@ -32,7 +35,7 @@ interface EventsProviderProps {
 
 export function EventsProvider({ children }: EventsProviderProps) {
   const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Initialize IndexedDB and load events on component mount
   useEffect(() => {
@@ -87,6 +90,9 @@ export function EventsProvider({ children }: EventsProviderProps) {
             await dbManager.saveEvent(event);
           }
         }
+
+        // Auto-sync with Google Calendar if enabled
+        await syncWithGoogleCalendar();
       } catch (error) {
         console.error('Failed to initialize database:', error);
         // Fallback to sample events if database fails
@@ -104,12 +110,41 @@ export function EventsProvider({ children }: EventsProviderProps) {
           },
         ]);
       } finally {
-        setIsLoading(false);
+        // Initialization complete
       }
     };
 
     initializeDB();
   }, []);
+
+  // Google Calendar sync function
+  const syncWithGoogleCalendar = async (): Promise<void> => {
+    setIsSyncing(true);
+    
+    try {
+      const currentDate = new Date();
+      const googleEvents = await googleCalendarSyncService.syncFromGoogle(currentDate);
+      
+      if (googleEvents.length > 0) {
+        setEvents(prevEvents => {
+          const mergedEvents = googleCalendarSyncService.mergeEvents(prevEvents, googleEvents);
+          
+          // Save merged events to IndexedDB
+          mergedEvents.forEach(event => {
+            dbManager.saveEvent(event).catch(error => {
+              console.error('Failed to save merged event:', error);
+            });
+          });
+          
+          return mergedEvents;
+        });
+      }
+    } catch (error) {
+      console.error('Failed to sync with Google Calendar:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string) => {
     const newEvent: Event = {
@@ -163,6 +198,17 @@ export function EventsProvider({ children }: EventsProviderProps) {
       console.error('Failed to save event to database:', error);
     }
 
+    // Sync to Google Calendar if enabled
+    try {
+      const googleEventId = await googleCalendarSyncService.syncToGoogle(newEvent, 'create');
+      if (googleEventId) {
+        newEvent.googleEventId = googleEventId;
+        await dbManager.saveEvent(newEvent); // Save again with Google event ID
+      }
+    } catch (error) {
+      console.error('Failed to sync event to Google Calendar:', error);
+    }
+
     setEvents(prev => [...prev, newEvent]);
   };
 
@@ -174,11 +220,16 @@ export function EventsProvider({ children }: EventsProviderProps) {
           : event
       );
       
-      // Save updated event to IndexedDB
+      // Save updated event to IndexedDB and sync to Google Calendar
       const updatedEvent = updatedEvents.find(event => event.id === id);
       if (updatedEvent) {
         dbManager.saveEvent(updatedEvent).catch(error => {
           console.error('Failed to update event in database:', error);
+        });
+
+        // Sync to Google Calendar if enabled
+        googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
+          console.error('Failed to sync updated event to Google Calendar:', error);
         });
       }
       
@@ -187,11 +238,23 @@ export function EventsProvider({ children }: EventsProviderProps) {
   };
 
   const deleteEvent = async (id: string) => {
+    // Get the event before deleting for Google Calendar sync
+    const eventToDelete = events.find(event => event.id === id);
+
     // Delete from IndexedDB
     try {
       await dbManager.deleteEvent(id);
     } catch (error) {
       console.error('Failed to delete event from database:', error);
+    }
+
+    // Sync deletion to Google Calendar if enabled
+    if (eventToDelete) {
+      try {
+        await googleCalendarSyncService.syncToGoogle(eventToDelete, 'delete');
+      } catch (error) {
+        console.error('Failed to sync event deletion to Google Calendar:', error);
+      }
     }
 
     setEvents(prev => prev.filter(event => event.id !== id));
@@ -213,6 +276,11 @@ export function EventsProvider({ children }: EventsProviderProps) {
           // Save to IndexedDB
           dbManager.saveEvent(updatedEvent).catch(error => {
             console.error('Failed to save moved event to database:', error);
+          });
+
+          // Sync to Google Calendar if enabled
+          googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
+            console.error('Failed to sync moved event to Google Calendar:', error);
           });
           
           return updatedEvent;
@@ -256,6 +324,11 @@ export function EventsProvider({ children }: EventsProviderProps) {
           dbManager.saveEvent(updatedEvent).catch(error => {
             console.error('Failed to save resized event to database:', error);
           });
+
+          // Sync to Google Calendar if enabled
+          googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
+            console.error('Failed to sync resized event to Google Calendar:', error);
+          });
           
           return updatedEvent;
         }
@@ -274,6 +347,8 @@ export function EventsProvider({ children }: EventsProviderProps) {
       deleteEvent,
       moveEvent,
       resizeEvent,
+      syncWithGoogleCalendar,
+      isSyncing,
     }}>
       {children}
     </EventsContext.Provider>

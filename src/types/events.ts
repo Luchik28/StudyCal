@@ -8,6 +8,7 @@ export interface Event {
   dayOfWeek: number; // 0 = Sunday, 1 = Monday, etc.
   category?: string;
   subcategory?: string;
+  googleEventId?: string; // For Google Calendar sync
 }
 
 export interface TimeSlot {

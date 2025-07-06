@@ -1,6 +1,19 @@
 // IndexedDB utility for storing app data
 import { Event } from '@/types/events';
+import type { GoogleCalendarConfig } from './googleCalendar';
 
+interface StoredEvent {
+  id: string;
+  title: string;
+  description?: string;
+  startTime: string | Date;
+  endTime: string | Date;
+  color: string;
+  dayOfWeek: number;
+  category?: string;
+  subcategory?: string;
+  googleEventId?: string;
+}
 const DB_NAME = 'WeekPlannerDB';
 const DB_VERSION = 1;
 const EVENTS_STORE = 'events';
@@ -8,6 +21,8 @@ const SETTINGS_STORE = 'settings';
 
 export interface Settings {
   timeFormat: '12h' | '24h';
+  googleCalendarEnabled: boolean;
+  googleCalendarConfig?: GoogleCalendarConfig;
 }
 
 class IndexedDBManager {
@@ -89,7 +104,7 @@ class IndexedDBManager {
 
       request.onerror = () => reject(new Error('Failed to fetch events'));
       request.onsuccess = () => {
-        const events = request.result.map((event: any) => ({
+        const events = request.result.map((event: StoredEvent) => ({
           ...event,
           startTime: new Date(event.startTime),
           endTime: new Date(event.endTime),
@@ -131,7 +146,8 @@ class IndexedDBManager {
       request.onsuccess = () => {
         const result = request.result;
         if (result) {
-          const { key, ...settings } = result;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { key: _, ...settings } = result;
           resolve(settings);
         } else {
           resolve(null);
@@ -147,8 +163,8 @@ class IndexedDBManager {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([EVENTS_STORE, SETTINGS_STORE], 'readwrite');
       
-      const clearEvents = transaction.objectStore(EVENTS_STORE).clear();
-      const clearSettings = transaction.objectStore(SETTINGS_STORE).clear();
+      void transaction.objectStore(EVENTS_STORE).clear();
+      void transaction.objectStore(SETTINGS_STORE).clear();
 
       transaction.onerror = () => reject(new Error('Failed to clear data'));
       transaction.oncomplete = () => resolve();
