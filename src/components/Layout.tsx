@@ -3,6 +3,9 @@
 import React, { useState, useRef } from 'react';
 import { WeeklyCalendar } from './WeeklyCalendar';
 import { EventAnalytics } from './EventAnalytics';
+import { SettingsModal } from './SettingsModal';
+import { SettingsProvider } from '@/contexts/SettingsContext';
+import { Settings } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
@@ -105,10 +108,19 @@ function SidebarList({
 }
 
 export function Layout() {
+  return (
+    <SettingsProvider>
+      <LayoutContent />
+    </SettingsProvider>
+  );
+}
+
+function LayoutContent() {
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentWeek, setCurrentWeek] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleViewChange = (view: CalendarView) => {
     setCurrentView(view);
@@ -141,10 +153,10 @@ export function Layout() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50">
-      {/* Left Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center">
+    <div className="h-screen flex bg-gray-50 overflow-hidden">
+      {/* Left Sidebar - Fixed, no scrolling with calendar */}
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+        <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0">
           {/* Dynamic View Switching Buttons */}
           <div className="flex items-center justify-between">
             <button
@@ -179,7 +191,7 @@ export function Layout() {
             </button>
           </div>
         </div>
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6 overflow-y-auto">
           {currentView === 'day' && (
             <SidebarList
               title="Todo today"
@@ -207,23 +219,44 @@ export function Layout() {
           )}
         </div>
       </div>
-      {/* Main Calendar Area */}
-      <div className="flex-1 flex flex-col">
-        {renderCalendar()}
-      </div>
-      {/* Right Sidebar */}
-      <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-        <EventAnalytics 
-          currentView={currentView}
-          selectedDate={selectedDate}
-          currentWeek={currentWeek}
-          currentMonth={currentMonth}
-        />
-        <div className="p-6">
-          <h4 className="text-md font-semibold mb-2">Suggestions for your schedule</h4>
-          <div className="bg-gray-50 rounded p-4 text-gray-500 text-sm">[Suggestions go here]</div>
+      {/* Main Calendar Area - Independently scrollable */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Calendar Header with Settings */}
+        <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-end flex-shrink-0">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            title="Settings"
+          >
+            <Settings size={20} className="text-gray-600" />
+          </button>
+        </div>
+        {/* Calendar Content - This area scrolls independently */}
+        <div className="flex-1 overflow-hidden">
+          {renderCalendar()}
         </div>
       </div>
+      {/* Right Sidebar - Fixed, no scrolling with calendar */}
+      <div className="w-80 bg-white border-l border-gray-200 flex flex-col flex-shrink-0">
+        <div className="flex-1 overflow-y-auto">
+          <EventAnalytics 
+            currentView={currentView}
+            selectedDate={selectedDate}
+            currentWeek={currentWeek}
+            currentMonth={currentMonth}
+          />
+          <div className="p-6">
+            <h4 className="text-md font-semibold mb-2">Suggestions for your schedule</h4>
+            <div className="bg-gray-50 rounded p-4 text-gray-500 text-sm">[Suggestions go here]</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 }

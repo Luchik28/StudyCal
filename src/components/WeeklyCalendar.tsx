@@ -5,6 +5,8 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { addWeeks, subWeeks, format } from 'date-fns';
 import { getWeekDays, createTimeSlot, calculateEventPosition } from '@/utils/calendar';
+import { formatTimeRange } from '@/utils/timeFormat';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useEvents } from '@/contexts/EventsContext';
 import { Event } from '@/types/events';
 import { TimeSlots } from './TimeSlots';
@@ -14,6 +16,7 @@ import { InlineEventCreator } from './InlineEventCreator';
 
 export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Date) => void }) {
   const { events, moveEvent } = useEvents();
+  const { timeFormat } = useSettings();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,26 +101,24 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
   }, [currentWeek, onWeekChange]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => navigateWeek('prev')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <span className="font-medium text-gray-700 min-w-[200px] text-center">
-            {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
-          </span>
-          <button
-            onClick={() => navigateWeek('next')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Navigation - moved to be compact */}
+      <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-center space-x-4">
+        <button
+          onClick={() => navigateWeek('prev')}
+          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="font-medium text-gray-700 text-sm">
+          {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
+        </span>
+        <button
+          onClick={() => navigateWeek('next')}
+          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {/* Calendar */}
@@ -161,7 +162,7 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
                       <div className="font-medium text-white truncate">{activeEvent.title}</div>
                       <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
                         <Clock size={10} />
-                        <span>{format(activeEvent.startTime, 'HH:mm')} - {format(activeEvent.endTime, 'HH:mm')}</span>
+                        <span>{formatTimeRange(activeEvent.startTime, activeEvent.endTime, timeFormat)}</span>
                       </div>
                     </div>
                   </div>

@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { generateTimeSlots, HOUR_HEIGHT } from '@/utils/calendar';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export function TimeSlots() {
-  const timeSlots = generateTimeSlots();
+  const { timeFormat } = useSettings();
+  const timeSlots = generateTimeSlots(timeFormat);
 
   return (
     <div className="w-16 border-r border-gray-200 sticky left-0 bg-white z-20 flex flex-col">

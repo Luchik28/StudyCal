@@ -5,6 +5,8 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { addDays, subDays, format } from 'date-fns';
 import { createTimeSlot, calculateEventPosition } from '@/utils/calendar';
+import { formatTimeRange } from '@/utils/timeFormat';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useEvents } from '@/contexts/EventsContext';
 import { Event } from '@/types/events';
 import { TimeSlots } from './TimeSlots';
@@ -14,6 +16,7 @@ import { InlineEventCreator } from './InlineEventCreator';
 
 export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
   const { events, moveEvent } = useEvents();
+  const { timeFormat } = useSettings();
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -150,7 +153,7 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
                       <div className="font-medium text-white truncate">{activeEvent.title}</div>
                       <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
                         <Clock size={10} />
-                        <span>{format(activeEvent.startTime, 'HH:mm')} - {format(activeEvent.endTime, 'HH:mm')}</span>
+                        <span>{formatTimeRange(activeEvent.startTime, activeEvent.endTime, timeFormat)}</span>
                       </div>
                     </div>
                   </div>

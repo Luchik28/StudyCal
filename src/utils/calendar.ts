@@ -29,10 +29,15 @@ export function formatDay(date: Date): string {
   return format(date, 'EEEE, MMM d');
 }
 
-export function generateTimeSlots(): string[] {
+export function generateTimeSlots(timeFormat: '12h' | '24h' = '12h'): string[] {
   const slots = [];
   for (let hour = 0; hour < 24; hour++) {
-    slots.push(format(setHours(setMinutes(new Date(), 0), hour), 'HH:mm'));
+    const time = setHours(setMinutes(new Date(), 0), hour);
+    if (timeFormat === '24h') {
+      slots.push(format(time, 'HH:mm'));
+    } else {
+      slots.push(format(time, 'h a'));
+    }
   }
   return slots;
 }

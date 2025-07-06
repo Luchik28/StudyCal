@@ -4,14 +4,17 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { addMonths, subMonths, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import { useEvents } from '@/contexts/EventsContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { formatTime, formatTimeRange } from '@/utils/timeFormat';
 import { Event } from '@/types/events';
 import { CreateEventModal } from './CreateEventModal';
 
 // Create a single static month component
-const StaticMonthCard = React.memo(({ monthDate, events, onDayClick }: {
+const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, timeFormat }: {
   monthDate: Date;
   events: Event[];
   onDayClick: (date: Date) => void;
+  timeFormat: '12h' | '24h';
 }) => {
   const monthStart = startOfMonth(monthDate);
   const monthEnd = endOfMonth(monthDate);
@@ -86,9 +89,9 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick }: {
                         backgroundColor: event.color,
                         color: 'white',
                       }}
-                      title={`${event.title} - ${format(event.startTime, 'HH:mm')} to ${format(event.endTime, 'HH:mm')}${event.category ? ` (${event.category}${event.subcategory ? ` - ${event.subcategory}` : ''})` : ''}`}
+                      title={`${event.title} - ${formatTimeRange(event.startTime, event.endTime, timeFormat)}${event.category ? ` (${event.category}${event.subcategory ? ` - ${event.subcategory}` : ''})` : ''}`}
                     >
-                      <div className="truncate">{format(event.startTime, 'HH:mm')} {event.title}</div>
+                      <div className="truncate">{formatTime(event.startTime, timeFormat)} {event.title}</div>
                       {event.category && (
                         <div className="text-xs opacity-75 truncate">
                           {event.category}{event.subcategory && ` - ${event.subcategory}`}
@@ -118,6 +121,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   onMonthChange?: (monthDate: Date) => void;
 }) {
   const { events } = useEvents();
+  const { timeFormat } = useSettings();
   const [headerMonth, setHeaderMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
@@ -459,6 +463,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
             monthDate={monthDate}
             events={events}
             onDayClick={handleDayClick}
+            timeFormat={timeFormat}
           />
         ))}
       </div>

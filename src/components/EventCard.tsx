@@ -2,7 +2,9 @@
 
 import React, { useState, useRef } from 'react';
 import { CalendarEvent } from '@/types/events';
-import { formatTime, HOUR_HEIGHT } from '@/utils/calendar';
+import { HOUR_HEIGHT } from '@/utils/calendar';
+import { formatTimeRange } from '@/utils/timeFormat';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, X } from 'lucide-react';
@@ -14,6 +16,7 @@ interface EventCardProps {
 
 export function EventCard({ event }: EventCardProps) {
   const { deleteEvent, resizeEvent } = useEvents();
+  const { timeFormat } = useSettings();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -168,7 +171,7 @@ export function EventCard({ event }: EventCardProps) {
             </div>
             <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
               <Clock size={10} />
-              <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
+              <span>{formatTimeRange(event.startTime, event.endTime, timeFormat)}</span>
             </div>
             {/* Always show classification if available */}
             {event.category && (
