@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { WeeklyCalendar } from './WeeklyCalendar';
 import { EventAnalytics } from './EventAnalytics';
 import { SettingsModal } from './SettingsModal';
-import { SettingsProvider } from '@/contexts/SettingsContext';
+import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { Settings } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
@@ -121,6 +121,14 @@ function LayoutContent() {
   const [currentWeek, setCurrentWeek] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { googleCalendarAuthenticated, isLoading } = useSettings();
+
+  // Log authentication status on load for monitoring
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('Layout loaded - Google Calendar authenticated:', googleCalendarAuthenticated);
+    }
+  }, [googleCalendarAuthenticated, isLoading]);
 
   const handleViewChange = (view: CalendarView) => {
     setCurrentView(view);
@@ -222,7 +230,10 @@ function LayoutContent() {
       {/* Main Calendar Area - Independently scrollable */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Calendar Header with Settings */}
-        <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-end flex-shrink-0">
+        <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
+          <div className="text-sm text-gray-500">
+            Google Calendar: {isLoading ? 'Loading...' : googleCalendarAuthenticated ? 'Connected' : 'Not connected'}
+          </div>
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors"

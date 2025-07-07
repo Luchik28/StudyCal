@@ -34,15 +34,45 @@ class GoogleCalendarManager {
   private config: GoogleCalendarConfig | null = null;
   private readonly CALENDAR_ID = 'primary';
   private readonly SCOPES = ['https://www.googleapis.com/auth/calendar'];
+  private onConfigUpdated?: (config: GoogleCalendarConfig) => Promise<void>;
+
+  // Set callback for when config is updated (e.g., after token refresh)
+  setOnConfigUpdated(callback: (config: GoogleCalendarConfig) => Promise<void>) {
+    this.onConfigUpdated = callback;
+  }
 
   // Initialize with stored configuration
   setConfig(config: GoogleCalendarConfig) {
     this.config = config;
   }
 
-  // Check if we have valid authentication
+  // Get current configuration
+  getConfig(): GoogleCalendarConfig | null {
+    return this.config;
+  }
+
+  // Check if we have valid authentication (either valid token or refresh token)
   isAuthenticated(): boolean {
-    return this.config !== null && this.config.accessToken !== '';
+    if (!this.config) {
+      console.log('GoogleCalendarManager.isAuthenticated: No config');
+      return false;
+    }
+    
+    // We're authenticated if we have a refresh token (can refresh access) or a valid access token
+    const hasRefreshToken = !!this.config.refreshToken;
+    const hasValidAccessToken = !!this.config.accessToken && Date.now() < (this.config.expiryDate - 60000);
+    
+    console.log('GoogleCalendarManager.isAuthenticated:', {
+      hasRefreshToken,
+      hasValidAccessToken,
+      accessToken: this.config.accessToken ? 'present' : 'missing',
+      refreshToken: this.config.refreshToken ? 'present' : 'missing',
+      expiryDate: this.config.expiryDate,
+      now: Date.now(),
+      timeUntilExpiry: this.config.expiryDate - Date.now()
+    });
+    
+    return hasRefreshToken || hasValidAccessToken;
   }
 
   // Get authorization URL for OAuth flow
@@ -104,6 +134,8 @@ class GoogleCalendarManager {
       throw new Error('No configuration available');
     }
 
+    console.log('Refreshing Google Calendar access token...');
+
     // Use secure API endpoint for token refresh
     const response = await fetch('/api/auth/google/refresh', {
       method: 'POST',
@@ -122,6 +154,14 @@ class GoogleCalendarManager {
     
     this.config.accessToken = data.accessToken;
     this.config.expiryDate = data.expiryDate;
+    
+    console.log('Access token refreshed successfully');
+
+    // Save updated config if callback is provided
+    if (this.onConfigUpdated && this.config) {
+      console.log('Saving updated config after token refresh...');
+      await this.onConfigUpdated(this.config);
+    }
   }
 
   // Ensure we have a valid access token
@@ -137,6 +177,11 @@ class GoogleCalendarManager {
 
   // Fetch events from Google Calendar
   async fetchEvents(timeMin?: Date, timeMax?: Date): Promise<Event[]> {
+    console.log('GoogleCalendarManager.fetchEvents called');
+    console.log('timeMin:', timeMin, 'timeMax:', timeMax);
+    console.log('config exists:', !!this.config);
+    console.log('accessToken exists:', this.config?.accessToken ? 'yes' : 'no');
+    
     await this.ensureValidToken();
 
     const params = new URLSearchParams({
@@ -153,6 +198,8 @@ class GoogleCalendarManager {
       params.append('timeMax', timeMax.toISOString());
     }
 
+    console.log('Making request to Google Calendar API with params:', params.toString());
+
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${this.CALENDAR_ID}/events?${params.toString()}`,
       {
@@ -163,13 +210,20 @@ class GoogleCalendarManager {
       }
     );
 
+    console.log('Google Calendar API response status:', response.status);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Google Calendar API error:', errorText);
       throw new Error('Failed to fetch Google Calendar events');
     }
 
     const data: GoogleCalendarListResponse = await response.json();
+    console.log('Google Calendar API response data:', data);
     
-    return data.items?.map((item) => this.convertFromGoogleEvent(item)) || [];
+    const events = data.items?.map((item) => this.convertFromGoogleEvent(item)) || [];
+    console.log('Converted events:', events);
+    return events;
   }
 
   // Create event in Google Calendar

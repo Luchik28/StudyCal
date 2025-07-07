@@ -16,18 +16,26 @@ export class GoogleCalendarSyncService {
 
   // Sync events from Google Calendar to local storage
   async syncFromGoogle(currentDate: Date): Promise<Event[]> {
+    console.log('syncFromGoogle called with date:', currentDate);
+    console.log('isAuthenticated:', googleCalendarManager.isAuthenticated());
+    console.log('shouldSync:', this.shouldSync());
+    
     if (!googleCalendarManager.isAuthenticated() || !this.shouldSync()) {
+      console.log('Skipping sync - not authenticated or cooling down');
       return [];
     }
 
     this.syncInProgress = true;
+    console.log('Starting Google Calendar sync...');
     
     try {
       // Fetch events for current week and 2 weeks before/after
       const weekStart = startOfWeek(subWeeks(currentDate, 2));
       const weekEnd = endOfWeek(addWeeks(currentDate, 2));
       
+      console.log('Fetching events from', weekStart, 'to', weekEnd);
       const googleEvents = await googleCalendarManager.fetchEvents(weekStart, weekEnd);
+      console.log('Fetched', googleEvents.length, 'events from Google Calendar');
       
       this.lastSyncTime = Date.now();
       
@@ -164,6 +172,9 @@ export class GoogleCalendarSyncService {
 
     if (!response.ok) {
       const error = await response.json();
+      console.error('Full error response from Google:', error);
+      console.error('Code:', code);
+      console.error('Redirect URI:', redirectUri);
       throw new Error(error.error || 'Failed to exchange authorization code for tokens');
     }
 
@@ -181,6 +192,43 @@ export class GoogleCalendarSyncService {
       clientSecret: '',
     });
   }
+
+  // Debug method to force sync (ignores cooldown)
+  async forceSyncFromGoogle(currentDate: Date): Promise<Event[]> {
+    console.log('forceSyncFromGoogle called - ignoring cooldown');
+    
+    if (!googleCalendarManager.isAuthenticated()) {
+      console.log('Not authenticated, cannot force sync');
+      return [];
+    }
+
+    this.syncInProgress = true;
+    console.log('Starting forced Google Calendar sync...');
+    
+    try {
+      // Fetch events for current week and 2 weeks before/after
+      const weekStart = startOfWeek(subWeeks(currentDate, 2));
+      const weekEnd = endOfWeek(addWeeks(currentDate, 2));
+      
+      console.log('Fetching events from', weekStart, 'to', weekEnd);
+      const googleEvents = await googleCalendarManager.fetchEvents(weekStart, weekEnd);
+      console.log('Fetched', googleEvents.length, 'events from Google Calendar');
+      
+      this.lastSyncTime = Date.now();
+      
+      return googleEvents;
+    } catch (error) {
+      console.error('Failed to force sync from Google Calendar:', error);
+      throw error;
+    } finally {
+      this.syncInProgress = false;
+    }
+  }
 }
 
 export const googleCalendarSyncService = new GoogleCalendarSyncService();
+
+// Add to window for debugging (only in development)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).googleCalendarSyncService = googleCalendarSyncService;
+}

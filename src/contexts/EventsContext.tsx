@@ -7,6 +7,7 @@ import { getRandomColor } from '@/utils/calendar';
 import { classifyEvent } from '@/utils/eventClassification';
 import { dbManager, initDB } from '@/utils/indexedDB';
 import { googleCalendarSyncService } from '@/utils/googleCalendarSync';
+import { useSettings } from './SettingsContext';
 
 interface EventsContextType {
   events: Event[];
@@ -36,9 +37,13 @@ interface EventsProviderProps {
 export function EventsProvider({ children }: EventsProviderProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const { isLoading: settingsLoading, googleCalendarAuthenticated } = useSettings();
 
   // Initialize IndexedDB and load events on component mount
   useEffect(() => {
+    // Wait for settings to load before initializing
+    if (settingsLoading) return;
+
     const initializeDB = async () => {
       try {
         await initDB();
@@ -91,8 +96,13 @@ export function EventsProvider({ children }: EventsProviderProps) {
           }
         }
 
-        // Auto-sync with Google Calendar if enabled
-        await syncWithGoogleCalendar();
+        // Auto-sync with Google Calendar if authenticated
+        if (googleCalendarAuthenticated) {
+          console.log('Google Calendar is authenticated, starting sync...');
+          await syncWithGoogleCalendar();
+        } else {
+          console.log('Google Calendar not authenticated, skipping sync');
+        }
       } catch (error) {
         console.error('Failed to initialize database:', error);
         // Fallback to sample events if database fails
@@ -115,19 +125,25 @@ export function EventsProvider({ children }: EventsProviderProps) {
     };
 
     initializeDB();
-  }, []);
+  }, [settingsLoading, googleCalendarAuthenticated]);
 
   // Google Calendar sync function
   const syncWithGoogleCalendar = async (): Promise<void> => {
+    console.log('syncWithGoogleCalendar called, isSyncing:', isSyncing);
     setIsSyncing(true);
     
     try {
       const currentDate = new Date();
+      console.log('Calling googleCalendarSyncService.syncFromGoogle with date:', currentDate);
       const googleEvents = await googleCalendarSyncService.syncFromGoogle(currentDate);
+      console.log('Received Google events:', googleEvents.length, 'events');
       
       if (googleEvents.length > 0) {
+        console.log('Google events details:', googleEvents);
         setEvents(prevEvents => {
+          console.log('Previous events count:', prevEvents.length);
           const mergedEvents = googleCalendarSyncService.mergeEvents(prevEvents, googleEvents);
+          console.log('Merged events count:', mergedEvents.length);
           
           // Save merged events to IndexedDB
           mergedEvents.forEach(event => {
@@ -138,11 +154,14 @@ export function EventsProvider({ children }: EventsProviderProps) {
           
           return mergedEvents;
         });
+      } else {
+        console.log('No Google events to merge');
       }
     } catch (error) {
       console.error('Failed to sync with Google Calendar:', error);
     } finally {
       setIsSyncing(false);
+      console.log('syncWithGoogleCalendar completed');
     }
   };
 
@@ -339,17 +358,26 @@ export function EventsProvider({ children }: EventsProviderProps) {
     });
   };
 
+  const contextValue = {
+    events,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    moveEvent,
+    resizeEvent,
+    syncWithGoogleCalendar,
+    isSyncing,
+  };
+
+  // Add to window for debugging (only in development)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      (window as any).eventsContext = contextValue;
+    }
+  }, [contextValue]);
+
   return (
-    <EventsContext.Provider value={{
-      events,
-      addEvent,
-      updateEvent,
-      deleteEvent,
-      moveEvent,
-      resizeEvent,
-      syncWithGoogleCalendar,
-      isSyncing,
-    }}>
+    <EventsContext.Provider value={contextValue}>
       {children}
     </EventsContext.Provider>
   );

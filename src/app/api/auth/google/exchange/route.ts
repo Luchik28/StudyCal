@@ -39,8 +39,26 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const error = await response.text();
       console.error('OAuth token exchange failed:', error);
+      console.error('Request details:', {
+        code: code.substring(0, 10) + '...', // Only log first 10 chars for security
+        redirectUri,
+        clientId,
+        hasClientSecret: !!clientSecret
+      });
+      
+      // Try to parse the error as JSON for better error reporting
+      let parsedError;
+      try {
+        parsedError = JSON.parse(error);
+      } catch {
+        parsedError = { error: 'unknown', error_description: error };
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to exchange authorization code for tokens' },
+        { 
+          error: 'Failed to exchange authorization code for tokens',
+          details: parsedError
+        },
         { status: 400 }
       );
     }
