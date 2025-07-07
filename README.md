@@ -119,39 +119,96 @@ The Google Calendar integration includes:
 
 ## Smart Task Scheduling
 
-The app features an advanced **AI-powered task scheduling system** that automatically converts your tasks into optimally scheduled calendar events.
+The app features an advanced **AI-powered task scheduling system** that automatically converts your tasks into optimally scheduled calendar events with sophisticated constraint-based optimization.
 
 ### How It Works
 
-1. **Add Tasks**: Add tasks to the sidebar with estimated durations and priorities
-2. **AI Classification**: Each task is automatically classified using TensorFlow (Work, Education, Health, Personal)  
-3. **Constraint Optimization**: The scheduler uses constraint programming principles to find optimal time slots:
-   - **Prevents overlaps** with existing events
-   - **Respects working hours** (9 AM - 5 PM for work/education tasks)
-   - **Considers priorities** (high priority tasks get better time slots)
-   - **Respects meal times** and break requirements
-   - **Balances workload** across days for weekly scheduling
+1. **Add Tasks**: Add tasks to the sidebar with detailed information including:
+   - **Duration**: From 15 minutes to 3+ hours
+   - **Priority**: Low, Medium, or High priority levels
+   - **Subject**: Specify the subject for education tasks (Math, History, etc.)
+   - **Test Information**: Mark tasks as tests/exams with specific dates
+   - **Description**: Additional context for better AI categorization
+
+2. **AI Classification**: Each task is automatically classified using TensorFlow to determine category (Work, Education, Health, Personal) and optimal scheduling
+
+3. **Constraint Optimization**: The scheduler uses advanced constraint programming principles to find optimal time slots considering:
+
+### Advanced Scheduling Constraints
+
+#### Study Session Optimization
+- **Subject Spacing**: Study sessions for the same subject are automatically spaced out to improve retention
+  - Longer study sessions require more spacing (2+ hour sessions need 6+ hours apart)
+  - High-priority tasks can be scheduled closer together when urgent
+  - Related topics are detected and spaced appropriately
+
+- **Test Preparation**: Intelligent scheduling for exam preparation
+  - Study sessions for subjects with upcoming tests get higher priority
+  - Tests scheduled today or tomorrow get maximum urgency
+  - Related subjects are automatically detected (e.g., Calculus and Mathematics)
+  - Minimum study time before tests is enforced
+
+#### Break Management
+- **Automatic Breaks**: Long tasks (2+ hours) automatically get breaks scheduled after them
+- **Break Duration**: 30-minute breaks are added after intensive study or work sessions
+- **Meal Time Respect**: Avoids scheduling over lunch (12-2 PM) and dinner (6-8 PM) times
+
+#### Work-Life Balance Constraints
+- **Daily Work Limits**: Maximum 8 hours of work tasks per day
+- **Weekend Reduction**: 50% less work scheduled on weekends
+- **Evening Cutoff**: No work tasks after 7 PM for better work-life balance
+- **Morning Start**: Work doesn't start before 7 AM
+- **Flexible Personal Time**: Personal tasks have more flexible scheduling
 
 ### Task Management Features
 
-- **Duration Selection**: Choose from 15 minutes to 3+ hours
-- **Priority Levels**: Set tasks as Low, Medium, or High priority
-- **Automatic Categorization**: AI determines optimal scheduling based on task content
-- **Flexible Scheduling**: 
-  - **Today View**: Schedule tasks for the current day
-  - **Week View**: Distribute tasks optimally across the week
-  - **Month View**: Schedule tasks in the coming days
+- **Enhanced Task Creation**: 
+  - Quick add with smart auto-detection
+  - Advanced options for detailed task specification
+  - Subject and topic extraction from task descriptions
+  - Test date specification for proper preparation scheduling
+
+- **Intelligent Categorization**: AI determines optimal scheduling based on:
+  - Task content analysis using TensorFlow
+  - Subject matter detection (STEM, Humanities, Business, etc.)
+  - Activity type recognition (study, work, exercise, etc.)
+  - Academic keyword recognition (chapters, assignments, projects)
+
+- **Flexible Scheduling Options**: 
+  - **Today View**: Schedule tasks for the current day with immediate optimization
+  - **Week View**: Distribute tasks optimally across the week for balanced workload
+  - **Month View**: Schedule tasks in the coming days with long-term planning
 
 ### Scheduling Intelligence
 
-The scheduler considers multiple factors:
-- **Task Category**: Work tasks prefer business hours, personal tasks are more flexible
-- **Existing Events**: Automatically works around your current schedule
-- **Break Requirements**: Ensures minimum breaks between tasks
-- **Meal Times**: Avoids scheduling over lunch and dinner times
-- **Workload Distribution**: Balances tasks across days for weekly scheduling
+The enhanced scheduler considers multiple sophisticated factors:
 
-Simply add your tasks, set their priorities and durations, then click the scheduling button to watch your tasks transform into an optimized calendar!
+#### Academic Intelligence
+- **Subject Recognition**: Automatically detects subjects from task titles and descriptions
+- **Topic Mapping**: Identifies specific topics within subjects for better spacing
+- **Test Detection**: Recognizes exam-related keywords and prioritizes preparation
+- **Study Session Distribution**: Prevents cramming by spacing out study sessions
+- **Academic Workload**: Balances study time across subjects and days
+
+#### Temporal Constraints
+- **Reasonable Hours**: Tasks are only scheduled between 7 AM and 11 PM for practical usability
+- **Time Preferences**: Different categories prefer different time slots
+  - Work/Education: Business hours (9 AM - 5 PM)
+  - Health: Morning (8 AM - 12 PM) and early afternoon (2 PM - 5 PM)
+  - Personal: Flexible daytime/evening hours (10 AM - 8 PM prime time)
+  - Social Activities: Prefer afternoon/evening (3 PM - 9 PM)
+- **Smart Fallback**: When prime time slots aren't available, prefers later reasonable hours over very early morning
+- **Existing Schedule**: Works around your current calendar events
+- **Meal Times**: Automatically avoids scheduling over meal periods
+- **Sleep Boundaries**: Respects morning and evening time limits
+
+#### Priority Intelligence
+- **Urgency Scaling**: High-priority tasks get prime time slots
+- **Test Urgency**: Study urgency increases as test dates approach
+- **Category Weighting**: Work and education tasks prioritized during business hours
+- **Deadline Awareness**: Tasks with test dates get scheduled with adequate preparation time
+
+Simply add your tasks with the enhanced details, set their priorities and subjects, then click the scheduling button to watch your tasks transform into a perfectly optimized and balanced calendar!
 
 ## Getting Started
 

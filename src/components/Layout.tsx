@@ -35,21 +35,41 @@ function TaskList({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState('');
   const [isScheduling, setIsScheduling] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   const { events, addEvent } = useEvents();
+
+  // Advanced task creation fields
+  const [newTaskSubject, setNewTaskSubject] = useState<string>('');
+  const [newTaskIsTest, setNewTaskIsTest] = useState(false);
+  const [newTaskTestDate, setNewTaskTestDate] = useState<string>('');
+  const [newTaskDescription, setNewTaskDescription] = useState<string>('');
 
   const handleAdd = () => {
     if (input.trim()) {
       const newTask: Task = {
         id: `task_${Date.now()}`,
         title: input.trim(),
+        description: newTaskDescription || undefined,
         estimatedDuration: 60, // Default 1 hour
-        priority: 'medium'
+        priority: 'medium',
+        // No manual category - let AI classify automatically
+        subject: newTaskSubject || undefined,
+        isTest: newTaskIsTest,
+        testDate: newTaskTestDate ? new Date(newTaskTestDate) : undefined
       };
       setTasks([...tasks, newTask]);
       setInput('');
+      
+      // Reset advanced fields
+      setNewTaskDescription('');
+      setNewTaskSubject('');
+      setNewTaskIsTest(false);
+      setNewTaskTestDate('');
+      setShowAdvanced(false);
+      
       inputRef.current?.focus();
     }
   };
@@ -80,6 +100,24 @@ function TaskList({
   const handleUpdatePriority = (idx: number, priority: 'low' | 'medium' | 'high') => {
     setTasks(tasks.map((task, i) => 
       i === idx ? { ...task, priority } : task
+    ));
+  };
+
+  const handleUpdateSubject = (idx: number, subject: string) => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, subject: subject || undefined } : task
+    ));
+  };
+
+  const handleUpdateIsTest = (idx: number, isTest: boolean) => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, isTest } : task
+    ));
+  };
+
+  const handleUpdateTestDate = (idx: number, testDate: string) => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, testDate: testDate ? new Date(testDate) : undefined } : task
     ));
   };
 
@@ -184,7 +222,7 @@ function TaskList({
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs flex-wrap">
                   <div className="flex items-center gap-1">
                     <Clock size={12} />
                     <select
@@ -211,7 +249,67 @@ function TaskList({
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
                   </select>
+                  
+                  {/* Show AI-detected category if available */}
+                  {task.category && (
+                    <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded border">
+                      AI: {task.category}
+                    </span>
+                  )}
                 </div>
+                
+                {/* Additional task details */}
+                {(task.subject || task.isTest || task.testDate) && (
+                  <div className="text-xs text-gray-600 space-y-1">
+                    {task.subject && (
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">Subject:</span>
+                        <input
+                          type="text"
+                          value={task.subject}
+                          onChange={(e) => handleUpdateSubject(idx, e.target.value)}
+                          className="border rounded px-1 py-0.5 text-xs flex-1 min-w-0"
+                          placeholder="Subject"
+                        />
+                      </div>
+                    )}
+                    {task.isTest && (
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-1">
+                          <input
+                            type="checkbox"
+                            checked={task.isTest}
+                            onChange={(e) => handleUpdateIsTest(idx, e.target.checked)}
+                            className="w-3 h-3"
+                          />
+                          <span className="text-red-600 font-medium">Test/Exam</span>
+                        </label>
+                        {task.isTest && (
+                          <input
+                            type="date"
+                            value={task.testDate ? task.testDate.toISOString().split('T')[0] : ''}
+                            onChange={(e) => handleUpdateTestDate(idx, e.target.value)}
+                            className="border rounded px-1 py-0.5 text-xs"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Show/hide advanced options for existing tasks */}
+                {!task.subject && !task.isTest && (
+                  <button
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                    onClick={() => {
+                      setTasks(tasks.map((t, i) => 
+                        i === idx ? { ...t, subject: '', isTest: false } : t
+                      ));
+                    }}
+                  >
+                    + Add subject/test info
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -219,21 +317,81 @@ function TaskList({
       </div>
       
       <div className="space-y-2">
-        <div className="flex items-center">
-          <input
-            ref={inputRef}
-            className="flex-1 border rounded px-2 py-1 text-sm mr-2"
-            placeholder={placeholder}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleInputKeyDown}
-          />
+        <div className="space-y-2">
+          <div className="flex items-center">
+            <input
+              ref={inputRef}
+              className="flex-1 border rounded px-2 py-1 text-sm mr-2"
+              placeholder={placeholder}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+            />
+            <button
+              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+              onClick={handleAdd}
+            >
+              {addButtonLabel}
+            </button>
+          </div>
+          
+          {/* Advanced options toggle */}
           <button
-            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-            onClick={handleAdd}
+            className="text-xs text-gray-600 hover:text-gray-800"
+            onClick={() => setShowAdvanced(!showAdvanced)}
           >
-            {addButtonLabel}
+            {showAdvanced ? '− Hide advanced options' : '+ Advanced options (subject, tests, etc.)'}
           </button>
+          
+          {/* Advanced task creation fields */}
+          {showAdvanced && (
+            <div className="space-y-2 p-2 bg-gray-50 rounded border">
+              <div>
+                <label className="text-xs text-gray-600">Subject:</label>
+                <input
+                  type="text"
+                  value={newTaskSubject}
+                  onChange={(e) => setNewTaskSubject(e.target.value)}
+                  placeholder="e.g., Math, History"
+                  className="w-full border rounded px-1 py-0.5 text-xs"
+                />
+              </div>
+              
+              <div>
+                <label className="text-xs text-gray-600">Description:</label>
+                <textarea
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  placeholder="Additional details about the task..."
+                  className="w-full border rounded px-1 py-0.5 text-xs h-12 resize-none"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={newTaskIsTest}
+                    onChange={(e) => setNewTaskIsTest(e.target.checked)}
+                    className="w-3 h-3"
+                  />
+                  <span className="text-red-600 font-medium">This is a test/exam</span>
+                </label>
+                
+                {newTaskIsTest && (
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-gray-600">Date:</label>
+                    <input
+                      type="date"
+                      value={newTaskTestDate}
+                      onChange={(e) => setNewTaskTestDate(e.target.value)}
+                      className="border rounded px-1 py-0.5 text-xs"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         {scheduleButtonLabel && tasks.length > 0 && (
