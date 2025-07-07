@@ -40,8 +40,6 @@ function CallbackContent() {
 
         // Exchange code for tokens
         const config = await googleCalendarSyncService.handleOAuthCallback(code);
-        console.log('Received config from OAuth:', config);
-        console.log('Current timeFormat from context:', timeFormat);
         
         // Save configuration - Pass config directly to avoid state timing issues
         setGoogleCalendarConfig(config);
@@ -54,23 +52,15 @@ function CallbackContent() {
             googleCalendarEnabled: true,
             googleCalendarConfig: config
           };
-          console.log('About to save settings:', settingsToSave);
           await dbManager.saveSettings(settingsToSave);
-          console.log('Settings saved successfully after OAuth');
-          
-          // Verify the save worked
-          const savedSettings = await dbManager.loadSettings();
-          console.log('Verification - loaded settings after save:', savedSettings);
         } catch (saveError) {
           console.error('Failed to save settings after OAuth:', saveError);
           throw saveError;
         }
 
         // Trigger sync to immediately fetch Google Calendar events
-        console.log('Triggering Google Calendar sync after successful authentication...');
         try {
           await syncWithGoogleCalendar();
-          console.log('Google Calendar sync completed successfully');
         } catch (syncError) {
           console.error('Failed to sync Google Calendar events after authentication:', syncError);
           // Don't fail the authentication flow if sync fails
@@ -90,7 +80,7 @@ function CallbackContent() {
     };
 
     handleCallback();
-  }, [searchParams, router, setGoogleCalendarEnabled, setGoogleCalendarConfig, saveSettings, syncWithGoogleCalendar, isProcessing]);
+  }, [searchParams, router, setGoogleCalendarEnabled, setGoogleCalendarConfig, saveSettings, syncWithGoogleCalendar, timeFormat, isProcessing]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

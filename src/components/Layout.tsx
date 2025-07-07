@@ -5,6 +5,7 @@ import { WeeklyCalendar } from './WeeklyCalendar';
 import { EventAnalytics } from './EventAnalytics';
 import { SettingsModal } from './SettingsModal';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
+import { useModelLoader } from '@/hooks/useModelLoader';
 import { Settings } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
@@ -122,13 +123,20 @@ function LayoutContent() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { googleCalendarAuthenticated, isLoading } = useSettings();
+  
+  // Load TensorFlow model on app startup
+  const { isModelLoaded, isLoading: modelLoading, error: modelError } = useModelLoader();
 
-  // Log authentication status on load for monitoring
+  // Log status when components are ready
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !modelLoading) {
       console.log('Layout loaded - Google Calendar authenticated:', googleCalendarAuthenticated);
+      console.log('TensorFlow model loaded:', isModelLoaded);
+      if (modelError) {
+        console.error('Model loading error:', modelError);
+      }
     }
-  }, [googleCalendarAuthenticated, isLoading]);
+  }, [googleCalendarAuthenticated, isLoading, isModelLoaded, modelLoading, modelError]);
 
   const handleViewChange = (view: CalendarView) => {
     setCurrentView(view);
@@ -161,7 +169,20 @@ function LayoutContent() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50 overflow-hidden">
+    <div className="h-screen flex bg-gray-50 overflow-hidden relative">
+      {/* Loading overlay when model is loading */}
+      {modelLoading && (
+        <div className="absolute inset-0 bg-gray-50 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading AI Classification</h3>
+            <p className="text-sm text-gray-600 text-center">
+              Setting up intelligent event categorization...
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Left Sidebar - Fixed, no scrolling with calendar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0">
@@ -231,8 +252,23 @@ function LayoutContent() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Calendar Header with Settings */}
         <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
-          <div className="text-sm text-gray-500">
-            Google Calendar: {isLoading ? 'Loading...' : googleCalendarAuthenticated ? 'Connected' : 'Not connected'}
+          <div className="flex flex-col text-sm text-gray-500">
+            <div>
+              Google Calendar: {isLoading ? 'Loading...' : googleCalendarAuthenticated ? 'Connected' : 'Not connected'}
+            </div>
+            <div className="flex items-center gap-1">
+              AI Classification: 
+              {modelLoading ? (
+                <span className="text-yellow-600">Loading...</span>
+              ) : isModelLoaded ? (
+                <span className="text-green-600">Ready</span>
+              ) : (
+                <span className="text-red-600">Error</span>
+              )}
+              {modelLoading && (
+                <div className="w-3 h-3 border border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              )}
+            </div>
           </div>
           <button
             onClick={() => setIsSettingsOpen(true)}

@@ -1,5 +1,6 @@
 // Google Calendar API integration
 import { Event } from '@/types/events';
+import { classifyEvent } from './eventClassification';
 
 interface GoogleCalendarEvent {
   id?: string;
@@ -221,7 +222,8 @@ class GoogleCalendarManager {
     const data: GoogleCalendarListResponse = await response.json();
     console.log('Google Calendar API response data:', data);
     
-    const events = data.items?.map((item) => this.convertFromGoogleEvent(item)) || [];
+    // Convert events with TensorFlow classification
+    const events = await this.convertAndClassifyGoogleEvents(data.items || []);
     console.log('Converted events:', events);
     return events;
   }
@@ -310,8 +312,43 @@ class GoogleCalendarManager {
     };
   }
 
-  // Convert Google Calendar event to our Event format
-  private convertFromGoogleEvent(googleEvent: GoogleCalendarEvent & { id: string }): Event {
+  // Convert Google Calendar events and classify them using TensorFlow
+  private async convertAndClassifyGoogleEvents(googleEvents: (GoogleCalendarEvent & { id: string })[]): Promise<Event[]> {
+    const convertedEvents = await Promise.all(
+      googleEvents.map(async (googleEvent) => {
+        // First convert to our Event format with temporary classification
+        const tempEvent = this.convertFromGoogleEventWithoutClassification(googleEvent);
+        
+        try {
+          // Use TensorFlow to classify the event
+          const classification = await classifyEvent(tempEvent);
+          
+          // Update the event with TensorFlow classification
+          return {
+            ...tempEvent,
+            category: classification.category,
+            subcategory: classification.subcategory,
+            color: this.getColorForCategory(classification.category),
+          };
+        } catch (error) {
+          console.error('Failed to classify Google Calendar event, using fallback:', error);
+          // Fallback to simple keyword-based classification
+          const { category, subcategory } = this.categorizeEvent(googleEvent.summary || '', googleEvent.description || '');
+          return {
+            ...tempEvent,
+            category,
+            subcategory,
+            color: this.getColorForCategory(category),
+          };
+        }
+      })
+    );
+    
+    return convertedEvents;
+  }
+
+  // Convert Google Calendar event to our Event format without classification
+  private convertFromGoogleEventWithoutClassification(googleEvent: GoogleCalendarEvent & { id: string }): Event {
     const startDateTime = googleEvent.start.dateTime || googleEvent.start.date;
     const endDateTime = googleEvent.end.dateTime || googleEvent.end.date;
     
@@ -325,12 +362,101 @@ class GoogleCalendarManager {
       description: googleEvent.description || '',
       startTime: new Date(startDateTime),
       endTime: new Date(endDateTime),
-      color: this.getColorFromGoogleColorId(googleEvent.colorId),
+      color: '#6B7280', // Default gray, will be updated after classification
       dayOfWeek: new Date(startDateTime).getDay(),
-      category: 'Google Calendar',
-      subcategory: 'Synced Event',
+      category: 'Personal', // Temporary, will be updated after classification
+      subcategory: 'Activity', // Temporary, will be updated after classification
       googleEventId: googleEvent.id,
     };
+  }
+
+  // Intelligently categorize events based on title and description
+  private categorizeEvent(title: string, description: string): { category: string; subcategory: string } {
+    const text = `${title} ${description}`.toLowerCase();
+    
+    // Work-related keywords
+    if (this.containsKeywords(text, ['meeting', 'standup', 'sync', 'review', 'demo', 'presentation', 'interview', 'conference', 'workshop', 'training', 'team', 'project', 'work', 'office', 'call', 'zoom', 'teams'])) {
+      if (this.containsKeywords(text, ['meeting', 'standup', 'sync', 'call', 'zoom', 'teams'])) {
+        return { category: 'Work', subcategory: 'Meeting' };
+      } else if (this.containsKeywords(text, ['training', 'workshop', 'conference', 'demo', 'presentation'])) {
+        return { category: 'Work', subcategory: 'Learning' };
+      } else if (this.containsKeywords(text, ['interview', 'review'])) {
+        return { category: 'Work', subcategory: 'Important' };
+      }
+      return { category: 'Work', subcategory: 'Task' };
+    }
+    
+    // Health-related keywords
+    if (this.containsKeywords(text, ['doctor', 'dentist', 'appointment', 'checkup', 'medical', 'hospital', 'clinic', 'therapy', 'physio', 'massage', 'surgery', 'vaccine', 'consultation'])) {
+      if (this.containsKeywords(text, ['doctor', 'dentist', 'medical', 'hospital', 'clinic', 'consultation'])) {
+        return { category: 'Health', subcategory: 'Appointment' };
+      } else if (this.containsKeywords(text, ['therapy', 'physio', 'massage'])) {
+        return { category: 'Health', subcategory: 'Treatment' };
+      }
+      return { category: 'Health', subcategory: 'Checkup' };
+    }
+    
+    // Education-related keywords
+    if (this.containsKeywords(text, ['class', 'lecture', 'course', 'study', 'exam', 'test', 'assignment', 'homework', 'school', 'university', 'college', 'tutorial', 'seminar', 'lab'])) {
+      if (this.containsKeywords(text, ['exam', 'test'])) {
+        return { category: 'Education', subcategory: 'Exam' };
+      } else if (this.containsKeywords(text, ['class', 'lecture', 'course', 'tutorial', 'seminar', 'lab'])) {
+        return { category: 'Education', subcategory: 'Class' };
+      } else if (this.containsKeywords(text, ['assignment', 'homework', 'study'])) {
+        return { category: 'Education', subcategory: 'Study' };
+      }
+      return { category: 'Education', subcategory: 'Academic' };
+    }
+    
+    // Personal/Social keywords
+    if (this.containsKeywords(text, ['dinner', 'lunch', 'breakfast', 'coffee', 'drink', 'party', 'birthday', 'celebration', 'wedding', 'date', 'friend', 'family', 'social', 'hangout', 'outing'])) {
+      if (this.containsKeywords(text, ['dinner', 'lunch', 'breakfast', 'coffee'])) {
+        return { category: 'Personal', subcategory: 'Meal' };
+      } else if (this.containsKeywords(text, ['party', 'birthday', 'celebration', 'wedding'])) {
+        return { category: 'Personal', subcategory: 'Event' };
+      }
+      return { category: 'Personal', subcategory: 'Social' };
+    }
+    
+    // Fitness/Exercise keywords
+    if (this.containsKeywords(text, ['gym', 'workout', 'exercise', 'run', 'jog', 'yoga', 'pilates', 'fitness', 'training', 'sports', 'swim', 'bike', 'hike'])) {
+      return { category: 'Personal', subcategory: 'Exercise' };
+    }
+    
+    // Travel keywords
+    if (this.containsKeywords(text, ['flight', 'travel', 'vacation', 'trip', 'hotel', 'airport', 'train', 'bus', 'drive'])) {
+      return { category: 'Personal', subcategory: 'Travel' };
+    }
+    
+    // Shopping/Errands keywords
+    if (this.containsKeywords(text, ['shopping', 'grocery', 'store', 'buy', 'purchase', 'errand', 'bank', 'post office', 'pickup', 'delivery'])) {
+      return { category: 'Personal', subcategory: 'Errands' };
+    }
+    
+    // Entertainment keywords
+    if (this.containsKeywords(text, ['movie', 'concert', 'show', 'theater', 'music', 'game', 'entertainment', 'fun', 'hobby'])) {
+      return { category: 'Personal', subcategory: 'Entertainment' };
+    }
+    
+    // Default category for unmatched events
+    return { category: 'Personal', subcategory: 'Activity' };
+  }
+
+  // Helper function to check if text contains any of the keywords
+  private containsKeywords(text: string, keywords: string[]): boolean {
+    return keywords.some(keyword => text.includes(keyword));
+  }
+
+  // Get color based on category
+  private getColorForCategory(category: string): string {
+    const categoryColors: { [key: string]: string } = {
+      'Work': '#3B82F6',        // Blue
+      'Health': '#EF4444',      // Red
+      'Education': '#8B5CF6',   // Purple
+      'Personal': '#10B981',    // Green
+    };
+    
+    return categoryColors[category] || '#6B7280'; // Default gray
   }
 
   // Map Google Calendar color IDs to our colors

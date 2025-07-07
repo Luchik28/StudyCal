@@ -338,3 +338,12 @@ export const classifyAllEvents = async (events: Event[]): Promise<Event[]> => {
 export const isModelLoaded = (): boolean => {
   return model !== null && wordIndex !== null;
 };
+
+// Debug utilities for development
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as unknown as Record<string, unknown>).debugClassification = {
+    classifyEvent,
+    loadClassificationModel,
+    isModelLoaded,
+  };
+}

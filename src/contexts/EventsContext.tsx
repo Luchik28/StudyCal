@@ -369,12 +369,7 @@ export function EventsProvider({ children }: EventsProviderProps) {
     isSyncing,
   };
 
-  // Add to window for debugging (only in development)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      (window as any).eventsContext = contextValue;
-    }
-  }, [contextValue]);
+
 
   return (
     <EventsContext.Provider value={contextValue}>
