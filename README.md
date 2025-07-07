@@ -14,6 +14,9 @@ A modern, interactive week planner built with Next.js, React, and TypeScript. Pl
 - ⚙️ **Settings**: Customizable time format (12h/24h) and preferences
 - 🔄 **Persistent Storage**: Auto-save events and settings using IndexedDB
 - 📱 **Google Calendar Sync**: Two-way synchronization with Google Calendar (optional)
+- 🤖 **Smart Task Scheduling**: AI-powered automatic task scheduling with constraint optimization
+- 🧠 **Intelligent Categorization**: TensorFlow-based event classification for optimal scheduling
+- ⏰ **Constraint-Based Optimization**: Respects working hours, prevents overlaps, and optimizes for productivity
 
 ## Google Calendar Integration
 
@@ -114,6 +117,42 @@ The Google Calendar integration includes:
    - For production, ensure your app is verified by Google (if required)
    - Test the OAuth flow in development mode first
 
+## Smart Task Scheduling
+
+The app features an advanced **AI-powered task scheduling system** that automatically converts your tasks into optimally scheduled calendar events.
+
+### How It Works
+
+1. **Add Tasks**: Add tasks to the sidebar with estimated durations and priorities
+2. **AI Classification**: Each task is automatically classified using TensorFlow (Work, Education, Health, Personal)  
+3. **Constraint Optimization**: The scheduler uses constraint programming principles to find optimal time slots:
+   - **Prevents overlaps** with existing events
+   - **Respects working hours** (9 AM - 5 PM for work/education tasks)
+   - **Considers priorities** (high priority tasks get better time slots)
+   - **Respects meal times** and break requirements
+   - **Balances workload** across days for weekly scheduling
+
+### Task Management Features
+
+- **Duration Selection**: Choose from 15 minutes to 3+ hours
+- **Priority Levels**: Set tasks as Low, Medium, or High priority
+- **Automatic Categorization**: AI determines optimal scheduling based on task content
+- **Flexible Scheduling**: 
+  - **Today View**: Schedule tasks for the current day
+  - **Week View**: Distribute tasks optimally across the week
+  - **Month View**: Schedule tasks in the coming days
+
+### Scheduling Intelligence
+
+The scheduler considers multiple factors:
+- **Task Category**: Work tasks prefer business hours, personal tasks are more flexible
+- **Existing Events**: Automatically works around your current schedule
+- **Break Requirements**: Ensures minimum breaks between tasks
+- **Meal Times**: Avoids scheduling over lunch and dinner times
+- **Workload Distribution**: Balances tasks across days for weekly scheduling
+
+Simply add your tasks, set their priorities and durations, then click the scheduling button to watch your tasks transform into an optimized calendar!
+
 ## Getting Started
 
 First, run the development server:
@@ -140,44 +179,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 ## Technical Stack
 
 - **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Drag & Drop**: @dnd-kit library
-- **Date Handling**: date-fns library
-- **Icons**: Lucide React
-
-## Project Structure
-
-```
-src/
-├── app/                   # Next.js app directory
-│   ├── auth/
-│   │   └── google/
-│   │       └── callback/      # Google OAuth callback page
-│   ├── globals.css            # Global styles
-│   ├── layout.tsx             # Root layout
-│   └── page.tsx               # Main page
-├── components/            # React components
-│   ├── WeeklyCalendar.tsx    # Main calendar component
-│   ├── DayColumn.tsx         # Individual day column
-│   ├── EventCard.tsx         # Event display card
-│   ├── TimeSlots.tsx         # Time slot sidebar
-│   ├── CreateEventModal.tsx  # Event creation modal
-│   ├── SettingsModal.tsx     # Settings and Google Calendar config
-│   └── MonthlyCalendar.tsx   # Monthly calendar view
-├── contexts/              # React contexts
-│   ├── EventsContext.tsx     # Event state management
-│   └── SettingsContext.tsx   # App settings and Google Calendar config
-├── types/                 # TypeScript type definitions
-│   └── events.ts             # Event-related types
-└── utils/                 # Utility functions
-    ├── calendar.ts           # Calendar helper functions
-    ├── googleCalendar.ts     # Google Calendar API integration
-    ├── googleCalendarSync.ts # Google Calendar sync service
-    ├── indexedDB.ts          # Local storage management
-    ├── eventClassification.ts # Event categorization
-    └── timeFormat.ts         # Time formatting utilities
-```
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

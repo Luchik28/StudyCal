@@ -6,7 +6,10 @@ import { EventAnalytics } from './EventAnalytics';
 import { SettingsModal } from './SettingsModal';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { useModelLoader } from '@/hooks/useModelLoader';
-import { Settings } from 'lucide-react';
+import { useEvents } from '@/contexts/EventsContext';
+import { taskScheduler, Task } from '@/utils/taskScheduler';
+import { startOfWeek } from 'date-fns';
+import { Settings, Clock, Calendar } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
@@ -14,96 +17,245 @@ import { MonthlyCalendar } from './MonthlyCalendar';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
-function SidebarList({
+function TaskList({
   title,
   placeholder,
   addButtonLabel,
-  showBelowButton,
-  belowButtonLabel,
+  scheduleButtonLabel,
+  view,
+  currentDate,
 }: {
   title: string;
   placeholder: string;
   addButtonLabel: string;
-  showBelowButton?: boolean;
-  belowButtonLabel?: string;
+  scheduleButtonLabel?: string;
+  view: CalendarView;
+  currentDate: Date;
 }) {
-  const [items, setItems] = useState<string[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
+  const { events, addEvent } = useEvents();
 
   const handleAdd = () => {
     if (input.trim()) {
-      setItems([...items, input.trim()]);
+      const newTask: Task = {
+        id: `task_${Date.now()}`,
+        title: input.trim(),
+        estimatedDuration: 60, // Default 1 hour
+        priority: 'medium'
+      };
+      setTasks([...tasks, newTask]);
       setInput('');
       inputRef.current?.focus();
     }
   };
+
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleAdd();
   };
+
   const handleEdit = (idx: number) => {
     setEditingIndex(idx);
-    setEditValue(items[idx]);
+    setEditValue(tasks[idx].title);
   };
+
   const handleEditSave = (idx: number) => {
-    setItems(items.map((item, i) => (i === idx ? editValue : item)));
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, title: editValue } : task
+    ));
     setEditingIndex(null);
     setEditValue('');
   };
+
+  const handleUpdateDuration = (idx: number, duration: number) => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, estimatedDuration: duration } : task
+    ));
+  };
+
+  const handleUpdatePriority = (idx: number, priority: 'low' | 'medium' | 'high') => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, priority } : task
+    ));
+  };
+
+  const handleRemoveTask = (idx: number) => {
+    setTasks(tasks.filter((_, i) => i !== idx));
+  };
+
+  const handleScheduleTasks = async () => {
+    if (tasks.length === 0) return;
+    
+    setIsScheduling(true);
+    try {
+      let scheduledEvents;
+      
+      if (view === 'day') {
+        // Schedule for today
+        scheduledEvents = await taskScheduler.scheduleTasks(
+          tasks,
+          currentDate,
+          events
+        );
+      } else if (view === 'week') {
+        // Schedule for the week
+        const weekStart = startOfWeek(currentDate);
+        const weekEvents = await taskScheduler.scheduleTasksForWeek(
+          tasks,
+          weekStart,
+          events
+        );
+        
+        // Flatten the week events
+        scheduledEvents = Object.values(weekEvents).flat();
+      } else {
+        // For month view, schedule across the next 7 days
+        const weekEvents = await taskScheduler.scheduleTasksForWeek(
+          tasks,
+          currentDate,
+          events
+        );
+        scheduledEvents = Object.values(weekEvents).flat();
+      }
+
+      // Add scheduled events to the calendar
+      for (const event of scheduledEvents) {
+        addEvent(event.title, event.startTime, event.endTime, event.description);
+      }
+
+      // Clear the task list after successful scheduling
+      setTasks([]);
+      
+    } catch (error) {
+      console.error('Failed to schedule tasks:', error);
+      alert('Failed to schedule tasks. Please try again.');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'text-red-600 bg-red-50 border-red-200';
+      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'low': return 'text-green-600 bg-green-50 border-green-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <h3 className="text-lg font-bold mb-2">{title}</h3>
-      <div className="flex-1 overflow-y-auto mb-2">
-        {items.map((item, idx) => (
-          <div key={idx} className="flex items-center mb-1">
+      <div className="flex-1 overflow-y-auto mb-2 space-y-2">
+        {tasks.map((task, idx) => (
+          <div key={task.id} className="border rounded-lg p-3 bg-white shadow-sm">
             {editingIndex === idx ? (
-              <>
+              <div className="space-y-2">
                 <input
-                  className="flex-1 border rounded px-2 py-1 text-sm mr-2"
+                  className="w-full border rounded px-2 py-1 text-sm"
                   value={editValue}
                   onChange={e => setEditValue(e.target.value)}
                   onBlur={() => handleEditSave(idx)}
                   onKeyDown={e => { if (e.key === 'Enter') handleEditSave(idx); }}
                   autoFocus
                 />
-                <button
-                  className="text-xs px-2 py-1 bg-blue-100 rounded hover:bg-blue-200"
-                  onClick={() => handleEditSave(idx)}
-                >Save</button>
-              </>
+              </div>
             ) : (
-              <>
-                <span className="flex-1 text-sm">{item}</span>
-                <button
-                  className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
-                  onClick={() => handleEdit(idx)}
-                >Edit</button>
-              </>
+              <div className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <span className="text-sm font-medium flex-1">{task.title}</span>
+                  <div className="flex gap-1">
+                    <button
+                      className="text-xs px-2 py-1 bg-blue-100 rounded hover:bg-blue-200"
+                      onClick={() => handleEdit(idx)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-xs px-2 py-1 bg-red-100 rounded hover:bg-red-200"
+                      onClick={() => handleRemoveTask(idx)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    <Clock size={12} />
+                    <select
+                      value={task.estimatedDuration}
+                      onChange={(e) => handleUpdateDuration(idx, parseInt(e.target.value))}
+                      className="border rounded px-1 py-0.5 text-xs"
+                    >
+                      <option value={15}>15 min</option>
+                      <option value={30}>30 min</option>
+                      <option value={45}>45 min</option>
+                      <option value={60}>1 hour</option>
+                      <option value={90}>1.5 hours</option>
+                      <option value={120}>2 hours</option>
+                      <option value={180}>3 hours</option>
+                    </select>
+                  </div>
+                  
+                  <select
+                    value={task.priority}
+                    onChange={(e) => handleUpdatePriority(idx, e.target.value as 'low' | 'medium' | 'high')}
+                    className={`border rounded px-2 py-0.5 text-xs ${getPriorityColor(task.priority)}`}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              </div>
             )}
           </div>
         ))}
       </div>
-      <div className="flex items-center mt-auto">
-        <input
-          ref={inputRef}
-          className="flex-1 border rounded px-2 py-1 text-sm mr-2"
-          placeholder={placeholder}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleInputKeyDown}
-        />
-        <button
-          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-          onClick={handleAdd}
-        >{addButtonLabel}</button>
+      
+      <div className="space-y-2">
+        <div className="flex items-center">
+          <input
+            ref={inputRef}
+            className="flex-1 border rounded px-2 py-1 text-sm mr-2"
+            placeholder={placeholder}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleInputKeyDown}
+          />
+          <button
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            onClick={handleAdd}
+          >
+            {addButtonLabel}
+          </button>
+        </div>
+        
+        {scheduleButtonLabel && tasks.length > 0 && (
+          <button 
+            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleScheduleTasks}
+            disabled={isScheduling}
+          >
+            {isScheduling ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Scheduling...
+              </>
+            ) : (
+              <>
+                <Calendar size={16} />
+                {scheduleButtonLabel}
+              </>
+            )}
+          </button>
+        )}
       </div>
-      {showBelowButton && belowButtonLabel && (
-        <button className="mt-4 w-full py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm font-medium">
-          {belowButtonLabel}
-        </button>
-      )}
     </div>
   );
 }
@@ -222,28 +374,33 @@ function LayoutContent() {
         </div>
         <div className="flex-1 p-6 overflow-y-auto">
           {currentView === 'day' && (
-            <SidebarList
-              title="Todo today"
+            <TaskList
+              title="Tasks for today"
               placeholder="Add a task..."
               addButtonLabel="Add"
-              showBelowButton
-              belowButtonLabel="Add to my day"
+              scheduleButtonLabel="Schedule to my day"
+              view={currentView}
+              currentDate={selectedDate || new Date()}
             />
           )}
           {currentView === 'week' && (
-            <SidebarList
-              title="My goals for the week"
-              placeholder="Add a goal..."
+            <TaskList
+              title="Tasks for the week"
+              placeholder="Add a task..."
               addButtonLabel="Add"
-              showBelowButton
-              belowButtonLabel="Implement throughout the week."
+              scheduleButtonLabel="Schedule across the week"
+              view={currentView}
+              currentDate={currentWeek}
             />
           )}
           {currentView === 'month' && (
-            <SidebarList
-              title="My goals"
-              placeholder="Add a goal..."
+            <TaskList
+              title="Upcoming tasks"
+              placeholder="Add a task..."
               addButtonLabel="Add"
+              scheduleButtonLabel="Schedule in coming days"
+              view={currentView}
+              currentDate={currentMonth}
             />
           )}
         </div>
