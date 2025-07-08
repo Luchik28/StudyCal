@@ -14,6 +14,7 @@ import { Settings, Clock, Calendar } from 'lucide-react';
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
 import { MonthlyCalendar } from './MonthlyCalendar';
+import { LongTermGoals } from './LongTermGoals';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -530,38 +531,48 @@ function LayoutContent() {
             </button>
           </div>
         </div>
-        <div className="flex-1 p-6 overflow-y-auto">
-          {currentView === 'day' && (
-            <TaskList
-              title="Tasks for today"
-              placeholder="Add a task..."
-              addButtonLabel="Add"
-              scheduleButtonLabel="Schedule to my day"
-              view={currentView}
-              currentDate={selectedDate || new Date()}
-            />
-          )}
-          {currentView === 'week' && (
-            <TaskList
-              title="Tasks for the week"
-              placeholder="Add a task..."
-              addButtonLabel="Add"
-              scheduleButtonLabel="Schedule across the week"
-              view={currentView}
-              currentDate={currentWeek}
-            />
-          )}
-          {currentView === 'month' && (
-            <TaskList
-              title="Upcoming tasks"
-              placeholder="Add a task..."
-              addButtonLabel="Add"
-              scheduleButtonLabel="Schedule in coming days"
-              view={currentView}
-              currentDate={currentMonth}
-            />
-          )}
-        </div>
+        {currentView === 'month' ? (
+          <div className="flex-1 flex flex-col">
+            {/* Top half - Tasks */}
+            <div className="flex-1 p-6 overflow-y-auto border-b border-gray-200">
+              <TaskList
+                title="Upcoming tasks"
+                placeholder="Add a task..."
+                addButtonLabel="Add"
+                scheduleButtonLabel="Schedule in coming days"
+                view={currentView}
+                currentDate={currentMonth}
+              />
+            </div>
+            {/* Bottom half - Long-term Goals */}
+            <div className="flex-1 p-6 overflow-y-auto">
+              <LongTermGoals />
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 p-6 overflow-y-auto">
+            {currentView === 'day' && (
+              <TaskList
+                title="Tasks for today"
+                placeholder="Add a task..."
+                addButtonLabel="Add"
+                scheduleButtonLabel="Schedule to my day"
+                view={currentView}
+                currentDate={selectedDate || new Date()}
+              />
+            )}
+            {currentView === 'week' && (
+              <TaskList
+                title="Tasks for the week"
+                placeholder="Add a task..."
+                addButtonLabel="Add"
+                scheduleButtonLabel="Schedule across the week"
+                view={currentView}
+                currentDate={currentWeek}
+              />
+            )}
+          </div>
+        )}
       </div>
       {/* Main Calendar Area - Independently scrollable */}
       <div className="flex-1 flex flex-col min-w-0">

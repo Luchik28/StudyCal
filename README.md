@@ -17,6 +17,7 @@ A modern, interactive week planner built with Next.js, React, and TypeScript. Pl
 - 🤖 **Smart Task Scheduling**: AI-powered automatic task scheduling with constraint optimization
 - 🧠 **Intelligent Categorization**: TensorFlow-based event classification for optimal scheduling
 - ⏰ **Constraint-Based Optimization**: Respects working hours, prevents overlaps, and optimizes for productivity
+- 🎯 **Long-Term Goals**: Persistent goal tracking with completion status in monthly view sidebar
 
 ## Google Calendar Integration
 
@@ -209,6 +210,28 @@ The enhanced scheduler considers multiple sophisticated factors:
 - **Deadline Awareness**: Tasks with test dates get scheduled with adequate preparation time
 
 Simply add your tasks with the enhanced details, set their priorities and subjects, then click the scheduling button to watch your tasks transform into a perfectly optimized and balanced calendar!
+
+## Long-Term Goals
+
+The app includes a dedicated **Long-Term Goals** section in the monthly view sidebar. This feature helps you track and maintain focus on your bigger objectives alongside your daily tasks and events.
+
+### Features
+
+- **Simple Goal Tracking**: Add, edit, complete, and remove long-term goals
+- **Persistent Storage**: Goals are automatically saved to localStorage and persist between sessions
+- **Completion Status**: Mark goals as complete/incomplete with a simple checkbox
+- **Clean Interface**: Styled to match the task input design for consistency
+- **Collapsible Completed Goals**: Hide/show completed goals to keep the interface clean
+
+### Usage
+
+1. **Switch to Monthly View**: The long-term goals section is only visible in the monthly calendar view
+2. **Add Goals**: Use the input field at the bottom of the left sidebar to add new goals
+3. **Manage Goals**: Edit goal titles by clicking the "Edit" button, or remove goals with the "×" button
+4. **Track Progress**: Check off goals as you complete them
+5. **Review Completed**: Use the "Show completed goals" toggle to review your achievements
+
+The goals persist automatically - no manual saving required. They'll be there when you return to the app, helping you maintain focus on what matters most.
 
 ## Getting Started
 
