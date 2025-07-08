@@ -49,6 +49,8 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
     if (hasLoadedRef.current) {
       try {
         localStorage.setItem('longTermGoals', JSON.stringify(goals));
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('goalsUpdated'));
       } catch (error) {
         console.error('Error saving to localStorage:', error);
       }
@@ -127,7 +129,7 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
             {editingIndex === idx ? (
               <div className="space-y-2">
         <input
-          className="w-full border rounded px-2 py-1 text-sm text-gray-900 bg-white"
+          className="w-full border rounded px-2 py-1 text-sm text-gray-900 dark:text-gray-900 bg-white dark:bg-white"
           value={editValue}
           onChange={e => setEditValue(e.target.value)}
           onKeyDown={e => handleEditKeyDown(e, idx)}
@@ -145,7 +147,7 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
                     >
                       {goal.isCompleted && <Check size={12} className="text-green-600" />}
                     </button>
-                    <span className="text-sm font-medium flex-1 text-gray-900">{goal.title}</span>
+                    <span className="text-sm font-medium flex-1 text-gray-900 dark:text-gray-900">{goal.title}</span>
                   </div>
                   
                   <div className="flex gap-1">
@@ -174,7 +176,7 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
         <div className="flex items-center">
           <input
             ref={inputRef}
-            className="flex-1 border rounded px-2 py-1 text-sm mr-2 text-gray-900 bg-white"
+            className="flex-1 border rounded px-2 py-1 text-sm mr-2 text-gray-900 dark:text-gray-900 bg-white dark:bg-white"
             placeholder="Add a long-term goal..."
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -210,7 +212,7 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
                   >
                     <Check size={12} className="text-white" />
                   </button>
-                  <span className="text-sm line-through text-gray-700 flex-1">{goal.title}</span>
+                  <span className="text-sm line-through text-gray-700 dark:text-gray-700 flex-1">{goal.title}</span>
                   <button
                     className="text-xs px-1 py-0.5 bg-red-100 rounded hover:bg-red-200"
                     onClick={() => handleRemoveGoal(goals.indexOf(goal))}

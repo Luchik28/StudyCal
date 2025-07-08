@@ -15,6 +15,7 @@ import { Settings, Clock, Calendar } from 'lucide-react';
 import { DayCalendar } from './DayCalendar';
 import { MonthlyCalendar } from './MonthlyCalendar';
 import { LongTermGoals } from './LongTermGoals';
+import { Suggestions } from './Suggestions';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -619,8 +620,12 @@ function LayoutContent() {
             currentMonth={currentMonth}
           />
           <div className="p-6">
-            <h4 className="text-md font-semibold mb-2">Suggestions for your schedule</h4>
-            <div className="bg-gray-50 rounded p-4 text-gray-500 text-sm">[Suggestions go here]</div>
+            <Suggestions 
+              currentView={currentView}
+              selectedDate={selectedDate || undefined}
+              currentWeek={currentWeek}
+              currentMonth={currentMonth}
+            />
           </div>
         </div>
       </div>
