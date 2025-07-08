@@ -220,7 +220,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
         minHeight: '40px',
         zIndex: event.position.zIndex,
       }}
-      className="rounded-lg border border-white/20 text-white text-sm shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]"
+      className="rounded-lg border border-white/20 text-white text-sm shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02] overflow-hidden"
     >
       {/* Top resize handle */}
       <div
@@ -241,7 +241,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       
       {/* Event content */}
       <div
-        className={`p-2 h-full flex flex-col justify-between ${
+        className={`p-2 h-full flex flex-col overflow-hidden ${
           isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-pointer'
         }`}
         {...(isResizing || isDragDisabled ? {} : listeners)}
@@ -265,31 +265,91 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           }
         }}
       >
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="font-medium text-white truncate">
-              {event.title}
-            </div>
-            <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
-              <Clock size={10} />
-              <span>{formatTimeRange(event.startTime, event.endTime, timeFormat)}</span>
-            </div>
-            {/* Always show classification if available */}
-            {event.category && (
-              <div className="text-white/90 text-xs mt-1">
-                <div className="font-medium">{event.category}</div>
-                {event.subcategory && (
-                  <div className="text-white/70 text-xs">{event.subcategory}</div>
+        {/* Smart content layout based on available space */}
+        {(() => {
+          const height = event.position.height;
+          const timeString = formatTimeRange(event.startTime, event.endTime, timeFormat);
+          
+          // Very small events (< 50px): Only title with time
+          if (height < 50) {
+            return (
+              <div className="flex-1 overflow-hidden">
+                <div className="font-medium text-white text-xs truncate">
+                  {event.title} • {timeString}
+                </div>
+              </div>
+            );
+          }
+          
+          // Small events (50-70px): Title, time, maybe category
+          if (height < 70) {
+            return (
+              <div className="flex-1 overflow-hidden">
+                <div className="font-medium text-white text-sm truncate">
+                  {event.title}
+                </div>
+                <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                  <Clock size={10} />
+                  <span className="truncate">{timeString}</span>
+                </div>
+                {event.category && (
+                  <div className="text-white/90 text-xs mt-1 truncate font-medium">
+                    {event.category}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
-        {event.description && event.position.height > 60 && (
-          <div className="text-white/80 text-xs truncate mt-1">
-            {event.description}
-          </div>
-        )}
+            );
+          }
+          
+          // Medium events (70-90px): Title, time, category, maybe subcategory
+          if (height < 90) {
+            return (
+              <div className="flex-1 overflow-hidden">
+                <div className="font-medium text-white text-sm truncate">
+                  {event.title}
+                </div>
+                <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                  <Clock size={10} />
+                  <span className="truncate">{timeString}</span>
+                </div>
+                {event.category && (
+                  <div className="text-white/90 text-xs mt-1">
+                    <div className="font-medium truncate">{event.category}</div>
+                    {event.subcategory && (
+                      <div className="text-white/70 text-xs truncate">{event.subcategory}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          }
+          
+          // Large events (90px+): Everything including description
+          return (
+            <div className="flex-1 overflow-hidden">
+              <div className="font-medium text-white text-sm truncate">
+                {event.title}
+              </div>
+              <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                <Clock size={10} />
+                <span className="truncate">{timeString}</span>
+              </div>
+              {event.category && (
+                <div className="text-white/90 text-xs mt-1">
+                  <div className="font-medium truncate">{event.category}</div>
+                  {event.subcategory && (
+                    <div className="text-white/70 text-xs truncate">{event.subcategory}</div>
+                  )}
+                </div>
+              )}
+              {event.description && (
+                <div className="text-white/80 text-xs mt-1 truncate">
+                  {event.description}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
       
       {/* Bottom resize handle */}
