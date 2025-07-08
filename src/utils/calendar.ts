@@ -55,10 +55,18 @@ export function calculateEventPosition(event: Event): { top: number; height: num
 export function getEventsForDay(events: Event[], date: Date): CalendarEvent[] {
   return events
     .filter(event => isSameDay(event.startTime, date))
-    .map(event => ({
-      ...event,
-      position: calculateEventPosition(event),
-    }));
+    .map(event => {
+      const basePosition = calculateEventPosition(event);
+      return {
+        ...event,
+        position: {
+          ...basePosition,
+          left: 0,
+          width: 100,
+          zIndex: 1,
+        },
+      };
+    });
 }
 
 export function createTimeSlot(date: Date, hour: number, minute: number = 0): Date {
@@ -129,4 +137,90 @@ export function calculateTimeFromMousePosition(
   date.setMinutes(Math.max(0, Math.min(59, minutes)));
   
   return snapToQuarterHour(date);
+}
+
+export interface EventPosition {
+  top: number;
+  height: number;
+  left: number;
+  width: number;
+  zIndex: number;
+}
+
+export interface PositionedEvent extends Event {
+  position: EventPosition;
+}
+
+// Check if two events overlap in time
+export function eventsOverlap(event1: Event, event2: Event): boolean {
+  return event1.startTime < event2.endTime && event1.endTime > event2.startTime;
+}
+
+// Calculate positions for overlapping events to display them side by side
+export function calculateOverlapPositions(events: Event[]): PositionedEvent[] {
+  if (events.length === 0) return [];
+
+  // Sort events by start time, then by end time for consistent ordering
+  const sortedEvents = [...events].sort((a, b) => {
+    const startDiff = a.startTime.getTime() - b.startTime.getTime();
+    if (startDiff === 0) {
+      return a.endTime.getTime() - b.endTime.getTime();
+    }
+    return startDiff;
+  });
+  
+  // Find overlapping groups using a more sophisticated algorithm
+  const columns: Event[][] = [];
+  
+  for (const event of sortedEvents) {
+    let placed = false;
+    
+    // Try to place the event in an existing column
+    for (const column of columns) {
+      const canPlaceInColumn = column.every(existingEvent => 
+        !eventsOverlap(event, existingEvent)
+      );
+      
+      if (canPlaceInColumn) {
+        column.push(event);
+        placed = true;
+        break;
+      }
+    }
+    
+    // If couldn't place in existing column, create a new one
+    if (!placed) {
+      columns.push([event]);
+    }
+  }
+
+  // Calculate positions for each event
+  const positionedEvents: PositionedEvent[] = [];
+  const totalColumns = columns.length;
+  
+  for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
+    const column = columns[columnIndex];
+    const columnWidth = 100 / totalColumns;
+    
+    for (const event of column) {
+      const basePosition = calculateEventPosition(event);
+      positionedEvents.push({
+        ...event,
+        position: {
+          ...basePosition,
+          left: columnIndex * columnWidth,
+          width: columnWidth - 0.5, // Small gap between columns
+          zIndex: columnIndex + 1,
+        },
+      });
+    }
+  }
+
+  return positionedEvents;
+}
+
+// Enhanced version of getEventsForDay that includes overlap positioning
+export function getEventsForDayWithPositions(events: Event[], date: Date): PositionedEvent[] {
+  const dayEvents = events.filter(event => isSameDay(event.startTime, date));
+  return calculateOverlapPositions(dayEvents);
 }

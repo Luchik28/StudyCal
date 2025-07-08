@@ -79,50 +79,58 @@ export class GoogleCalendarSyncService {
 
   // Merge Google Calendar events with local events
   mergeEvents(localEvents: Event[], googleEvents: Event[]): Event[] {
-    // Create a map of existing Google events by their Google ID
-    const googleEventMap = new Map<string, Event>();
+    // Create a map of existing events by their Google ID for deduplication
+    const existingGoogleEventIds = new Set<string>();
     
-    // First, collect all existing Google events from local storage
+    // Collect all existing Google event IDs from local events
     localEvents.forEach(event => {
-      if (event.id.startsWith('google_') && event.googleEventId) {
-        googleEventMap.set(event.googleEventId, event);
+      if (event.googleEventId) {
+        existingGoogleEventIds.add(event.googleEventId);
       }
     });
 
-    // Update or add Google events
-    const updatedGoogleEvents: Event[] = [];
+    // Filter out local Google events to rebuild from fresh Google data
+    const nonGoogleLocalEvents = localEvents.filter(event => !event.googleEventId);
+    
+    // Process Google events, only add ones that don't already exist
+    const newGoogleEvents: Event[] = [];
     googleEvents.forEach(googleEvent => {
-      const existingEvent = googleEventMap.get(googleEvent.googleEventId!);
-      
-      if (existingEvent) {
-        // Update existing Google event
-        updatedGoogleEvents.push({
-          ...existingEvent,
-          title: googleEvent.title,
-          description: googleEvent.description,
-          startTime: googleEvent.startTime,
-          endTime: googleEvent.endTime,
-          dayOfWeek: googleEvent.dayOfWeek,
-        });
-        googleEventMap.delete(googleEvent.googleEventId!);
-      } else {
-        // Add new Google event
-        updatedGoogleEvents.push(googleEvent);
+      if (googleEvent.googleEventId && !existingGoogleEventIds.has(googleEvent.googleEventId)) {
+        // This is a new Google event, add it
+        newGoogleEvents.push(googleEvent);
+        existingGoogleEventIds.add(googleEvent.googleEventId);
       }
     });
 
-    // Filter out local events that correspond to deleted Google events
-    const filteredLocalEvents = localEvents.filter(event => {
-      if (event.id.startsWith('google_') && event.googleEventId) {
-        return !googleEventMap.has(event.googleEventId);
+    // Update existing Google events with fresh data from Google
+    const updatedLocalEvents = localEvents.map(localEvent => {
+      if (localEvent.googleEventId) {
+        // Find the corresponding Google event
+        const matchingGoogleEvent = googleEvents.find(ge => ge.googleEventId === localEvent.googleEventId);
+        if (matchingGoogleEvent) {
+          // Update with fresh Google data but keep local properties like color if not specified
+          return {
+            ...localEvent,
+            title: matchingGoogleEvent.title,
+            description: matchingGoogleEvent.description,
+            startTime: matchingGoogleEvent.startTime,
+            endTime: matchingGoogleEvent.endTime,
+            dayOfWeek: matchingGoogleEvent.dayOfWeek,
+            color: matchingGoogleEvent.color || localEvent.color, // Keep local color if Google doesn't specify one
+          };
+        } else {
+          // Google event was deleted, remove from local
+          return null;
+        }
       }
-      return true;
-    });
+      return localEvent;
+    }).filter((event): event is Event => event !== null);
 
-    // Combine local events (non-Google) with updated Google events
+    // Combine non-Google local events, updated Google events, and new Google events
     return [
-      ...filteredLocalEvents.filter(event => !event.id.startsWith('google_')),
-      ...updatedGoogleEvents,
+      ...nonGoogleLocalEvents,
+      ...updatedLocalEvents.filter(event => event.googleEventId),
+      ...newGoogleEvents,
     ];
   }
 

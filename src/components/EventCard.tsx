@@ -1,24 +1,31 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { CalendarEvent } from '@/types/events';
+import { PositionedEvent, Event } from '@/types/events';
 import { HOUR_HEIGHT } from '@/utils/calendar';
 import { formatTimeRange } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Clock, X } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
+import { EventPopupMenu } from './EventPopupMenu';
 
 interface EventCardProps {
-  event: CalendarEvent;
+  event: PositionedEvent;
+  onEventEdit?: (event: Event) => void;
 }
 
-export function EventCard({ event }: EventCardProps) {
-  const { deleteEvent, resizeEvent } = useEvents();
+export function EventCard({ event, onEventEdit }: EventCardProps) {
+  const { resizeEvent, deleteEvent } = useEvents();
   const { timeFormat } = useSettings();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
+  const [showPopupMenu, setShowPopupMenu] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [isDragDisabled, setIsDragDisabled] = useState(true); // Start with drag disabled
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartTime = useRef<number>(0);
+  const dragHoldTimer = useRef<NodeJS.Timeout | null>(null);
   
   const {
     attributes,
@@ -31,12 +38,54 @@ export function EventCard({ event }: EventCardProps) {
     data: {
       event,
     },
-    disabled: isResizing !== null, // Disable dragging when resizing
+    disabled: isResizing !== null || isDragDisabled, // Disable dragging when resizing or when not holding
   });
 
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0 : 1, // Completely hide original during drag
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isResizing) return;
+    
+    dragStartTime.current = Date.now();
+    
+    // Set a timer to enable dragging after 300ms (hold threshold)
+    dragHoldTimer.current = setTimeout(() => {
+      setIsDragDisabled(false); // Enable dragging after hold
+    }, 300);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (isResizing) return;
+    
+    const dragEndTime = Date.now();
+    const dragDuration = dragEndTime - dragStartTime.current;
+    
+    // Clear the hold timer
+    if (dragHoldTimer.current) {
+      clearTimeout(dragHoldTimer.current);
+      dragHoldTimer.current = null;
+    }
+    
+    // Re-disable dragging
+    setIsDragDisabled(true);
+    
+    // If it was a quick click (less than 250ms), show popup
+    if (dragDuration < 250) {
+      e.stopPropagation();
+      
+      // Calculate position relative to the event container
+      if (containerRef.current) {
+        const eventRect = containerRef.current.getBoundingClientRect();
+        // Position popup to the right of the event
+        const x = eventRect.right + 10; // 10px margin from right edge
+        const y = eventRect.top;
+        setPopupPosition({ x, y });
+        setShowPopupMenu(true);
+      }
+    }
   };
 
   const handleResizeStart = (e: React.MouseEvent, direction: 'top' | 'bottom') => {
@@ -119,6 +168,39 @@ export function EventCard({ event }: EventCardProps) {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const handleClosePopup = () => {
+    setShowPopupMenu(false);
+  };
+
+  const handleEditEvent = (event: Event) => {
+    if (onEventEdit) {
+      onEventEdit(event);
+    }
+  };
+
+  const handleDeleteEvent = async (event: Event) => {
+    console.log('EventCard handleDeleteEvent called with event:', event);
+    try {
+      // Close popup immediately to provide instant feedback
+      setShowPopupMenu(false);
+      
+      console.log('Calling deleteEvent function...');
+      // Delete the event (this will trigger optimistic update)
+      await deleteEvent(event.id);
+      console.log('Delete completed successfully');
+      
+    } catch (error) {
+      console.error('Failed to delete event in EventCard:', error);
+      alert('Failed to delete event. Please try again.');
+      // Don't reopen popup on error - let user click again if needed
+    }
+  };
+
+  // Calculate event dimensions and position
+  const eventHeight = Math.max(40, event.position.height);
+  const eventTop = event.position.top;
+  const eventBottom = eventTop + eventHeight;
+
   return (
     <div
       ref={(node) => {
@@ -131,11 +213,12 @@ export function EventCard({ event }: EventCardProps) {
         ...style,
         top: event.position.top,
         height: event.position.height,
+        left: `${event.position.left}%`,
+        width: `${event.position.width}%`,
         backgroundColor: event.color,
         position: 'absolute',
-        left: '4px',
-        right: '4px',
         minHeight: '40px',
+        zIndex: event.position.zIndex,
       }}
       className="rounded-lg border border-white/20 text-white text-sm shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]"
     >
@@ -159,10 +242,28 @@ export function EventCard({ event }: EventCardProps) {
       {/* Event content */}
       <div
         className={`p-2 h-full flex flex-col justify-between ${
-          isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-pointer'
         }`}
-        {...(isResizing ? {} : listeners)}
-        {...(isResizing ? {} : attributes)}
+        {...(isResizing || isDragDisabled ? {} : listeners)}
+        {...(isResizing || isDragDisabled ? {} : attributes)}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onClick={(e) => {
+          // Don't handle click if we're resizing or if drag was initiated
+          if (isResizing || !isDragDisabled) return;
+          
+          e.stopPropagation();
+          
+          // Calculate position relative to the event container
+          if (containerRef.current) {
+            const eventRect = containerRef.current.getBoundingClientRect();
+            // Position popup to the right of the event
+            const x = eventRect.right + 10; // 10px margin from right edge
+            const y = eventRect.top;
+            setPopupPosition({ x, y });
+            setShowPopupMenu(true);
+          }
+        }}
       >
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -183,15 +284,6 @@ export function EventCard({ event }: EventCardProps) {
               </div>
             )}
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteEvent(event.id);
-            }}
-            className="text-white/70 hover:text-white transition-colors p-1 z-10 relative"
-          >
-            <X size={12} />
-          </button>
         </div>
         {event.description && event.position.height > 60 && (
           <div className="text-white/80 text-xs truncate mt-1">
@@ -216,6 +308,16 @@ export function EventCard({ event }: EventCardProps) {
           isResizing === 'bottom' ? 'bg-blue-200' : 'bg-white/60'
         }`} />
       </div>
+
+      {/* Popup menu */}
+      <EventPopupMenu
+        event={event}
+        isOpen={showPopupMenu}
+        position={popupPosition}
+        onClose={handleClosePopup}
+        onEdit={handleEditEvent}
+        onDelete={handleDeleteEvent}
+      />
     </div>
   );
 }

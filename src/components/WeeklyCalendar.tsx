@@ -12,6 +12,7 @@ import { Event } from '@/types/events';
 import { TimeSlots } from './TimeSlots';
 import { DayColumn } from './DayColumn';
 import { CreateEventModal } from './CreateEventModal';
+import { EventEditModal } from './EventEditModal';
 import { InlineEventCreator } from './InlineEventCreator';
 
 export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Date) => void }) {
@@ -20,6 +21,8 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
   const [modalInitialHour, setModalInitialHour] = useState<number>();
   
@@ -89,6 +92,11 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
     setInlineEvent(prev => prev ? { ...prev, ...updates } : null);
   }, []); // Empty dependency array - function never changes
 
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event);
+    setIsEditModalOpen(true);
+  };
+
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeek = direction === 'prev' ? subWeeks(currentWeek, 1) : addWeeks(currentWeek, 1);
     setCurrentWeek(newWeek);
@@ -135,6 +143,7 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
                 date={day}
                 events={events}
                 onTimeSlotClick={handleTimeSlotClick}
+                onEventEdit={handleEventClick}
                 inlineEvent={inlineEvent?.date.toDateString() === day.toDateString() ? {
                   startTime: inlineEvent.startTime,
                   endTime: inlineEvent.endTime,
@@ -202,6 +211,15 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
         }}
         initialDate={modalInitialDate}
         initialHour={modalInitialHour}
+      />
+
+      <EventEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedEvent(null);
+        }}
+        event={selectedEvent}
       />
     </div>
   );

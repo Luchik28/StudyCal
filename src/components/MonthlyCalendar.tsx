@@ -8,12 +8,14 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { formatTime, formatTimeRange } from '@/utils/timeFormat';
 import { Event } from '@/types/events';
 import { CreateEventModal } from './CreateEventModal';
+import { EventEditModal } from './EventEditModal';
 
 // Create a single static month component
-const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, timeFormat }: {
+const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, onEventEdit, timeFormat }: {
   monthDate: Date;
   events: Event[];
   onDayClick: (date: Date) => void;
+  onEventEdit?: (event: Event) => void;
   timeFormat: '12h' | '24h';
 }) => {
   const monthStart = startOfMonth(monthDate);
@@ -84,12 +86,16 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, timeFormat 
                   {dayEvents.slice(0, 3).map((event) => (
                     <div
                       key={event.id}
-                      className="text-xs p-1 rounded"
+                      className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity"
                       style={{
                         backgroundColor: event.color,
                         color: 'white',
                       }}
                       title={`${event.title} - ${formatTimeRange(event.startTime, event.endTime, timeFormat)}${event.category ? ` (${event.category}${event.subcategory ? ` - ${event.subcategory}` : ''})` : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEventEdit?.(event);
+                      }}
                     >
                       <div className="truncate">{formatTime(event.startTime, timeFormat)} {event.title}</div>
                       {event.category && (
@@ -124,6 +130,8 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   const { timeFormat } = useSettings();
   const [headerMonth, setHeaderMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
   
   // Track which months are currently loaded
@@ -417,6 +425,11 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
     }
   };
 
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event);
+    setIsEditModalOpen(true);
+  };
+
   // Create sorted array of months to render
   const monthsToRender = Array.from(loadedMonths)
     .sort()
@@ -463,6 +476,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
             monthDate={monthDate}
             events={events}
             onDayClick={handleDayClick}
+            onEventEdit={handleEventClick}
             timeFormat={timeFormat}
           />
         ))}
@@ -476,6 +490,15 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
         }}
         initialDate={modalInitialDate}
         initialHour={9} // Default to 9 AM for month view
+      />
+
+      <EventEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedEvent(null);
+        }}
+        event={selectedEvent}
       />
     </div>
   );

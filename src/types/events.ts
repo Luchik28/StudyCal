@@ -16,9 +16,18 @@ export interface TimeSlot {
   dayOfWeek: number;
 }
 
+export interface EventPosition {
+  top: number;
+  height: number;
+  left: number;
+  width: number;
+  zIndex: number;
+}
+
 export interface CalendarEvent extends Event {
-  position: {
-    top: number;
-    height: number;
-  };
+  position: EventPosition;
+}
+
+export interface PositionedEvent extends Event {
+  position: EventPosition;
 }

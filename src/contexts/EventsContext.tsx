@@ -35,7 +35,47 @@ interface EventsProviderProps {
 }
 
 export function EventsProvider({ children }: EventsProviderProps) {
-  const [events, setEvents] = useState<Event[]>([]);
+  // Initialize with sample events as fallback, will be replaced when IndexedDB loads
+  const [events, setEvents] = useState<Event[]>(() => {
+    const sampleEvents: Event[] = [
+      {
+        id: '1',
+        title: 'Team Meeting',
+        description: 'Weekly team sync',
+        startTime: new Date(2025, 6, 7, 9, 0), // July 7, 2025 at 9:00 AM (Monday)
+        endTime: new Date(2025, 6, 7, 10, 0), // July 7, 2025 at 10:00 AM
+        color: '#3B82F6',
+        dayOfWeek: 1,
+        category: 'Work',
+        subcategory: 'Meeting',
+      },
+      {
+        id: '2',
+        title: 'Lunch Break',
+        description: 'Time to eat',
+        startTime: new Date(2025, 6, 8, 12, 0), // July 8, 2025 at 12:00 PM (Tuesday)
+        endTime: new Date(2025, 6, 8, 13, 0), // July 8, 2025 at 1:00 PM
+        color: '#10B981',
+        dayOfWeek: 2,
+        category: 'Personal',
+        subcategory: 'Activity',
+      },
+      {
+        id: '3',
+        title: 'Doctor Appointment',
+        description: 'Annual checkup',
+        startTime: new Date(2025, 6, 9, 14, 0), // July 9, 2025 at 2:00 PM (Wednesday)
+        endTime: new Date(2025, 6, 9, 15, 0), // July 9, 2025 at 3:00 PM
+        color: '#EF4444',
+        dayOfWeek: 3,
+        category: 'Health',
+        subcategory: 'Appointment',
+      },
+    ];
+    
+    return sampleEvents;
+  });
+  
   const [isSyncing, setIsSyncing] = useState(false);
   const { isLoading: settingsLoading, googleCalendarAuthenticated } = useSettings();
 
@@ -44,106 +84,43 @@ export function EventsProvider({ children }: EventsProviderProps) {
     // Wait for settings to load before initializing
     if (settingsLoading) return;
 
-    const initializeDB = async () => {
+    const initializeData = async () => {
       try {
+        // Initialize IndexedDB
         await initDB();
-        const savedEvents = await dbManager.getAllEvents();
         
-        if (savedEvents.length > 0) {
-          setEvents(savedEvents);
-        } else {
-          // Load sample events if no saved events exist
-          const sampleEvents: Event[] = [
-            {
-              id: '1',
-              title: 'Team Meeting',
-              description: 'Weekly team sync',
-              startTime: new Date(2025, 6, 7, 9, 0), // July 7, 2025 at 9:00 AM (Monday)
-              endTime: new Date(2025, 6, 7, 10, 0), // July 7, 2025 at 10:00 AM
-              color: '#3B82F6',
-              dayOfWeek: 1,
-              category: 'Work',
-              subcategory: 'Meeting',
-            },
-            {
-              id: '2',
-              title: 'Lunch Break',
-              description: 'Time to eat',
-              startTime: new Date(2025, 6, 8, 12, 0), // July 8, 2025 at 12:00 PM (Tuesday)
-              endTime: new Date(2025, 6, 8, 13, 0), // July 8, 2025 at 1:00 PM
-              color: '#10B981',
-              dayOfWeek: 2,
-              category: 'Personal',
-              subcategory: 'Activity',
-            },
-            {
-              id: '3',
-              title: 'Doctor Appointment',
-              description: 'Annual checkup',
-              startTime: new Date(2025, 6, 9, 14, 0), // July 9, 2025 at 2:00 PM (Wednesday)
-              endTime: new Date(2025, 6, 9, 15, 0), // July 9, 2025 at 3:00 PM
-              color: '#EF4444',
-              dayOfWeek: 3,
-              category: 'Health',
-              subcategory: 'Appointment',
-            },
-          ];
-          
-          setEvents(sampleEvents);
-          // Save sample events to IndexedDB
-          for (const event of sampleEvents) {
-            await dbManager.saveEvent(event);
-          }
+        // Load existing events from IndexedDB
+        const storedEvents = await dbManager.getAllEvents();
+        if (storedEvents.length > 0) {
+          setEvents(storedEvents);
         }
-
-        // Auto-sync with Google Calendar if authenticated
-        if (googleCalendarAuthenticated) {
-          console.log('Google Calendar is authenticated, starting sync...');
-          await syncWithGoogleCalendar();
-        } else {
-          console.log('Google Calendar not authenticated, skipping sync');
-        }
+        // If no stored events, keep the sample events as fallback
+        
       } catch (error) {
-        console.error('Failed to initialize database:', error);
-        // Fallback to sample events if database fails
-        setEvents([
-          {
-            id: '1',
-            title: 'Team Meeting',
-            description: 'Weekly team sync',
-            startTime: new Date(2025, 6, 7, 9, 0),
-            endTime: new Date(2025, 6, 7, 10, 0),
-            color: '#3B82F6',
-            dayOfWeek: 1,
-            category: 'Work',
-            subcategory: 'Meeting',
-          },
-        ]);
-      } finally {
-        // Initialization complete
+        console.error('Failed to initialize IndexedDB:', error);
+        // Keep sample events if IndexedDB fails
       }
     };
 
-    initializeDB();
+    initializeData();
+    
+    // Auto-sync with Google Calendar if authenticated
+    if (googleCalendarAuthenticated) {
+      syncWithGoogleCalendar();
+    }
   }, [settingsLoading, googleCalendarAuthenticated]);
 
   // Google Calendar sync function
   const syncWithGoogleCalendar = async (): Promise<void> => {
-    console.log('syncWithGoogleCalendar called, isSyncing:', isSyncing);
     setIsSyncing(true);
     
     try {
       const currentDate = new Date();
-      console.log('Calling googleCalendarSyncService.syncFromGoogle with date:', currentDate);
       const googleEvents = await googleCalendarSyncService.syncFromGoogle(currentDate);
-      console.log('Received Google events:', googleEvents.length, 'events');
       
       if (googleEvents.length > 0) {
-        console.log('Google events details:', googleEvents);
         setEvents(prevEvents => {
-          console.log('Previous events count:', prevEvents.length);
           const mergedEvents = googleCalendarSyncService.mergeEvents(prevEvents, googleEvents);
-          console.log('Merged events count:', mergedEvents.length);
           
           // Save merged events to IndexedDB
           mergedEvents.forEach(event => {
@@ -154,14 +131,11 @@ export function EventsProvider({ children }: EventsProviderProps) {
           
           return mergedEvents;
         });
-      } else {
-        console.log('No Google events to merge');
       }
     } catch (error) {
       console.error('Failed to sync with Google Calendar:', error);
     } finally {
       setIsSyncing(false);
-      console.log('syncWithGoogleCalendar completed');
     }
   };
 
@@ -260,11 +234,19 @@ export function EventsProvider({ children }: EventsProviderProps) {
     // Get the event before deleting for Google Calendar sync
     const eventToDelete = events.find(event => event.id === id);
 
+    // Immediately update UI (optimistic update)
+    setEvents(prev => prev.filter(event => event.id !== id));
+
     // Delete from IndexedDB
     try {
       await dbManager.deleteEvent(id);
     } catch (error) {
       console.error('Failed to delete event from database:', error);
+      // Revert the optimistic update on error
+      if (eventToDelete) {
+        setEvents(prev => [...prev, eventToDelete]);
+      }
+      throw error;
     }
 
     // Sync deletion to Google Calendar if enabled
@@ -273,10 +255,9 @@ export function EventsProvider({ children }: EventsProviderProps) {
         await googleCalendarSyncService.syncToGoogle(eventToDelete, 'delete');
       } catch (error) {
         console.error('Failed to sync event deletion to Google Calendar:', error);
+        // Don't revert the local deletion for Google Calendar sync errors
       }
     }
-
-    setEvents(prev => prev.filter(event => event.id !== id));
   };
 
   const moveEvent = async (id: string, newStartTime: Date) => {
@@ -368,8 +349,6 @@ export function EventsProvider({ children }: EventsProviderProps) {
     syncWithGoogleCalendar,
     isSyncing,
   };
-
-
 
   return (
     <EventsContext.Provider value={contextValue}>

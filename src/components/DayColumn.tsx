@@ -3,8 +3,8 @@
 import React, { forwardRef, useState, useEffect, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Clock } from 'lucide-react';
-import { getEventsForDay, generateTimeSlots, HOUR_HEIGHT } from '@/utils/calendar';
-import { Event } from '@/types/events';
+import { getEventsForDayWithPositions, generateTimeSlots, HOUR_HEIGHT } from '@/utils/calendar';
+import { Event, PositionedEvent } from '@/types/events';
 import { EventCard } from './EventCard';
 import { format } from 'date-fns';
 
@@ -138,6 +138,7 @@ interface DayColumnProps {
   date: Date;
   events: Event[];
   onTimeSlotClick: (date: Date, hour: number, minute: number) => void;
+  onEventEdit?: (event: Event) => void;
   inlineEvent?: {
     startTime: Date;
     endTime: Date;
@@ -146,8 +147,8 @@ interface DayColumnProps {
 }
 
 export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
-  ({ date, events, onTimeSlotClick, inlineEvent }, ref) => {
-    const dayEvents = getEventsForDay(events, date);
+  ({ date, events, onTimeSlotClick, onEventEdit, inlineEvent }, ref) => {
+    const dayEvents = getEventsForDayWithPositions(events, date);
     const timeSlots = generateTimeSlots();
 
     // Check if inline event should be shown for this day
@@ -198,8 +199,12 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
         })}
         
         {/* Events */}
-        {dayEvents.map((event) => (
-          <EventCard key={event.id} event={event} />
+        {dayEvents.map((event: PositionedEvent) => (
+          <EventCard 
+            key={event.id} 
+            event={event} 
+            onEventEdit={onEventEdit}
+          />
         ))}
         
         {/* Inline Event Preview */}
