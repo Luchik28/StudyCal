@@ -612,21 +612,24 @@ function LayoutContent() {
       </div>
       {/* Right Sidebar - Fixed, no scrolling with calendar */}
       <div className="w-80 bg-white border-l border-gray-200 flex flex-col flex-shrink-0">
-        <div className="flex-1 overflow-y-auto">
+        {/* Fixed Analytics at top */}
+        <div className="flex-shrink-0">
           <EventAnalytics 
             currentView={currentView}
             selectedDate={selectedDate}
             currentWeek={currentWeek}
             currentMonth={currentMonth}
           />
-          <div className="p-6">
-            <Suggestions 
-              currentView={currentView}
-              selectedDate={selectedDate || undefined}
-              currentWeek={currentWeek}
-              currentMonth={currentMonth}
-            />
-          </div>
+        </div>
+        
+        {/* Scrollable Suggestions section */}
+        <div className="flex-1 min-h-0">
+          <Suggestions 
+            currentView={currentView}
+            selectedDate={selectedDate || undefined}
+            currentWeek={currentWeek}
+            currentMonth={currentMonth}
+          />
         </div>
       </div>
       

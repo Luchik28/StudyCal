@@ -504,54 +504,59 @@ export function Suggestions({
 
   if (allSuggestions.length === 0) {
     return (
-      <div className={`space-y-4 ${className}`}>
-        <div className="flex items-center gap-2 mb-4">
+      <div className={`p-6 flex flex-col h-full ${className}`}>
+        <div className="flex items-center gap-2 mb-4 flex-shrink-0">
           <Lightbulb size={20} className="text-yellow-600" />
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-900">Suggestions</h3>
         </div>
-        <div className="text-center py-8 text-gray-500">
-          <Lightbulb size={32} className="mx-auto mb-2 text-gray-300" />
-          <p className="text-sm text-gray-700 dark:text-gray-700">Your schedule looks great!</p>
-          <p className="text-xs text-gray-600 dark:text-gray-600">Suggestions will appear here when we find optimization opportunities.</p>
+        <div className="flex-1 flex items-center justify-center min-h-0">
+          <div className="text-center text-gray-500">
+            <Lightbulb size={32} className="mx-auto mb-2 text-gray-300" />
+            <p className="text-sm text-gray-700 dark:text-gray-700">Your schedule looks great!</p>
+            <p className="text-xs text-gray-600 dark:text-gray-600">Suggestions will appear here when we find optimization opportunities.</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      <div className="flex items-center gap-2 mb-4">
+    <div className={`p-6 flex flex-col h-full ${className}`}>
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <Lightbulb size={20} className="text-yellow-600" />
         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-900">Suggestions</h3>
       </div>
       
-      <div className="space-y-3 max-h-96 overflow-y-auto">
+      <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
         {allSuggestions.slice(0, 5).map((suggestion) => (
           <div 
             key={suggestion.id}
-            className={`p-4 rounded-lg border bg-white shadow-sm ${
-              suggestion.priority === 'high' ? 'border-red-200 bg-red-50' :
-              suggestion.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-              'border-gray-200'
-            }`}
+            className="bg-gray-50 rounded-lg border border-gray-200 shadow-sm overflow-hidden"
           >
-            <div className="flex items-start gap-3">
-              {getSuggestionIcon(suggestion.type)}
-              <div className="flex-1">
-                <h4 className="font-medium text-gray-900 dark:text-gray-900 text-sm mb-1">
-                  {suggestion.title}
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-600 mb-3 leading-relaxed">
-                  {suggestion.description}
-                </p>
-                <button
-                  onClick={suggestion.onAction}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                >
-                  <Plus size={12} />
-                  {suggestion.actionLabel}
-                </button>
+            {/* Card Header with Icon and Title */}
+            <div className="p-4 pb-3">
+              <div className="flex items-start gap-3">
+                {getSuggestionIcon(suggestion.type)}
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 text-sm mb-2">
+                    {suggestion.title}
+                  </h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {suggestion.description}
+                  </p>
+                </div>
               </div>
+            </div>
+            
+            {/* Card Footer with Action Button */}
+            <div className="px-4 py-3 bg-gray-100 border-t border-gray-200">
+              <button
+                onClick={suggestion.onAction}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <Plus size={16} />
+                {suggestion.actionLabel}
+              </button>
             </div>
           </div>
         ))}
