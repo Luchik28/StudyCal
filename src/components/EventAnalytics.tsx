@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useEvents } from '@/contexts/EventsContext';
 import { CalendarView } from './Layout';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, isSameDay, format } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface EventAnalyticsProps {
   currentView: CalendarView;
@@ -31,6 +32,7 @@ interface PieChartData {
 
 export function EventAnalytics({ currentView, selectedDate, currentWeek, currentMonth }: EventAnalyticsProps) {
   const { events } = useEvents();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const getTimeData = (): CategoryTimeData => {
     let filteredEvents = events;
@@ -192,8 +194,28 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
           {/* Pie Chart */}
           {pieChartData.length > 0 && (
             <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Time Distribution</h4>
-              <div className="h-64">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-gray-700">Time Distribution</h4>
+                {pieChartData.length > 5 && (
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp size={16} />
+                        Collapse
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown size={16} />
+                        Expand
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <div className={`transition-all duration-300 ${isExpanded ? 'h-96' : 'h-64'}`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -201,7 +223,7 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
                       cx="50%"
                       cy="50%"
                       innerRadius={40}
-                      outerRadius={80}
+                      outerRadius={isExpanded ? 120 : 80}
                       paddingAngle={2}
                       dataKey="minutes"
                       nameKey="category"
@@ -219,6 +241,7 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
                         const data = pieChartData.find(item => item.category === value);
                         return `${value} (${data ? formatDuration(data.minutes) : ''})`;
                       }}
+                      wrapperStyle={{ fontSize: isExpanded ? '12px' : '11px' }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
