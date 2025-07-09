@@ -129,7 +129,13 @@ function TimeSlotDropZone({
         top: (hour + minute / 60) * HOUR_HEIGHT,
         height: HOUR_HEIGHT / 4 // 15-minute slots
       }}
-      onClick={() => onTimeSlotClick(date, hour, minute)}
+      onClick={(e) => {
+        // Don't trigger time slot click if this is a popup dismissal click
+        if ((e as any)._popupDismissalClick) {
+          return;
+        }
+        onTimeSlotClick(date, hour, minute);
+      }}
     />
   );
 }

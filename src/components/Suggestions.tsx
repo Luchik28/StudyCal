@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Lightbulb, Clock, Target, Plus } from 'lucide-react';
+import { Lightbulb, Clock, Target, Plus, X } from 'lucide-react';
 import { useEvents } from '../contexts/EventsContext';
 import { LongTermGoal } from './LongTermGoals';
 import { Event } from '../types/events';
@@ -36,6 +36,29 @@ export function Suggestions({
   const { events, addEvent, updateEvent } = useEvents();
   const [goals, setGoals] = React.useState<LongTermGoal[]>([]);
   const [dismissedSuggestions, setDismissedSuggestions] = React.useState<Set<string>>(new Set());
+
+  // Load dismissed suggestions from localStorage
+  React.useEffect(() => {
+    const savedDismissed = localStorage.getItem('dismissedSuggestions');
+    if (savedDismissed) {
+      try {
+        const parsed = JSON.parse(savedDismissed);
+        setDismissedSuggestions(new Set(parsed));
+      } catch (error) {
+        console.error('Error loading dismissed suggestions:', error);
+      }
+    }
+  }, []);
+
+  // Save dismissed suggestions to localStorage whenever they change
+  React.useEffect(() => {
+    localStorage.setItem('dismissedSuggestions', JSON.stringify(Array.from(dismissedSuggestions)));
+  }, [dismissedSuggestions]);
+
+  // Function to dismiss a suggestion permanently
+  const dismissSuggestion = (suggestionId: string) => {
+    setDismissedSuggestions(prev => new Set(prev).add(suggestionId));
+  };
 
   // Load goals from localStorage
   React.useEffect(() => {
@@ -247,7 +270,7 @@ export function Suggestions({
               addEvent('Break', breakStart, breakEnd);
               
               // Mark this suggestion as dismissed
-              setDismissedSuggestions(prev => new Set(prev).add(`break-${currentEvent.id}-${nextEvent.id}`));
+              dismissSuggestion(`break-${currentEvent.id}-${nextEvent.id}`);
             },
             priority: 'high'
           });
@@ -286,13 +309,13 @@ export function Suggestions({
           
           if (timeSlot) {
             addEvent('Personal Time', timeSlot.start, timeSlot.end);
-            setDismissedSuggestions(prev => new Set(prev).add('work-life-balance'));
+            dismissSuggestion('work-life-balance');
           } else {
             // Fallback: still add but user will need to resolve conflicts manually
             const endTime = new Date(targetDate);
             endTime.setHours(19, 0, 0, 0);
             addEvent('Personal Time', targetDate, endTime);
-            setDismissedSuggestions(prev => new Set(prev).add('work-life-balance'));
+            dismissSuggestion('work-life-balance');
           }
         },
         priority: 'medium'
@@ -357,13 +380,13 @@ export function Suggestions({
             
             if (timeSlot) {
               addEvent(`Work on: ${goal.title}`, timeSlot.start, timeSlot.end);
-              setDismissedSuggestions(prev => new Set(prev).add(`goal-${goal.id}`));
+              dismissSuggestion(`goal-${goal.id}`);
             } else {
               // Fallback: still add but user will need to resolve conflicts manually
               const endTime = new Date(targetDate);
               endTime.setHours(11, 0, 0, 0);
               addEvent(`Work on: ${goal.title}`, targetDate, endTime);
-              setDismissedSuggestions(prev => new Set(prev).add(`goal-${goal.id}`));
+              dismissSuggestion(`goal-${goal.id}`);
             }
           },
           priority: 'medium'
@@ -501,17 +524,6 @@ export function Suggestions({
     console.log('- Dismissed suggestions:', dismissedSuggestions);
   }, [allSuggestions, currentView, selectedDate, events.length, goals.length]);
 
-  // Reset dismissed suggestions when events change significantly
-  React.useEffect(() => {
-    // Clear dismissed suggestions when events are added/removed/modified
-    // This allows suggestions to reappear if the problem persists
-    const timeoutId = setTimeout(() => {
-      setDismissedSuggestions(new Set());
-    }, 5000); // Reset after 5 seconds to allow re-evaluation
-
-    return () => clearTimeout(timeoutId);
-  }, [events.length]); // Trigger when number of events changes
-
   const getSuggestionIcon = (type: Suggestion['type']) => {
     switch (type) {
       case 'break': return <Clock size={16} className="text-blue-600" />;
@@ -567,15 +579,24 @@ export function Suggestions({
               </div>
             </div>
             
-            {/* Card Footer with Action Button */}
+            {/* Card Footer with Action Buttons */}
             <div className="px-4 py-3 bg-gray-100 border-t border-gray-200">
-              <button
-                onClick={suggestion.onAction}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <Plus size={16} />
-                {suggestion.actionLabel}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={suggestion.onAction}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <Plus size={16} />
+                  {suggestion.actionLabel}
+                </button>
+                <button
+                  onClick={() => dismissSuggestion(suggestion.id)}
+                  className="px-4 py-2 text-gray-600 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors flex items-center gap-1"
+                >
+                  <X size={14} />
+                  No thanks
+                </button>
+              </div>
             </div>
           </div>
         ))}

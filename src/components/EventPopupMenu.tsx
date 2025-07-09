@@ -30,6 +30,8 @@ export function EventPopupMenu({
 
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        // Mark this as a popup dismissal click to prevent calendar actions
+        (event as any)._popupDismissalClick = true;
         onClose();
       }
     };

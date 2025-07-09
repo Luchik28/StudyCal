@@ -24,8 +24,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [isDragDisabled, setIsDragDisabled] = useState(true); // Start with drag disabled
   const containerRef = useRef<HTMLDivElement>(null);
-  const dragStartTime = useRef<number>(0);
-  const dragHoldTimer = useRef<NodeJS.Timeout | null>(null);
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  const isDragStarted = useRef(false);
+  const dragTimer = useRef<NodeJS.Timeout | null>(null);
   
   const {
     attributes,
@@ -46,45 +47,108 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     opacity: isDragging ? 0 : 1, // Completely hide original during drag
   };
 
-  const handleMouseDown = () => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (isResizing) return;
     
-    dragStartTime.current = Date.now();
+    console.log('EventCard: Mouse down on event', event.id);
     
-    // Set a timer to enable dragging after 300ms (hold threshold)
-    dragHoldTimer.current = setTimeout(() => {
-      setIsDragDisabled(false); // Enable dragging after hold
+    // Prevent text selection
+    e.preventDefault();
+    
+    // Store the initial mouse position
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    isDragStarted.current = false;
+    
+    // Set a timer to enable dragging after 300ms
+    console.log('EventCard: Setting drag timer for 300ms');
+    dragTimer.current = setTimeout(() => {
+      if (!isDragStarted.current) {
+        console.log('EventCard: Timer triggered - starting drag');
+        isDragStarted.current = true;
+        setIsDragDisabled(false);
+        
+        // Clean up the mouse listeners since we're now dragging
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      }
     }, 300);
+    
+    // Add global mouse move listener to detect drag threshold
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!dragStartPos.current) return;
+      
+      // Don't check distance if we've already started dragging via timer
+      if (isDragStarted.current) return;
+      
+      const deltaX = moveEvent.clientX - dragStartPos.current.x;
+      const deltaY = moveEvent.clientY - dragStartPos.current.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      // If moved more than 5 pixels, start dragging
+      if (distance > 5) {
+        console.log('EventCard: Distance triggered - starting drag (moved', distance, 'px)');
+        isDragStarted.current = true;
+        setIsDragDisabled(false);
+        
+        // Clear the timer since we're starting drag via distance
+        if (dragTimer.current) {
+          clearTimeout(dragTimer.current);
+          dragTimer.current = null;
+        }
+        
+        // Remove the move listener since we've started dragging
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      console.log('EventCard: Mouse up - cleaning up');
+      
+      // Clean up listeners and timer
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      // Clear the timer
+      if (dragTimer.current) {
+        clearTimeout(dragTimer.current);
+        dragTimer.current = null;
+      }
+      
+      // If we didn't start dragging, it's a click
+      if (!isDragStarted.current) {
+        console.log('EventCard: Handling as click');
+        handleClick(e);
+      }
+      
+      // Reset drag state
+      dragStartPos.current = null;
+      isDragStarted.current = false;
+      setIsDragDisabled(true);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (isResizing) return;
-    
-    const dragEndTime = Date.now();
-    const dragDuration = dragEndTime - dragStartTime.current;
-    
-    // Clear the hold timer
-    if (dragHoldTimer.current) {
-      clearTimeout(dragHoldTimer.current);
-      dragHoldTimer.current = null;
+  const handleClick = (e: React.MouseEvent) => {
+    if (isResizing || isDragStarted.current) {
+      console.log('EventCard: Click ignored - resizing or dragging');
+      return;
     }
     
-    // Re-disable dragging
-    setIsDragDisabled(true);
+    console.log('EventCard: Processing click on event', event.id);
+    e.stopPropagation();
     
-    // If it was a quick click (less than 250ms), show popup
-    if (dragDuration < 250) {
-      e.stopPropagation();
-      
-      // Calculate position relative to the event container
-      if (containerRef.current) {
-        const eventRect = containerRef.current.getBoundingClientRect();
-        // Position popup to the right of the event
-        const x = eventRect.right + 10; // 10px margin from right edge
-        const y = eventRect.top;
-        setPopupPosition({ x, y });
-        setShowPopupMenu(true);
-      }
+    // Calculate position relative to the event container
+    if (containerRef.current) {
+      const eventRect = containerRef.current.getBoundingClientRect();
+      // Position popup to the right of the event
+      const x = eventRect.right + 10; // 10px margin from right edge
+      const y = eventRect.top;
+      setPopupPosition({ x, y });
+      setShowPopupMenu(true);
+      console.log('EventCard: Showing popup menu at', { x, y });
     }
   };
 
@@ -236,29 +300,13 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       
       {/* Event content */}
       <div
-        className={`p-2 h-full flex flex-col overflow-hidden ${
+        className={`p-2 h-full flex flex-col overflow-hidden select-none ${
           isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-pointer'
         }`}
         {...(isResizing || isDragDisabled ? {} : listeners)}
         {...(isResizing || isDragDisabled ? {} : attributes)}
         onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onClick={(e) => {
-          // Don't handle click if we're resizing or if drag was initiated
-          if (isResizing || !isDragDisabled) return;
-          
-          e.stopPropagation();
-          
-          // Calculate position relative to the event container
-          if (containerRef.current) {
-            const eventRect = containerRef.current.getBoundingClientRect();
-            // Position popup to the right of the event
-            const x = eventRect.right + 10; // 10px margin from right edge
-            const y = eventRect.top;
-            setPopupPosition({ x, y });
-            setShowPopupMenu(true);
-          }
-        }}
+        onClick={handleClick}
       >
         {/* Smart content layout based on available space */}
         {(() => {
