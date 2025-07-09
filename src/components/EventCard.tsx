@@ -46,7 +46,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     opacity: isDragging ? 0 : 1, // Completely hide original during drag
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = () => {
     if (isResizing) return;
     
     dragStartTime.current = Date.now();
@@ -141,12 +141,12 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       if (clampedTime > dayEnd) clampedTime = new Date(dayEnd);
       
       if (direction === 'top') {
-        // Resizing start time - ensure it doesn't go past end time
+        // Resizing start time - ensure it doesn't go past end time (minimum 15 minutes)
         const maxStartTime = new Date(event.endTime.getTime() - 15 * 60 * 1000);
         if (clampedTime > maxStartTime) clampedTime = maxStartTime;
         resizeEvent(event.id, clampedTime, undefined);
       } else {
-        // Resizing end time - ensure it doesn't go before start time
+        // Resizing end time - ensure it doesn't go before start time (minimum 15 minutes)
         const minEndTime = new Date(event.startTime.getTime() + 15 * 60 * 1000);
         if (clampedTime < minEndTime) clampedTime = minEndTime;
         resizeEvent(event.id, undefined, clampedTime);
@@ -196,11 +196,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     }
   };
 
-  // Calculate event dimensions and position
-  const eventHeight = Math.max(40, event.position.height);
-  const eventTop = event.position.top;
-  const eventBottom = eventTop + eventHeight;
-
   return (
     <div
       ref={(node) => {
@@ -217,7 +212,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
         width: `${event.position.width}%`,
         backgroundColor: event.color,
         position: 'absolute',
-        minHeight: '40px',
+        minHeight: '15px',
         zIndex: event.position.zIndex,
       }}
       className="rounded-lg border border-white/20 text-white text-sm shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02] overflow-hidden"
@@ -270,7 +265,18 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           const height = event.position.height;
           const timeString = formatTimeRange(event.startTime, event.endTime, timeFormat);
           
-          // Very small events (< 50px): Only title with time
+          // Tiny events (< 25px, ~15 mins): Only title in tiny font
+          if (height < 25) {
+            return (
+              <div className="flex-1 overflow-hidden">
+                <div className="font-medium text-white text-xs truncate leading-tight">
+                  {event.title}
+                </div>
+              </div>
+            );
+          }
+          
+          // Very small events (25-50px): Only title with time
           if (height < 50) {
             return (
               <div className="flex-1 overflow-hidden">

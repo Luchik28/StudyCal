@@ -114,16 +114,16 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
       <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-center space-x-4">
         <button
           onClick={() => navigateWeek('prev')}
-          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+          className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="font-medium text-gray-700 text-sm">
+        <span className="font-medium text-gray-900 text-sm">
           {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
         </span>
         <button
           onClick={() => navigateWeek('next')}
-          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+          className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
         >
           <ChevronRight size={16} />
         </button>

@@ -192,13 +192,8 @@ export function calculateOverlapPositions(events: Event[]): PositionedEvent[] {
         },
       });
     } else {
-      // Find overlapping groups and calculate positions
-      const allOverlappingEvents = [event, ...overlappingEvents];
-      
       // Group events that overlap with each other in the same time segment
       const overlapGroup: Event[] = [event];
-      const groupStartTime = event.startTime.getTime();
-      const groupEndTime = event.endTime.getTime();
       
       // Find all events that overlap within this time window
       for (const positioned of positionedEvents) {
@@ -213,9 +208,6 @@ export function calculateOverlapPositions(events: Event[]): PositionedEvent[] {
       // Calculate the number of concurrent events at any point in this group
       const maxConcurrent = calculateMaxConcurrentEvents(overlapGroup);
       const columnWidth = 100 / maxConcurrent;
-      
-      // Find the position for the current event within the overlap group
-      const eventIndex = overlapGroup.findIndex(e => e.id === event.id);
       
       // Assign column based on the event's position in the sorted group
       let columnIndex = 0;
@@ -244,7 +236,7 @@ export function calculateOverlapPositions(events: Event[]): PositionedEvent[] {
       });
       
       // Update positions of overlapping events if needed to optimize layout
-      updateOverlappingEventPositions(positionedEvents, overlapGroup, maxConcurrent);
+      updateOverlappingEventPositions(positionedEvents, overlapGroup);
     }
   }
 
@@ -289,11 +281,8 @@ function calculateMaxConcurrentEvents(events: Event[]): number {
 // Helper function to optimize positions of overlapping events
 function updateOverlappingEventPositions(
   positionedEvents: PositionedEvent[], 
-  overlapGroup: Event[], 
-  maxConcurrent: number
+  overlapGroup: Event[]
 ): void {
-  const columnWidth = 100 / maxConcurrent;
-  
   // Only reposition if we have more than 2 events overlapping
   if (overlapGroup.length <= 2) return;
   

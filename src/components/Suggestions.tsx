@@ -22,6 +22,7 @@ interface SuggestionsProps {
   selectedDate?: Date;
   currentWeek?: Date;
   currentMonth?: Date;
+  onViewChange?: (view: 'day' | 'week' | 'month') => void;
 }
 
 export function Suggestions({ 
@@ -29,7 +30,8 @@ export function Suggestions({
   currentView = 'week',
   selectedDate,
   currentWeek,
-  currentMonth 
+  currentMonth,
+  onViewChange
 }: SuggestionsProps) {
   const { events, addEvent, updateEvent } = useEvents();
   const [goals, setGoals] = React.useState<LongTermGoal[]>([]);
@@ -76,7 +78,6 @@ export function Suggestions({
 
   // Get the time range based on current view
   const getTimeRange = (): { start: Date; end: Date } => {
-    const now = new Date();
     let start: Date, end: Date;
 
     switch (currentView) {
@@ -220,9 +221,6 @@ export function Suggestions({
               
               if (conflictingEvents.length > 0) {
                 // Find the minimum amount we need to move events
-                const latestConflictEnd = Math.max(
-                  ...conflictingEvents.map(event => new Date(event.endTime).getTime())
-                );
                 const breakDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
                 
                 // Move all conflicting and subsequent events
@@ -314,6 +312,26 @@ export function Suggestions({
     const suggestions: Suggestion[] = [];
     const activeGoals = goals.filter(goal => !goal.isCompleted);
 
+    // If user has no goals at all, suggest setting them up
+    if (goals.length === 0) {
+      suggestions.push({
+        id: 'setup-goals',
+        type: 'goal',
+        title: 'Set up your goals',
+        description: 'Having clear goals helps you stay focused and motivated. Set up some long-term goals to track your progress and get personalized suggestions.',
+        actionLabel: 'Go to Goals',
+        onAction: () => {
+          if (onViewChange) {
+            onViewChange('month');
+          }
+        },
+        priority: 'high'
+      });
+      
+      console.log('No goals found - suggesting goal setup');
+      return suggestions;
+    }
+
     activeGoals.forEach(goal => {
       // Check if there are any events this week that might relate to this goal
       const goalKeywords = extractKeywords(goal.title);
@@ -354,6 +372,7 @@ export function Suggestions({
     });
 
     console.log('Goal analysis:');
+    console.log('- Total goals:', goals.length);
     console.log('- Active goals:', activeGoals.length);
     console.log('- Goal suggestions generated:', suggestions.length);
 
@@ -498,7 +517,7 @@ export function Suggestions({
       case 'break': return <Clock size={16} className="text-blue-600" />;
       case 'goal': return <Target size={16} className="text-purple-600" />;
       case 'balance': return <Lightbulb size={16} className="text-orange-600" />;
-      default: return <Lightbulb size={16} className="text-gray-600" />;
+      default: return <Lightbulb size={16} className="text-gray-700" />;
     }
   };
 
@@ -510,10 +529,10 @@ export function Suggestions({
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-900">Suggestions</h3>
         </div>
         <div className="flex-1 flex items-center justify-center min-h-0">
-          <div className="text-center text-gray-500">
-            <Lightbulb size={32} className="mx-auto mb-2 text-gray-300" />
-            <p className="text-sm text-gray-700 dark:text-gray-700">Your schedule looks great!</p>
-            <p className="text-xs text-gray-600 dark:text-gray-600">Suggestions will appear here when we find optimization opportunities.</p>
+          <div className="text-center text-gray-600">
+            <Lightbulb size={32} className="mx-auto mb-2 text-gray-400" />
+            <p className="text-sm text-gray-800">Your schedule looks great!</p>
+            <p className="text-xs text-gray-700">Suggestions will appear here when we find optimization opportunities.</p>
           </div>
         </div>
       </div>

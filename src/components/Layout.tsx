@@ -189,7 +189,7 @@ function TaskList({
 
   return (
     <div className="flex flex-col h-full">
-      <h3 className="text-lg font-bold mb-2">{title}</h3>
+      <h3 className="text-lg font-bold mb-2 text-gray-900">{title}</h3>
       <div className="flex-1 overflow-y-auto mb-2 space-y-2">
         {tasks.map((task, idx) => (
           <div key={task.id} className="border rounded-lg p-3 bg-white shadow-sm">
@@ -505,7 +505,7 @@ function LayoutContent() {
               className={`text-lg font-semibold transition-all duration-300 ease-out group ${
                 currentView === 'day'
                   ? 'font-bold text-gray-900 scale-105 px-6'
-                  : 'text-gray-400 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold'
+                  : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
               Today
@@ -515,7 +515,7 @@ function LayoutContent() {
               className={`text-lg font-semibold transition-all duration-300 ease-out whitespace-nowrap group ${
                 currentView === 'week'
                   ? 'font-bold text-gray-900 scale-105 px-6'
-                  : 'text-gray-400 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold'
+                  : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
               This Week
@@ -525,7 +525,7 @@ function LayoutContent() {
               className={`text-lg font-semibold transition-all duration-300 ease-out group ${
                 currentView === 'month'
                   ? 'font-bold text-gray-900 scale-105 px-6'
-                  : 'text-gray-400 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold'
+                  : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
               Later
@@ -629,6 +629,7 @@ function LayoutContent() {
             selectedDate={selectedDate || undefined}
             currentWeek={currentWeek}
             currentMonth={currentMonth}
+            onViewChange={handleViewChange}
           />
         </div>
       </div>

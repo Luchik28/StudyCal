@@ -179,14 +179,14 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
 
   return (
     <div className="p-6 border-b border-gray-200">
-      <h3 className="text-lg font-bold mb-3">Analytics</h3>
-      <div className="text-sm text-gray-600 mb-4">
+      <h3 className="text-lg font-bold mb-3 text-gray-900">Analytics</h3>
+      <div className="text-sm text-gray-700 mb-4">
         {getTimeFrameLabel()}: {totalEvents} event{totalEvents !== 1 ? 's' : ''}
         {totalTime > 0 && ` • ${formatDuration(totalTime)} total`}
       </div>
       
       {totalEvents === 0 ? (
-        <div className="text-center text-gray-400 py-4">
+        <div className="text-center text-gray-600 py-4">
           No events for {getTimeFrameLabel().toLowerCase()}
         </div>
       ) : (
@@ -195,7 +195,7 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
           {pieChartData.length > 0 && (
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-gray-700">Time Distribution</h4>
+                <h4 className="text-sm font-medium text-gray-900">Time Distribution</h4>
                 {pieChartData.length > 5 && (
                   <button
                     onClick={() => setIsExpanded(!isExpanded)}

@@ -109,16 +109,16 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => navigateDay('prev')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
           >
             <ChevronLeft size={20} />
           </button>
-          <span className="font-medium text-gray-700 min-w-[200px] text-center">
+          <span className="font-medium text-gray-900 min-w-[200px] text-center">
             {format(currentDate, 'EEEE, MMMM d, yyyy')}
           </span>
           <button
             onClick={() => navigateDay('next')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
           >
             <ChevronRight size={20} />
           </button>

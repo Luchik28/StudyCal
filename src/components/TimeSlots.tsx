@@ -20,7 +20,7 @@ export function TimeSlots() {
         {timeSlots.map((time, index) => (
           <div
             key={time}
-            className="border-b border-gray-100 flex items-start justify-end pr-2 text-xs text-gray-500"
+            className="border-b border-gray-100 flex items-start justify-end pr-2 text-xs text-gray-700"
             style={{ height: HOUR_HEIGHT }}
           >
             {index > 0 && (

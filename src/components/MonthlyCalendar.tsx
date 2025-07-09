@@ -46,7 +46,7 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, onEventEdit
         {/* Week days header */}
         <div className="grid grid-cols-7 border-b border-gray-200">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="p-3 text-center text-sm font-medium text-gray-500 bg-gray-50">
+            <div key={day} className="p-3 text-center text-sm font-medium text-gray-700 bg-gray-50">
               {day}
             </div>
           ))}
@@ -74,7 +74,7 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, onEventEdit
                         ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center'
                         : isCurrentMonth
                         ? 'text-gray-900'
-                        : 'text-gray-400'
+                        : 'text-gray-600'
                     }`}
                   >
                     {format(day, 'd')}
@@ -106,7 +106,7 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, onEventEdit
                     </div>
                   ))}
                   {dayEvents.length > 3 && (
-                    <div className="text-xs text-gray-500 font-medium">
+                    <div className="text-xs text-gray-700 font-medium">
                       +{dayEvents.length - 3} more
                     </div>
                   )}
@@ -442,22 +442,22 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => navigateMonth('prev')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
           >
             <ChevronLeft size={20} />
           </button>
-          <span className="font-medium text-gray-700 min-w-[200px] text-center">
+          <span className="font-medium text-gray-900 min-w-[200px] text-center">
             {format(headerMonth, 'MMMM yyyy')}
           </span>
           <button
             onClick={() => navigateMonth('next')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
           >
             <ChevronRight size={20} />
           </button>
           <button
             onClick={navigateToToday}
-            className="ml-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            className="ml-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-gray-800 hover:text-gray-900"
           >
             Today
           </button>
