@@ -327,6 +327,222 @@ export function Suggestions({
     console.log('- Personal hours:', personalHours);
     console.log('- Should suggest balance?', workHours > personalHours * 2 && workHours > 20);
 
+    // Enhanced category balance analysis
+    const categoryBalance = analyzeCategoryBalance(rangeEvents);
+    suggestions.push(...categoryBalance);
+
+    return suggestions;
+  };
+
+  // Enhanced category balance analysis
+  const analyzeCategoryBalance = (events: Event[]): Suggestion[] => {
+    const suggestions: Suggestion[] = [];
+    
+    // Calculate time spent in each category
+    const categoryHours: { [key: string]: number } = {};
+    const totalHours = events.reduce((total: number, event: Event) => {
+      const duration = (new Date(event.endTime).getTime() - new Date(event.startTime).getTime()) / (1000 * 60 * 60);
+      const category = event.category || 'Personal';
+      categoryHours[category] = (categoryHours[category] || 0) + duration;
+      return total + duration;
+    }, 0);
+
+    // Skip analysis if too few events
+    if (totalHours < 10) return suggestions;
+
+    const personalHours = categoryHours['Personal'] || 0;
+    const educationHours = categoryHours['Education'] || 0;
+    const workHours = categoryHours['Work'] || 0;
+    const healthHours = categoryHours['Health'] || 0;
+    
+    // Count events by category for activity suggestions
+    const activityEvents = events.filter(event => {
+      const category = event.category || 'Personal';
+      const subcategory = event.subcategory || '';
+      return category === 'Personal' && (subcategory === 'Exercise' || subcategory === 'Activity');
+    });
+
+    // Helper function to create balance suggestions
+    const createBalanceSuggestion = (dominantCategory: string, hours: number, balanceActivity: string, description: string) => {
+      const targetDate = getTargetDate();
+      targetDate.setHours(17, 0, 0, 0); // 5 PM
+      
+      return {
+        id: `balance-${dominantCategory.toLowerCase()}`,
+        type: 'balance' as const,
+        title: `Add some ${balanceActivity}`,
+        description: `You have ${Math.round(hours)} hours of ${dominantCategory.toLowerCase()} activities. ${description}`,
+        actionLabel: `Schedule ${balanceActivity}`,
+        onAction: () => {
+          const timeSlot = findAvailableTimeSlot(targetDate, 60 * 60 * 1000); // 1 hour
+          
+          if (timeSlot) {
+            addEvent(balanceActivity, timeSlot.start, timeSlot.end);
+            dismissSuggestion(`balance-${dominantCategory.toLowerCase()}`);
+          } else {
+            // Fallback: still add but user will need to resolve conflicts manually
+            const endTime = new Date(targetDate);
+            endTime.setHours(18, 0, 0, 0);
+            addEvent(balanceActivity, targetDate, endTime);
+            dismissSuggestion(`balance-${dominantCategory.toLowerCase()}`);
+          }
+        },
+        priority: 'medium' as const
+      };
+    };
+
+    // Create goal-related suggestions based on user's goals
+    const createGoalRelatedSuggestion = (category: string, hours: number) => {
+      const relevantGoals = goals.filter(goal => !goal.isCompleted).slice(0, 3);
+      if (relevantGoals.length === 0) return null;
+      
+      const randomGoal = relevantGoals[Math.floor(Math.random() * relevantGoals.length)];
+      const targetDate = getTargetDate();
+      targetDate.setHours(19, 0, 0, 0); // 7 PM
+      
+      return {
+        id: `goal-balance-${category.toLowerCase()}`,
+        type: 'balance' as const,
+        title: `Work on your goal: ${randomGoal.title}`,
+        description: `You have ${Math.round(hours)} hours of ${category.toLowerCase()} time. Consider making progress on "${randomGoal.title}" to balance your activities.`,
+        actionLabel: `Schedule goal work`,
+        onAction: () => {
+          const timeSlot = findAvailableTimeSlot(targetDate, 60 * 60 * 1000); // 1 hour
+          
+          if (timeSlot) {
+            addEvent(`Work on: ${randomGoal.title}`, timeSlot.start, timeSlot.end);
+            dismissSuggestion(`goal-balance-${category.toLowerCase()}`);
+          } else {
+            // Fallback: still add but user will need to resolve conflicts manually
+            const endTime = new Date(targetDate);
+            endTime.setHours(20, 0, 0, 0);
+            addEvent(`Work on: ${randomGoal.title}`, targetDate, endTime);
+            dismissSuggestion(`goal-balance-${category.toLowerCase()}`);
+          }
+        },
+        priority: 'medium' as const
+      };
+    };
+
+    // Check for overwhelming Personal time
+    if (personalHours > totalHours * 0.6 && personalHours > 15) {
+      const goalSuggestion = createGoalRelatedSuggestion('Personal', personalHours);
+      if (goalSuggestion) {
+        suggestions.push(goalSuggestion);
+      } else {
+        suggestions.push(createBalanceSuggestion(
+          'Personal',
+          personalHours,
+          'Learning Session',
+          'Consider dedicating some time to learning something new or developing a skill.'
+        ));
+      }
+    }
+
+    // Check for overwhelming Educational time
+    if (educationHours > totalHours * 0.6 && educationHours > 15) {
+      suggestions.push(createBalanceSuggestion(
+        'Education',
+        educationHours,
+        'Personal Relaxation',
+        'Take a break from studying with some personal time - maybe read a book, watch a movie, or pursue a hobby.'
+      ));
+    }
+
+    // Check for overwhelming Work time
+    if (workHours > totalHours * 0.6 && workHours > 15) {
+      suggestions.push(createBalanceSuggestion(
+        'Work',
+        workHours,
+        'Personal Time',
+        'Balance your work with some personal activities like reading, relaxing, or spending time with friends.'
+      ));
+    }
+
+    // Check for lack of active/physical activities
+    if (activityEvents.length === 0 && totalHours > 20) {
+      const targetDate = getTargetDate();
+      targetDate.setHours(8, 0, 0, 0); // 8 AM
+      
+      const activities = [
+        'Morning Walk',
+        'Workout Session',
+        'Outdoor Run',
+        'Yoga Practice',
+        'Bike Ride'
+      ];
+      
+      const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+      
+      suggestions.push({
+        id: 'add-physical-activity',
+        type: 'balance',
+        title: 'Add some physical activity',
+        description: 'Your schedule lacks physical activities. Consider adding some exercise to boost your energy and well-being.',
+        actionLabel: `Schedule ${randomActivity}`,
+        onAction: () => {
+          const timeSlot = findAvailableTimeSlot(targetDate, 45 * 60 * 1000); // 45 minutes
+          
+          if (timeSlot) {
+            addEvent(randomActivity, timeSlot.start, timeSlot.end);
+            dismissSuggestion('add-physical-activity');
+          } else {
+            // Fallback: still add but user will need to resolve conflicts manually
+            const endTime = new Date(targetDate);
+            endTime.setHours(8, 45, 0, 0);
+            addEvent(randomActivity, targetDate, endTime);
+            dismissSuggestion('add-physical-activity');
+          }
+        },
+        priority: 'high'
+      });
+    }
+
+    // Check for lack of social activities
+    const socialEvents = events.filter(event => {
+      const category = event.category || 'Personal';
+      const subcategory = event.subcategory || '';
+      return category === 'Personal' && subcategory === 'Social';
+    });
+
+    if (socialEvents.length === 0 && totalHours > 25) {
+      const targetDate = getTargetDate();
+      targetDate.setHours(18, 0, 0, 0); // 6 PM
+      
+      const socialActivities = [
+        'Coffee with Friends',
+        'Social Call',
+        'Family Time',
+        'Group Activity',
+        'Social Outing'
+      ];
+      
+      const randomSocial = socialActivities[Math.floor(Math.random() * socialActivities.length)];
+      
+      suggestions.push({
+        id: 'add-social-activity',
+        type: 'balance',
+        title: 'Add some social time',
+        description: 'Your schedule lacks social activities. Consider scheduling time with friends or family to maintain social connections.',
+        actionLabel: `Schedule ${randomSocial}`,
+        onAction: () => {
+          const timeSlot = findAvailableTimeSlot(targetDate, 90 * 60 * 1000); // 1.5 hours
+          
+          if (timeSlot) {
+            addEvent(randomSocial, timeSlot.start, timeSlot.end);
+            dismissSuggestion('add-social-activity');
+          } else {
+            // Fallback: still add but user will need to resolve conflicts manually
+            const endTime = new Date(targetDate);
+            endTime.setHours(19, 30, 0, 0);
+            addEvent(randomSocial, targetDate, endTime);
+            dismissSuggestion('add-social-activity');
+          }
+        },
+        priority: 'medium'
+      });
+    }
+
     return suggestions;
   };
 
@@ -581,17 +797,17 @@ export function Suggestions({
             
             {/* Card Footer with Action Buttons */}
             <div className="px-4 py-3 bg-gray-100 border-t border-gray-200">
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <button
                   onClick={suggestion.onAction}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <Plus size={16} />
                   {suggestion.actionLabel}
                 </button>
                 <button
                   onClick={() => dismissSuggestion(suggestion.id)}
-                  className="px-4 py-2 text-gray-600 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors flex items-center gap-1"
+                  className="w-full px-4 py-2 text-gray-600 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-1"
                 >
                   <X size={14} />
                   No thanks

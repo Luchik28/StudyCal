@@ -71,8 +71,64 @@ export function EventsProvider({ children }: EventsProviderProps) {
         category: 'Health',
         subcategory: 'Appointment',
       },
+      // Add more events to test balance suggestions
+      {
+        id: '4',
+        title: 'Study Session - Math',
+        description: 'Calculus homework',
+        startTime: new Date(2025, 6, 7, 14, 0), // July 7, 2025 at 2:00 PM (Monday)
+        endTime: new Date(2025, 6, 7, 17, 0), // July 7, 2025 at 5:00 PM
+        color: '#8B5CF6',
+        dayOfWeek: 1,
+        category: 'Education',
+        subcategory: 'Study',
+      },
+      {
+        id: '5',
+        title: 'Study Session - Physics',
+        description: 'Lab report',
+        startTime: new Date(2025, 6, 8, 14, 0), // July 8, 2025 at 2:00 PM (Tuesday)
+        endTime: new Date(2025, 6, 8, 18, 0), // July 8, 2025 at 6:00 PM
+        color: '#8B5CF6',
+        dayOfWeek: 2,
+        category: 'Education',
+        subcategory: 'Study',
+      },
+      {
+        id: '6',
+        title: 'Study Session - Chemistry',
+        description: 'Exam prep',
+        startTime: new Date(2025, 6, 9, 16, 0), // July 9, 2025 at 4:00 PM (Wednesday)
+        endTime: new Date(2025, 6, 9, 19, 0), // July 9, 2025 at 7:00 PM
+        color: '#8B5CF6',
+        dayOfWeek: 3,
+        category: 'Education',
+        subcategory: 'Study',
+      },
+      {
+        id: '7',
+        title: 'Study Session - History',
+        description: 'Essay writing',
+        startTime: new Date(2025, 6, 10, 13, 0), // July 10, 2025 at 1:00 PM (Thursday)
+        endTime: new Date(2025, 6, 10, 16, 0), // July 10, 2025 at 4:00 PM
+        color: '#8B5CF6',
+        dayOfWeek: 4,
+        category: 'Education',
+        subcategory: 'Study',
+      },
+      {
+        id: '8',
+        title: 'Study Session - Literature',
+        description: 'Book analysis',
+        startTime: new Date(2025, 6, 11, 10, 0), // July 11, 2025 at 10:00 AM (Friday)
+        endTime: new Date(2025, 6, 11, 13, 0), // July 11, 2025 at 1:00 PM
+        color: '#8B5CF6',
+        dayOfWeek: 5,
+        category: 'Education',
+        subcategory: 'Study',
+      },
     ];
-    
+
     return sampleEvents;
   });
   
