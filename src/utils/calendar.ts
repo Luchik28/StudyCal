@@ -156,7 +156,7 @@ export function eventsOverlap(event1: Event, event2: Event): boolean {
   return event1.startTime < event2.endTime && event1.endTime > event2.startTime;
 }
 
-// Calculate positions for overlapping events to display them side by side
+// Calculate positions for overlapping events with smart segment-based positioning
 export function calculateOverlapPositions(events: Event[]): PositionedEvent[] {
   if (events.length === 0) return [];
 
@@ -168,42 +168,71 @@ export function calculateOverlapPositions(events: Event[]): PositionedEvent[] {
     }
     return startDiff;
   });
-  
-  // Find overlapping groups using a more sophisticated algorithm
-  const columns: Event[][] = [];
-  
-  for (const event of sortedEvents) {
-    let placed = false;
-    
-    // Try to place the event in an existing column
-    for (const column of columns) {
-      const canPlaceInColumn = column.every(existingEvent => 
-        !eventsOverlap(event, existingEvent)
-      );
-      
-      if (canPlaceInColumn) {
-        column.push(event);
-        placed = true;
-        break;
-      }
-    }
-    
-    // If couldn't place in existing column, create a new one
-    if (!placed) {
-      columns.push([event]);
-    }
-  }
 
-  // Calculate positions for each event
   const positionedEvents: PositionedEvent[] = [];
-  const totalColumns = columns.length;
   
-  for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
-    const column = columns[columnIndex];
-    const columnWidth = 100 / totalColumns;
+  // Process each event and find its optimal position
+  for (const event of sortedEvents) {
+    const basePosition = calculateEventPosition(event);
     
-    for (const event of column) {
-      const basePosition = calculateEventPosition(event);
+    // Find all events that overlap with this event (including already positioned ones)
+    const overlappingEvents = positionedEvents.filter(positioned => 
+      eventsOverlap(event, positioned)
+    );
+    
+    if (overlappingEvents.length === 0) {
+      // No overlaps - event gets full width
+      positionedEvents.push({
+        ...event,
+        position: {
+          ...basePosition,
+          left: 0,
+          width: 100,
+          zIndex: 1,
+        },
+      });
+    } else {
+      // Find overlapping groups and calculate positions
+      const allOverlappingEvents = [event, ...overlappingEvents];
+      
+      // Group events that overlap with each other in the same time segment
+      const overlapGroup: Event[] = [event];
+      const groupStartTime = event.startTime.getTime();
+      const groupEndTime = event.endTime.getTime();
+      
+      // Find all events that overlap within this time window
+      for (const positioned of positionedEvents) {
+        if (eventsOverlap(event, positioned)) {
+          overlapGroup.push(positioned);
+        }
+      }
+      
+      // Sort overlap group by start time
+      overlapGroup.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+      
+      // Calculate the number of concurrent events at any point in this group
+      const maxConcurrent = calculateMaxConcurrentEvents(overlapGroup);
+      const columnWidth = 100 / maxConcurrent;
+      
+      // Find the position for the current event within the overlap group
+      const eventIndex = overlapGroup.findIndex(e => e.id === event.id);
+      
+      // Assign column based on the event's position in the sorted group
+      let columnIndex = 0;
+      const usedColumns = new Set<number>();
+      
+      // Check which columns are already used by overlapping events
+      for (const positioned of overlappingEvents) {
+        const positionedColumn = Math.floor(positioned.position.left / columnWidth);
+        usedColumns.add(positionedColumn);
+      }
+      
+      // Find the first available column
+      while (usedColumns.has(columnIndex)) {
+        columnIndex++;
+      }
+      
+      // Position the event
       positionedEvents.push({
         ...event,
         position: {
@@ -213,10 +242,78 @@ export function calculateOverlapPositions(events: Event[]): PositionedEvent[] {
           zIndex: columnIndex + 1,
         },
       });
+      
+      // Update positions of overlapping events if needed to optimize layout
+      updateOverlappingEventPositions(positionedEvents, overlapGroup, maxConcurrent);
     }
   }
 
   return positionedEvents;
+}
+
+// Helper function to calculate maximum concurrent events at any point
+function calculateMaxConcurrentEvents(events: Event[]): number {
+  if (events.length === 0) return 0;
+  
+  // Create time points for all start and end times
+  const timePoints: { time: number; type: 'start' | 'end'; eventId: string }[] = [];
+  
+  for (const event of events) {
+    timePoints.push({ time: event.startTime.getTime(), type: 'start', eventId: event.id });
+    timePoints.push({ time: event.endTime.getTime(), type: 'end', eventId: event.id });
+  }
+  
+  // Sort time points by time, with end events before start events at the same time
+  timePoints.sort((a, b) => {
+    if (a.time === b.time) {
+      return a.type === 'end' ? -1 : 1;
+    }
+    return a.time - b.time;
+  });
+  
+  let currentConcurrent = 0;
+  let maxConcurrent = 0;
+  
+  for (const point of timePoints) {
+    if (point.type === 'start') {
+      currentConcurrent++;
+      maxConcurrent = Math.max(maxConcurrent, currentConcurrent);
+    } else {
+      currentConcurrent--;
+    }
+  }
+  
+  return maxConcurrent;
+}
+
+// Helper function to optimize positions of overlapping events
+function updateOverlappingEventPositions(
+  positionedEvents: PositionedEvent[], 
+  overlapGroup: Event[], 
+  maxConcurrent: number
+): void {
+  const columnWidth = 100 / maxConcurrent;
+  
+  // Only reposition if we have more than 2 events overlapping
+  if (overlapGroup.length <= 2) return;
+  
+  // Find events in the positioned list that are part of this overlap group
+  const groupEventIds = new Set(overlapGroup.map(e => e.id));
+  
+  for (const positioned of positionedEvents) {
+    if (groupEventIds.has(positioned.id)) {
+      // Recalculate optimal position based on current layout
+      const overlappingInGroup = overlapGroup.filter(e => 
+        e.id !== positioned.id && eventsOverlap(positioned, e)
+      );
+      
+      // If this event has fewer overlaps now, it might be able to take full width
+      if (overlappingInGroup.length === 0) {
+        positioned.position.left = 0;
+        positioned.position.width = 100;
+      }
+    }
+  }
 }
 
 // Enhanced version of getEventsForDay that includes overlap positioning
