@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { dbManager, initDB } from '@/utils/indexedDB';
 import { googleCalendarManager, GoogleCalendarConfig } from '@/utils/googleCalendar';
 
@@ -41,7 +41,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   };
 
   // Callback to save updated config when tokens are refreshed
-  const handleConfigUpdate = async (config: GoogleCalendarConfig) => {
+  const handleConfigUpdate = useCallback(async (config: GoogleCalendarConfig) => {
     // Update the state with the new config
     setGoogleCalendarConfig(config);
     // Update authentication status
@@ -57,12 +57,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to save settings after token refresh:', error);
     }
-  };
+  }, [timeFormat, googleCalendarEnabled]);
 
   // Set up the callback immediately
   useEffect(() => {
     googleCalendarManager.setOnConfigUpdated(handleConfigUpdate);
-  }, []);
+  }, [handleConfigUpdate]);
 
   // Load settings from IndexedDB on component mount
   useEffect(() => {
@@ -137,7 +137,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Set up the callback when component mounts
   useEffect(() => {
     googleCalendarManager.setOnConfigUpdated(handleConfigUpdate);
-  }, []);
+  }, [handleConfigUpdate]);
 
   return (
     <SettingsContext.Provider value={{ 

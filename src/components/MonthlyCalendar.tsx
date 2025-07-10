@@ -166,7 +166,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
         }
       }
     }, 200);
-  }, []);
+  }, [onMonthChange]);
 
   // Handle scroll to update header and load more months
   useEffect(() => {
@@ -358,7 +358,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
         clearTimeout(scrollTimeout);
       }
     };
-  }, [headerMonth]);
+  }, [headerMonth, onMonthChange]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const targetMonth = direction === 'prev' ? subMonths(headerMonth, 1) : addMonths(headerMonth, 1);

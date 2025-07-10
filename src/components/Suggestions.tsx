@@ -328,6 +328,7 @@ export function Suggestions({
   };
 
   // Analyze schedule for optimization opportunities
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const analyzeSchedule = (): Suggestion[] => {
     const suggestions: Suggestion[] = [];
     const { start, end } = getTimeRange();
@@ -536,6 +537,28 @@ export function Suggestions({
         (category === 'education' && (title.includes('exam') || title.includes('test')))
       );
     });
+    
+    // If no tests/exams found, suggest adding one to unlock exam prep features
+    if (testEvents.length === 0 && events.length > 0) {
+      suggestions.push({
+        id: 'add-test-exam',
+        type: 'optimization',
+        title: 'Add upcoming tests or exams',
+        description: 'Add your upcoming tests, quizzes, or exams to your calendar and the AI will automatically create optimized study schedules to help you prepare on time.',
+        actionLabel: 'Add test/exam',
+        onAction: () => {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 7); // Default to next week
+          tomorrow.setHours(10, 0, 0, 0); // 10 AM
+          
+          const nextWeek = new Date(tomorrow);
+          nextWeek.setHours(11, 30, 0, 0); // 11:30 AM
+          
+          addEvent('Math Test', tomorrow, nextWeek, 'Midterm exam for Calculus I');
+        },
+        priority: 'medium'
+      });
+    }
     
     testEvents.forEach((testEvent: Event) => {
       const testDate = new Date(testEvent.startTime);
@@ -1014,6 +1037,7 @@ export function Suggestions({
   };
 
   // Enhanced goal analysis for actionable suggestions
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const analyzeGoals = (): Suggestion[] => {
     const suggestions: Suggestion[] = [];
     const activeGoals = goals.filter(goal => !goal.isCompleted);
@@ -1343,15 +1367,9 @@ export function Suggestions({
 
     return suggestions;
   }, [
-    events, 
-    goals, 
-    dismissedSuggestions, 
-    currentView, 
-    selectedDate, 
-    currentWeek, 
-    currentMonth,
-    analyzeSchedule,
-    analyzeGoals
+    dismissedSuggestions,
+    analyzeGoals,
+    analyzeSchedule
   ]);
 
   // Don't render until we're on the client to avoid hydration issues
