@@ -338,11 +338,7 @@ export function Suggestions({
       return eventDate >= start && eventDate < end;
     });
 
-    console.log('Schedule Analysis Debug:');
-    console.log('- Time range:', start, 'to', end);
-    console.log('- All events:', events);
-    console.log('- Range events:', rangeEvents);
-    console.log('- Total events in range:', rangeEvents.length);
+    // Main schedule analysis
 
     // If no events in range, suggest adding some structure
     if (rangeEvents.length === 0 && currentView !== 'month') {
@@ -354,7 +350,6 @@ export function Suggestions({
         actionLabel: 'Add event',
         onAction: () => {
           // This could trigger the new event modal in the future
-          console.log('User wants to add structure');
         },
         priority: 'medium'
       });
@@ -497,10 +492,7 @@ export function Suggestions({
       });
     }
 
-    console.log('Work-life balance analysis:');
-    console.log('- Work hours:', workHours);
-    console.log('- Personal hours:', personalHours);
-    console.log('- Should suggest balance?', workHours > personalHours * 2 && workHours > 20);
+    // Work-life balance analysis
 
     // Enhanced category balance analysis
     const categoryBalance = analyzeCategoryBalance(rangeEvents);
@@ -545,9 +537,6 @@ export function Suggestions({
       );
     });
     
-    console.log('Test preparation analysis:');
-    console.log('- Found test events:', testEvents);
-    
     testEvents.forEach((testEvent: Event) => {
       const testDate = new Date(testEvent.startTime);
       const testSubject = extractSubjectFromEvent(testEvent);
@@ -564,9 +553,6 @@ export function Suggestions({
         
         return isStudySession && isSameSubject && eventDate >= start;
       });
-      
-      console.log(`- Test: ${testEvent.title}, Subject: ${testSubject}`);
-      console.log(`- Existing study sessions:`, studySessions);
       
       const daysUntilTest = Math.ceil((testDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
       
@@ -632,8 +618,6 @@ export function Suggestions({
 
   // Create suggestions for study sessions when none exist
   const createStudySessionSuggestions = (testEvent: Event, subject: string, daysUntilTest: number): Suggestion => {
-    const testDate = new Date(testEvent.startTime);
-    
     // Calculate optimal study schedule based on spaced repetition
     const studyDays = calculateOptimalStudyDays(daysUntilTest);
     const sessionDuration = calculateStudySessionDuration(daysUntilTest);
@@ -668,18 +652,10 @@ export function Suggestions({
       return Math.ceil((testDate.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24));
     }).sort((a, b) => b - a); // Sort by days before test (descending)
     
-    console.log('- Current study days before test:', currentStudyDays);
-    console.log('- Optimal study days before test:', optimalDays);
-    
     // Check if current spacing matches optimal spacing
     const isOptimallySpaced = isSpacingOptimal(currentStudyDays, optimalDays);
     
     if (!isOptimallySpaced && studySessions.length >= 2) {
-      const totalStudyTime = studySessions.reduce((total, session) => {
-        const duration = (new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / (1000 * 60);
-        return total + duration;
-      }, 0);
-      
       return {
         id: `optimize-study-spacing-${testEvent.id}`,
         type: 'optimization',
@@ -765,8 +741,6 @@ export function Suggestions({
 
   // Optimize existing study sessions by moving them to optimal days
   const optimizeExistingStudySessions = (testEvent: Event, subject: string, existingSessions: Event[], optimalDays: number[]) => {
-    const testDate = new Date(testEvent.startTime);
-    
     // Calculate total study time to redistribute
     const totalStudyTime = existingSessions.reduce((total, session) => {
       const duration = (new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / (1000 * 60);
@@ -803,7 +777,6 @@ export function Suggestions({
     const personalHours = categoryHours['Personal'] || 0;
     const educationHours = categoryHours['Education'] || 0;
     const workHours = categoryHours['Work'] || 0;
-    const healthHours = categoryHours['Health'] || 0;
     
     // Count events by category for activity suggestions
     const activityEvents = events.filter(event => {
@@ -1061,7 +1034,6 @@ export function Suggestions({
         priority: 'high'
       });
       
-      console.log('No goals found - suggesting goal setup');
       return suggestions;
     }
 
@@ -1268,11 +1240,6 @@ export function Suggestions({
       }
     });
 
-    console.log('Enhanced goal analysis:');
-    console.log('- Total goals:', goals.length);
-    console.log('- Active goals:', activeGoals.length);
-    console.log('- Goal suggestions generated:', suggestions.length);
-
     return suggestions;
   };
 
@@ -1360,21 +1327,10 @@ export function Suggestions({
     return null; // No available slot found
   };
 
-  // Helper function to check keyword overlap
-  const hasKeywordOverlap = (keywords1: string[], keywords2: string[]): boolean => {
-    return keywords1.some(keyword => 
-      keywords2.some(kw => kw.includes(keyword) || keyword.includes(kw))
-    );
-  };
-
   // Combine all suggestions and filter out dismissed ones
   const allSuggestions = React.useMemo(() => {
     const scheduleAnalysis = analyzeSchedule();
     const goalAnalysis = analyzeGoals();
-    
-    console.log('Analysis results:');
-    console.log('- Schedule suggestions:', scheduleAnalysis);
-    console.log('- Goal suggestions:', goalAnalysis);
     
     const suggestions = [
       ...scheduleAnalysis,
@@ -1385,7 +1341,6 @@ export function Suggestions({
         return priorityOrder[b.priority] - priorityOrder[a.priority];
       });
 
-    console.log('Final suggestions after filtering:', suggestions);
     return suggestions;
   }, [
     events, 
@@ -1394,20 +1349,10 @@ export function Suggestions({
     currentView, 
     selectedDate, 
     currentWeek, 
-    currentMonth
+    currentMonth,
+    analyzeSchedule,
+    analyzeGoals
   ]);
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('Suggestions Debug:');
-    console.log('- Current view:', currentView);
-    console.log('- Selected date:', selectedDate);
-    console.log('- Events count:', events.length);
-    console.log('- Goals count:', goals.length);
-    console.log('- Time range:', getTimeRange());
-    console.log('- All suggestions:', allSuggestions);
-    console.log('- Dismissed suggestions:', dismissedSuggestions);
-  }, [allSuggestions, currentView, selectedDate, events.length, goals.length, dismissedSuggestions]);
 
   // Don't render until we're on the client to avoid hydration issues
   if (!isClient) {

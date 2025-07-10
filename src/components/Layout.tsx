@@ -442,8 +442,7 @@ function LayoutContent() {
   // Log status when components are ready
   useEffect(() => {
     if (!isLoading && !modelLoading) {
-      console.log('Layout loaded - Google Calendar authenticated:', googleCalendarAuthenticated);
-      console.log('TensorFlow model loaded:', isModelLoaded);
+
       if (modelError) {
         console.error('Model loading error:', modelError);
       }
@@ -578,25 +577,7 @@ function LayoutContent() {
       {/* Main Calendar Area - Independently scrollable */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Calendar Header with Settings */}
-        <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
-          <div className="flex flex-col text-sm text-gray-500">
-            <div>
-              Google Calendar: {isLoading ? 'Loading...' : googleCalendarAuthenticated ? 'Connected' : 'Not connected'}
-            </div>
-            <div className="flex items-center gap-1">
-              AI Classification: 
-              {modelLoading ? (
-                <span className="text-yellow-600">Loading...</span>
-              ) : isModelLoaded ? (
-                <span className="text-green-600">Ready</span>
-              ) : (
-                <span className="text-red-600">Error</span>
-              )}
-              {modelLoading && (
-                <div className="w-3 h-3 border border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-              )}
-            </div>
-          </div>
+        <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-end flex-shrink-0">
           <button
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors"

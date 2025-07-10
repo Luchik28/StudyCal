@@ -55,23 +55,12 @@ class GoogleCalendarManager {
   // Check if we have valid authentication (either valid token or refresh token)
   isAuthenticated(): boolean {
     if (!this.config) {
-      console.log('GoogleCalendarManager.isAuthenticated: No config');
       return false;
     }
     
     // We're authenticated if we have a refresh token (can refresh access) or a valid access token
     const hasRefreshToken = !!this.config.refreshToken;
     const hasValidAccessToken = !!this.config.accessToken && Date.now() < (this.config.expiryDate - 60000);
-    
-    console.log('GoogleCalendarManager.isAuthenticated:', {
-      hasRefreshToken,
-      hasValidAccessToken,
-      accessToken: this.config.accessToken ? 'present' : 'missing',
-      refreshToken: this.config.refreshToken ? 'present' : 'missing',
-      expiryDate: this.config.expiryDate,
-      now: Date.now(),
-      timeUntilExpiry: this.config.expiryDate - Date.now()
-    });
     
     return hasRefreshToken || hasValidAccessToken;
   }
@@ -156,11 +145,8 @@ class GoogleCalendarManager {
     this.config.accessToken = data.accessToken;
     this.config.expiryDate = data.expiryDate;
     
-    console.log('Access token refreshed successfully');
-
     // Save updated config if callback is provided
     if (this.onConfigUpdated && this.config) {
-      console.log('Saving updated config after token refresh...');
       await this.onConfigUpdated(this.config);
     }
   }
@@ -178,11 +164,6 @@ class GoogleCalendarManager {
 
   // Fetch events from Google Calendar
   async fetchEvents(timeMin?: Date, timeMax?: Date): Promise<Event[]> {
-    console.log('GoogleCalendarManager.fetchEvents called');
-    console.log('timeMin:', timeMin, 'timeMax:', timeMax);
-    console.log('config exists:', !!this.config);
-    console.log('accessToken exists:', this.config?.accessToken ? 'yes' : 'no');
-    
     await this.ensureValidToken();
 
     const params = new URLSearchParams({
@@ -199,8 +180,6 @@ class GoogleCalendarManager {
       params.append('timeMax', timeMax.toISOString());
     }
 
-    console.log('Making request to Google Calendar API with params:', params.toString());
-
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${this.CALENDAR_ID}/events?${params.toString()}`,
       {
@@ -211,8 +190,6 @@ class GoogleCalendarManager {
       }
     );
 
-    console.log('Google Calendar API response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Google Calendar API error:', errorText);
@@ -220,11 +197,9 @@ class GoogleCalendarManager {
     }
 
     const data: GoogleCalendarListResponse = await response.json();
-    console.log('Google Calendar API response data:', data);
     
     // Convert events with TensorFlow classification
     const events = await this.convertAndClassifyGoogleEvents(data.items || []);
-    console.log('Converted events:', events);
     return events;
   }
 

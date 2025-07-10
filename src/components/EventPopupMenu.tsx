@@ -31,7 +31,7 @@ export function EventPopupMenu({
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         // Mark this as a popup dismissal click to prevent calendar actions
-        (event as any)._popupDismissalClick = true;
+        (event as MouseEvent & { _popupDismissalClick?: boolean })._popupDismissalClick = true;
         onClose();
       }
     };
@@ -63,21 +63,15 @@ export function EventPopupMenu({
     e.stopPropagation();
     e.preventDefault();
     
-    console.log('Delete button clicked, event:', event);
-    
     if (confirm('Are you sure you want to delete this event?')) {
-      console.log('User confirmed deletion');
       try {
         await onDelete(event);
-        console.log('Delete function completed successfully');
         onClose();
       } catch (error) {
         console.error('Failed to delete event:', error);
         alert('Failed to delete event: ' + (error instanceof Error ? error.message : String(error)));
         // Keep popup open on error so user can try again
       }
-    } else {
-      console.log('User cancelled deletion');
     }
   };
 

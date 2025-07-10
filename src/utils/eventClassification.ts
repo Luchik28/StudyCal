@@ -124,8 +124,6 @@ export const loadClassificationModel = async (): Promise<void> => {
 
   isLoading = true;
   try {
-    console.log('Starting to load classification model and word index...');
-    
     // Load the word_index.json file
     const wordIndexResponse = await fetch('/word_index.json');
     if (!wordIndexResponse.ok) {
@@ -133,14 +131,10 @@ export const loadClassificationModel = async (): Promise<void> => {
     }
     const loadedWordIndex = await wordIndexResponse.json();
     wordIndex = loadedWordIndex;
-    console.log('Word index loaded successfully!', Object.keys(wordIndex || {}).length, 'words');
 
     // Load the TensorFlow.js model with additional options
-    console.log('Loading TensorFlow.js model...');
-    
     // Ensure TensorFlow.js backend is ready
     await tf.ready();
-    console.log('TensorFlow.js backend ready:', tf.getBackend());
     
     // Try loading the model with enhanced error handling
     let loadedModel;
@@ -151,12 +145,9 @@ export const loadClassificationModel = async (): Promise<void> => {
       if (!modelResponse.ok) {
         throw new Error(`Model file not accessible: HTTP ${modelResponse.status}`);
       }
-      const modelData = await modelResponse.json();
-      console.log('Model JSON loaded successfully, format:', modelData.format);
       
       // Load as graph model (not layers model)
       loadedModel = await tf.loadGraphModel(`/tfjs_multi_output_model_v2/model.json${cacheBuster}`);
-      console.log('Model loaded successfully without options');
     } catch (error) {
       console.error('Failed to load model:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -164,7 +155,6 @@ export const loadClassificationModel = async (): Promise<void> => {
     }
     
     model = loadedModel;
-    console.log('TensorFlow.js graph model loaded successfully!');
     
     // Test the model with a simple prediction to ensure it works
     const testInputs = {

@@ -131,7 +131,7 @@ function TimeSlotDropZone({
       }}
       onClick={(e) => {
         // Don't trigger time slot click if this is a popup dismissal click
-        if ((e as any)._popupDismissalClick) {
+        if ((e as React.MouseEvent & { _popupDismissalClick?: boolean })._popupDismissalClick) {
           return;
         }
         onTimeSlotClick(date, hour, minute);

@@ -50,8 +50,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isResizing) return;
     
-    console.log('EventCard: Mouse down on event', event.id);
-    
     // Prevent text selection
     e.preventDefault();
     
@@ -60,10 +58,8 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     isDragStarted.current = false;
     
     // Set a timer to enable dragging after 300ms
-    console.log('EventCard: Setting drag timer for 300ms');
     dragTimer.current = setTimeout(() => {
       if (!isDragStarted.current) {
-        console.log('EventCard: Timer triggered - starting drag');
         isDragStarted.current = true;
         setIsDragDisabled(false);
         
@@ -86,7 +82,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       
       // If moved more than 5 pixels, start dragging
       if (distance > 5) {
-        console.log('EventCard: Distance triggered - starting drag (moved', distance, 'px)');
         isDragStarted.current = true;
         setIsDragDisabled(false);
         
@@ -103,8 +98,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     };
     
     const handleMouseUp = () => {
-      console.log('EventCard: Mouse up - cleaning up');
-      
       // Clean up listeners and timer
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -117,7 +110,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       
       // If we didn't start dragging, it's a click
       if (!isDragStarted.current) {
-        console.log('EventCard: Handling as click');
         handleClick(e);
       }
       
@@ -133,11 +125,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
 
   const handleClick = (e: React.MouseEvent) => {
     if (isResizing || isDragStarted.current) {
-      console.log('EventCard: Click ignored - resizing or dragging');
       return;
     }
     
-    console.log('EventCard: Processing click on event', event.id);
     e.stopPropagation();
     
     // Calculate position relative to the event container
@@ -148,7 +138,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       const y = eventRect.top;
       setPopupPosition({ x, y });
       setShowPopupMenu(true);
-      console.log('EventCard: Showing popup menu at', { x, y });
     }
   };
 
@@ -243,15 +232,12 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
   };
 
   const handleDeleteEvent = async (event: Event) => {
-    console.log('EventCard handleDeleteEvent called with event:', event);
     try {
       // Close popup immediately to provide instant feedback
       setShowPopupMenu(false);
       
-      console.log('Calling deleteEvent function...');
       // Delete the event (this will trigger optimistic update)
       await deleteEvent(event.id);
-      console.log('Delete completed successfully');
       
     } catch (error) {
       console.error('Failed to delete event in EventCard:', error);

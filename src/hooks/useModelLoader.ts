@@ -11,9 +11,7 @@ export function useModelLoader() {
   useEffect(() => {
     const loadModel = async () => {
       try {
-        console.log('Starting TensorFlow model initialization...');
         await loadClassificationModel();
-        console.log('TensorFlow model loaded successfully');
         setIsModelLoaded(true);
         setError(null);
       } catch (err) {

@@ -29,17 +29,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Define saveSettings function
   const saveSettings = async (): Promise<void> => {
     try {
-      console.log('Saving settings to IndexedDB:', { 
-        timeFormat, 
-        googleCalendarEnabled,
-        googleCalendarConfig: googleCalendarConfig ? 'present' : 'none'
-      });
       await dbManager.saveSettings({ 
         timeFormat, 
         googleCalendarEnabled,
         googleCalendarConfig 
       });
-      console.log('Settings saved successfully');
     } catch (error) {
       console.error('Failed to save settings:', error);
       throw error;
@@ -48,7 +42,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   // Callback to save updated config when tokens are refreshed
   const handleConfigUpdate = async (config: GoogleCalendarConfig) => {
-    console.log('Config updated by GoogleCalendarManager, saving to IndexedDB...');
     // Update the state with the new config
     setGoogleCalendarConfig(config);
     // Update authentication status
@@ -61,7 +54,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         googleCalendarEnabled,
         googleCalendarConfig: config 
       });
-      console.log('Settings saved successfully after token refresh');
     } catch (error) {
       console.error('Failed to save settings after token refresh:', error);
     }
@@ -76,37 +68,26 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        console.log('Loading settings from IndexedDB...');
         await initDB();
         const savedSettings = await dbManager.loadSettings();
-        console.log('Loaded settings:', savedSettings);
         
         if (savedSettings) {
           setTimeFormat(savedSettings.timeFormat);
           setGoogleCalendarEnabled(savedSettings.googleCalendarEnabled);
-          console.log('Setting Google Calendar enabled:', savedSettings.googleCalendarEnabled);
           if (savedSettings.googleCalendarConfig) {
-            console.log('Setting Google Calendar config:', savedSettings.googleCalendarConfig);
             setGoogleCalendarConfig(savedSettings.googleCalendarConfig);
             googleCalendarManager.setConfig(savedSettings.googleCalendarConfig);
             const authStatus = googleCalendarManager.isAuthenticated();
-            console.log('Authentication status after setting config:', authStatus);
             setGoogleCalendarAuthenticated(authStatus);
             
             // If token is expired but we have a refresh token, try to refresh it
             if (!authStatus && savedSettings.googleCalendarConfig.refreshToken) {
-              console.log('Token appears expired, attempting to refresh...');
-              console.log('Current time:', Date.now());
-              console.log('Token expiry:', savedSettings.googleCalendarConfig.expiryDate);
-              console.log('Time until expiry:', savedSettings.googleCalendarConfig.expiryDate - Date.now());
               try {
                 await googleCalendarManager.refreshAccessToken();
                 const newConfig = googleCalendarManager.getConfig();
-                console.log('Token refresh successful, new config:', newConfig);
                 if (newConfig) {
                   setGoogleCalendarConfig(newConfig);
                   const newAuthStatus = googleCalendarManager.isAuthenticated();
-                  console.log('Authentication status after refresh:', newAuthStatus);
                   setGoogleCalendarAuthenticated(newAuthStatus);
                   
                   // Save the updated config
@@ -115,7 +96,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                     googleCalendarEnabled: savedSettings.googleCalendarEnabled,
                     googleCalendarConfig: newConfig
                   });
-                  console.log('Updated settings saved after token refresh');
                 }
               } catch (error) {
                 console.error('Failed to refresh token on startup:', error);

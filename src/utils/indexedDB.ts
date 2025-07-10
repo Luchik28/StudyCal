@@ -179,7 +179,6 @@ export const dbManager = new IndexedDBManager();
 export const initDB = async (): Promise<void> => {
   try {
     await dbManager.init();
-    console.log('IndexedDB initialized successfully');
   } catch (error) {
     console.error('Failed to initialize IndexedDB:', error);
     throw error;
