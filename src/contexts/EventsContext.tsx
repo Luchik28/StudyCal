@@ -127,6 +127,18 @@ export function EventsProvider({ children }: EventsProviderProps) {
         category: 'Education',
         subcategory: 'Study',
       },
+      // Add a test event to demonstrate test preparation suggestions
+      {
+        id: '9',
+        title: 'Chemistry Final Exam',
+        description: 'Final exam for Chemistry course',
+        startTime: new Date(2025, 6, 16, 10, 0), // July 16, 2025 at 10:00 AM (Next Wednesday)
+        endTime: new Date(2025, 6, 16, 12, 0), // July 16, 2025 at 12:00 PM
+        color: '#EF4444',
+        dayOfWeek: 3,
+        category: 'Education',
+        subcategory: 'Exam',
+      },
     ];
 
     return sampleEvents;
