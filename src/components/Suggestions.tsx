@@ -23,6 +23,7 @@ interface SuggestionsProps {
   currentWeek?: Date;
   currentMonth?: Date;
   onViewChange?: (view: 'day' | 'week' | 'month') => void;
+  showingGoals?: boolean; // Add this to indicate when goals are visible
 }
 
 export function Suggestions({ 
@@ -31,7 +32,8 @@ export function Suggestions({
   selectedDate,
   currentWeek,
   currentMonth,
-  onViewChange
+  onViewChange,
+  showingGoals = false
 }: SuggestionsProps) {
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
   const [goals, setGoals] = React.useState<LongTermGoal[]>([]);
@@ -348,9 +350,9 @@ export function Suggestions({
         type: 'optimization',
         title: 'Add some structure',
         description: `Your ${currentView} looks empty. Consider adding some events to organize your time better.`,
-        actionLabel: 'Add event',
+        actionLabel: '', // Remove the button
         onAction: () => {
-          // This could trigger the new event modal in the future
+          // No action
         },
         priority: 'medium'
       });
@@ -545,17 +547,8 @@ export function Suggestions({
         type: 'optimization',
         title: 'Add upcoming tests or exams',
         description: 'Add your upcoming tests, quizzes, or exams to your calendar and the AI will automatically create optimized study schedules to help you prepare on time.',
-        actionLabel: 'Add test/exam',
-        onAction: () => {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 7); // Default to next week
-          tomorrow.setHours(10, 0, 0, 0); // 10 AM
-          
-          const nextWeek = new Date(tomorrow);
-          nextWeek.setHours(11, 30, 0, 0); // 11:30 AM
-          
-          addEvent('Math Test', tomorrow, nextWeek, 'Midterm exam for Calculus I');
-        },
+        actionLabel: '', // Remove the button
+        onAction: () => {}, // Dummy function
         priority: 'medium'
       });
     }
@@ -1042,8 +1035,8 @@ export function Suggestions({
     const suggestions: Suggestion[] = [];
     const activeGoals = goals.filter(goal => !goal.isCompleted);
 
-    // If user has no goals at all, suggest setting them up
-    if (goals.length === 0) {
+    // If user has no goals at all, suggest setting them up (only if not already showing goals)
+    if (goals.length === 0 && !showingGoals) {
       suggestions.push({
         id: 'setup-goals',
         type: 'goal',
@@ -1456,13 +1449,15 @@ export function Suggestions({
             {/* Card Footer with Action Buttons */}
             <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
               <div className="flex flex-col gap-3">
-                <button
-                  onClick={suggestion.onAction}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
-                >
-                  <Plus size={16} />
-                  <span className="truncate">{suggestion.actionLabel}</span>
-                </button>
+                {suggestion.actionLabel && (
+                  <button
+                    onClick={suggestion.onAction}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+                  >
+                    <Plus size={16} />
+                    <span className="truncate">{suggestion.actionLabel}</span>
+                  </button>
+                )}
                 <button
                   onClick={() => dismissSuggestion(suggestion.id)}
                   className="w-full px-4 py-2 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"

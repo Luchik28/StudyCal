@@ -62,11 +62,10 @@ export function EventEditModal({ isOpen, onClose, event }: EventEditModalProps) 
     }
   };
 
-  if (!isOpen || !event) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+    <div className={`fixed inset-0 flex items-center justify-center p-4 transition-opacity duration-300 ${isOpen && event ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} style={{ zIndex: 60, backgroundColor: 'rgba(0, 0, 0, 0.1)', backdropFilter: 'blur(1px)' }}>
+      {event && (
+        <div className={`bg-white rounded-lg shadow-lg w-full max-w-md transition-all duration-300 ${isOpen && event ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Edit Event</h2>
@@ -179,7 +178,8 @@ export function EventEditModal({ isOpen, onClose, event }: EventEditModalProps) 
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

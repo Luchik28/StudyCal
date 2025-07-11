@@ -21,35 +21,35 @@ export default function LandingPage() {
         {/* Animated Background Elements */}
         <div className="absolute inset-0 opacity-30">
           <div 
-            className="absolute top-20 left-20 w-32 h-32 bg-blue-200 rounded-full"
+            className="absolute top-20 left-20 w-32 h-32 bg-blue-200 rounded-full md:top-20 md:left-20 top-10 left-4 md:w-32 md:h-32 w-20 h-20"
             style={{ transform: `translateY(${scrollY * 0.3}px) rotate(${scrollY * 0.1}deg)` }}
           />
           <div 
-            className="absolute top-40 right-32 w-24 h-24 bg-purple-200 rounded-lg"
+            className="absolute top-40 right-32 w-24 h-24 bg-purple-200 rounded-lg md:top-40 md:right-32 top-20 right-4 md:w-24 md:h-24 w-16 h-16"
             style={{ transform: `translateY(${scrollY * -0.2}px) rotate(${scrollY * -0.1}deg)` }}
           />
           <div 
-            className="absolute bottom-40 left-32 w-20 h-20 bg-green-200 rounded-full"
+            className="absolute bottom-40 left-32 w-20 h-20 bg-green-200 rounded-full md:bottom-40 md:left-32 bottom-32 left-4 md:w-20 md:h-20 w-14 h-14"
             style={{ transform: `translateY(${scrollY * 0.4}px) rotate(${scrollY * 0.2}deg)` }}
           />
           <div 
-            className="absolute bottom-20 right-20 w-28 h-28 bg-yellow-200 rounded-lg"
+            className="absolute bottom-20 right-20 w-28 h-28 bg-yellow-200 rounded-lg md:bottom-20 md:right-20 bottom-16 right-4 md:w-28 md:h-28 w-16 h-16"
             style={{ transform: `translateY(${scrollY * -0.3}px) rotate(${scrollY * -0.15}deg)` }}
           />
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
+        <div className="relative z-10 text-center max-w-4xl mx-auto px-4 md:px-6">
           <div 
-            className="mb-8"
+            className="mb-6 md:mb-8"
             style={{ transform: `translateY(${scrollY * -0.1}px)` }}
           >
-            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 mb-6 shadow-lg">
-              <Calendar className="w-8 h-8 text-blue-600" />
-              <span className="text-lg font-semibold text-gray-800">AI Student Calendar</span>
+            <div className="inline-flex items-center gap-2 md:gap-3 bg-white/80 backdrop-blur-sm rounded-full px-4 md:px-6 py-2 md:py-3 mb-4 md:mb-6 shadow-lg">
+              <Calendar className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+              <span className="text-base md:text-lg font-semibold text-gray-800">AI Student Calendar</span>
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight">
               Your Student
               <br />
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -57,36 +57,36 @@ export default function LandingPage() {
               </span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-6 md:mb-8 max-w-2xl mx-auto px-2">
               The smart calendar designed for student life. Seamlessly manage academics, work, and personal time 
               with AI-powered insights that help you succeed.
             </p>
 
-            <div className="bg-green-100 border border-green-300 rounded-lg px-4 py-2 inline-block mb-8">
-              <span className="text-green-800 font-medium">💯 Completely Free Forever</span>
+            <div className="bg-green-100 border border-green-300 rounded-lg px-3 md:px-4 py-2 inline-block mb-6 md:mb-8">
+              <span className="text-green-800 font-medium text-sm md:text-base">💯 Completely Free Forever</span>
             </div>
           </div>
 
           {/* Main CTA */}
           <div 
-            className="space-y-4"
+            className="space-y-3 md:space-y-4 mb-16 md:mb-8"
             style={{ transform: `translateY(${scrollY * -0.05}px)` }}
           >
             <Link 
               href="/calendar"
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
+              className="inline-flex items-center gap-2 md:gap-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-full text-base md:text-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
             >
-              <Calendar className="w-6 h-6" />
+              <Calendar className="w-5 h-5 md:w-6 md:h-6" />
               Start Organizing Now
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
             </Link>
             
-            <p className="text-sm text-gray-500">No signup required • Works in your browser</p>
+            <p className="text-xs md:text-sm text-gray-500 px-4">No signup required • Works in your browser</p>
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        {/* Scroll Indicator - Hidden on mobile to prevent overlap */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce hidden md:block">
           <div className="w-6 h-10 border-2 border-gray-400 rounded-full flex justify-center">
             <div className="w-1 h-3 bg-gray-400 rounded-full mt-2 animate-pulse"></div>
           </div>
