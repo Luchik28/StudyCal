@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Student Calendar - Smart Calendar for Student Life",
+  title: "StudyCal - Smart Calendar for Student Life",
   description: "The smart calendar designed for student life. Seamlessly manage academics, work, and personal time with AI-powered insights. Completely free forever.",
   keywords: "student calendar, academic calendar, AI calendar, school planner, university calendar, student life organizer, free",
   openGraph: {
-    title: "AI Student Calendar - Smart Calendar for Student Life",
+    title: "StudyCal - Smart Calendar for Student Life",
     description: "Your student calendar with AI-powered insights. Manage academics, work, and life balance effortlessly.",
     type: "website",
   },

@@ -46,7 +46,7 @@ export default function LandingPage() {
           >
             <div className="inline-flex items-center gap-2 md:gap-3 bg-white/80 backdrop-blur-sm rounded-full px-4 md:px-6 py-2 md:py-3 mb-4 md:mb-6 shadow-lg">
               <Calendar className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
-              <span className="text-base md:text-lg font-semibold text-gray-800">AI Student Calendar</span>
+              <span className="text-base md:text-lg font-semibold text-gray-800">StudyCal</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight">
@@ -299,11 +299,18 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Calendar className="w-6 h-6 text-blue-400" />
-            <span className="text-white font-semibold">AI Student Calendar</span>
+            <span className="text-white font-semibold">StudyCal</span>
           </div>
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-400 text-sm mb-3">
             Built with ❤️ for students who want to thrive • Free forever
           </p>
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+            <Link href="/privacy-policy" className="hover:text-gray-300 transition-colors">
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <span>No tracking • No data collection • Local-first</span>
+          </div>
         </div>
       </footer>
     </div>
