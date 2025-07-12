@@ -49,7 +49,7 @@ word-break: break-word !important;
         list-style-type: square;
       }
       ol li {
-        font-family: Arial ;
+        font-family: Arial;
       }
     </style>
       </div>
