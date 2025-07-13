@@ -18,12 +18,20 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Top Navigation */}
       <div className="absolute top-0 right-0 z-50 p-4">
-        <Link 
-          href="/privacy-policy"
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          Privacy Policy
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link 
+            href="/how-to-use"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            How to use
+          </Link>
+          <Link 
+            href="/privacy-policy"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Privacy Policy
+          </Link>
+        </div>
       </div>
 
       {/* Hero Section with 3D Effects */}
