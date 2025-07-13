@@ -36,9 +36,6 @@ export default function PrivacyPolicy() {
           <p className="text-xl text-blue-100 max-w-2xl mx-auto">
             Your privacy is important to us. Learn how we collect, use, and protect your information.
           </p>
-          <p className="text-sm text-blue-200 mt-4">
-            Last updated: December 2024
-          </p>
         </div>
       </section>
 

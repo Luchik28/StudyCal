@@ -16,6 +16,16 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Top Navigation */}
+      <div className="absolute top-0 right-0 z-50 p-4">
+        <Link 
+          href="/privacy-policy"
+          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          Privacy Policy
+        </Link>
+      </div>
+
       {/* Hero Section with 3D Effects */}
       <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Animated Background Elements */}
