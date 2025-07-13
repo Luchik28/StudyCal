@@ -26,7 +26,7 @@ export default function LandingPage() {
             How to use
           </Link>
           <Link 
-            href="/privacy-policy/"
+            href="https://studycal.app/privacy-policy/"
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             Privacy Policy
