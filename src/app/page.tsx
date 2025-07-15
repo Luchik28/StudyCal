@@ -15,15 +15,29 @@ const rotatingTexts = [
 ];
 
 export default function LandingPage() {
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState({ card0: 0, card1: 0, card2: 0, card3: 0 });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cardSectionRef = useRef<HTMLElement | null>(null);
   const isScrollingRef = useRef(false);
+
+  // Page visibility detection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     console.log('Animation effect starting...');
@@ -32,17 +46,41 @@ export default function LandingPage() {
     setDisplayedText(rotatingTexts[0]);
     
     let wordIndex = 0;
+    let animationTimeouts: NodeJS.Timeout[] = [];
+    let animationIntervals: NodeJS.Timeout[] = [];
+    
+    const clearAllTimers = () => {
+      animationTimeouts.forEach(timeout => clearTimeout(timeout));
+      animationIntervals.forEach(interval => clearInterval(interval));
+      animationTimeouts = [];
+      animationIntervals = [];
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
     
     const runAnimation = () => {
+      // Don't run animation if page is not visible
+      if (!isPageVisible) return;
+      
       const word = rotatingTexts[wordIndex];
       
       // Show word for 1 second
-      setTimeout(() => {
+      const showTimeout = setTimeout(() => {
+        if (!isPageVisible) return;
+        
         setIsTyping(true);
         
         // Delete animation
         let deleteLength = word.length;
         const deleteInterval = setInterval(() => {
+          if (!isPageVisible) return;
+          
           deleteLength--;
           setDisplayedText(word.substring(0, deleteLength));
           
@@ -51,12 +89,13 @@ export default function LandingPage() {
             
             // Move to next word
             wordIndex = (wordIndex + 1) % rotatingTexts.length;
-            setCurrentWordIndex(wordIndex);
             const nextWord = rotatingTexts[wordIndex];
             
             // Type animation
             let typeLength = 0;
             const typeInterval = setInterval(() => {
+              if (!isPageVisible) return;
+              
               typeLength++;
               setDisplayedText(nextWord.substring(0, typeLength));
               
@@ -65,24 +104,36 @@ export default function LandingPage() {
                 setIsTyping(false);
               }
             }, 50);
+            
+            animationIntervals.push(typeInterval);
           }
         }, 40);
-      }, 1000); // Display word for 1 second
+        
+        animationIntervals.push(deleteInterval);
+      }, 1000);
+      
+      animationTimeouts.push(showTimeout);
     };
     
-    // Initial delay, then start cycling
-    const initialTimeout = setTimeout(() => {
-      runAnimation();
-      intervalRef.current = setInterval(runAnimation, 2000); // 2 seconds total cycle
-    }, 2000);
+    // Only start animation if page is visible
+    if (isPageVisible) {
+      // Initial delay, then start cycling
+      timeoutRef.current = setTimeout(() => {
+        if (!isPageVisible) return;
+        
+        runAnimation();
+        intervalRef.current = setInterval(() => {
+          if (isPageVisible) {
+            runAnimation();
+          }
+        }, 2000);
+      }, 2000);
+    }
     
     return () => {
-      clearTimeout(initialTimeout);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      clearAllTimers();
     };
-  }, []);
+  }, [isPageVisible]); // Depend on page visibility
 
   // Detect mobile device
   useEffect(() => {
@@ -219,7 +270,7 @@ export default function LandingPage() {
         
         <div className="pb-8">
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            StudyCal is an AI powered calendar for students that analyzes your schedule and offers suggestions to improve it.
+            StudyCal is an AI Calendar for students that analyzes your schedule and offers intelligent suggestions to optimize your time.
           </p>
           
           <Link 
@@ -311,7 +362,7 @@ export default function LandingPage() {
       </section>      {/* Perfect For Section */}
       <section className="px-6 py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">AI optimization works for</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">AI Calendar optimization works for</h2>
           <p className="text-xl text-gray-600 mb-12">Every aspect of student life gets automatically optimized</p>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-gray-700">
@@ -356,7 +407,7 @@ export default function LandingPage() {
       </section>      {/* Benefits Section */}
       <section className="px-6 py-20 max-w-5xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">Why AI optimization changes everything</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">Why AI Calendar optimization changes everything</h2>
           <p className="text-xl text-gray-600">Manual planning is exhausting. Let AI do the heavy lifting.</p>
         </div>
 
@@ -391,7 +442,7 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             Stop planning manually.
             <br />
-            <span className="text-blue-600">Start living optimally.</span>
+            <span className="text-blue-600">Start using AI Calendar optimization.</span>
           </h2>
           
           <p className="text-xl text-gray-700 mb-12 max-w-2xl mx-auto">

@@ -29,7 +29,7 @@ export default function HowToUsePage() {
       <main className="max-w-4xl mx-auto px-6 py-12">
         {/* Quick Start */}
         <section className="mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">Getting Started with StudyCal</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">Getting Started with StudyCal AI Calendar</h1>
           <p className="text-xl text-gray-600 mb-8">
             Your AI-powered student calendar is ready to help you organize your academic and personal life. 
             Here&apos;s how to get the most out of it in just a few minutes.
