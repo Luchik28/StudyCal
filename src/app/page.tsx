@@ -9,14 +9,15 @@ const rotatingTexts = [
   'Life',
   'Calendar', 
   'Studying',
-  'Work-Life Balance',
+  'Work Life',
   'Student Life',
   'Time Management'
 ];
 
 export default function LandingPage() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState({ card0: 0, card1: 0, card2: 0, card3: 0 });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -27,37 +28,53 @@ export default function LandingPage() {
   useEffect(() => {
     console.log('Animation effect starting...');
     
-    // Initial 5 second delay before any cycling starts
-    const initialTimeout = setTimeout(() => {
-      console.log('Starting word rotation...');
+    // Initial display of "Schedule"
+    setDisplayedText(rotatingTexts[0]);
+    
+    let wordIndex = 0;
+    
+    const runAnimation = () => {
+      const word = rotatingTexts[wordIndex];
       
-      const runCycle = () => {
-        // Wait for display time then start animation
-        setTimeout(() => {
-          console.log('Starting fade...');
-          setIsAnimating(true);
+      // Show word for 1 second
+      setTimeout(() => {
+        setIsTyping(true);
+        
+        // Delete animation
+        let deleteLength = word.length;
+        const deleteInterval = setInterval(() => {
+          deleteLength--;
+          setDisplayedText(word.substring(0, deleteLength));
           
-          // After fade completes, update word and fade in
-          setTimeout(() => {
-            setCurrentWordIndex(prev => {
-              const nextIndex = (prev + 1) % rotatingTexts.length;
-              console.log('Switching to:', rotatingTexts[nextIndex]);
-              return nextIndex;
-            });
-            setIsAnimating(false);
-          }, 1000);
-        }, 3000);
-      };
-      
-      // Start the first cycle
-      runCycle();
-      
-      // Set up interval for subsequent cycles
-      intervalRef.current = setInterval(() => {
-        runCycle();
-      }, 4000); // 3s display + 1s animation = 4s total
-      
-    }, 5000);
+          if (deleteLength === 0) {
+            clearInterval(deleteInterval);
+            
+            // Move to next word
+            wordIndex = (wordIndex + 1) % rotatingTexts.length;
+            setCurrentWordIndex(wordIndex);
+            const nextWord = rotatingTexts[wordIndex];
+            
+            // Type animation
+            let typeLength = 0;
+            const typeInterval = setInterval(() => {
+              typeLength++;
+              setDisplayedText(nextWord.substring(0, typeLength));
+              
+              if (typeLength === nextWord.length) {
+                clearInterval(typeInterval);
+                setIsTyping(false);
+              }
+            }, 50);
+          }
+        }, 40);
+      }, 1000); // Display word for 1 second
+    };
+    
+    // Initial delay, then start cycling
+    const initialTimeout = setTimeout(() => {
+      runAnimation();
+      intervalRef.current = setInterval(runAnimation, 2000); // 2 seconds total cycle
+    }, 2000);
     
     return () => {
       clearTimeout(initialTimeout);
@@ -65,7 +82,7 @@ export default function LandingPage() {
         clearInterval(intervalRef.current);
       }
     };
-  }, []); // No dependencies to avoid re-running
+  }, []);
 
   // Detect mobile device
   useEffect(() => {
@@ -192,12 +209,9 @@ export default function LandingPage() {
           <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-gray-900 mb-8 leading-tight font-mono">
             Optimize Your{' '}
             <span className="block mt-4 relative overflow-hidden h-[1.2em]">
-              <span 
-                className={`absolute left-0 right-0 text-blue-600 transition-opacity duration-1000 ease-in-out ${
-                  isAnimating ? 'opacity-0' : 'opacity-100'
-                }`}
-              >
-                {rotatingTexts[currentWordIndex]}
+              <span className="text-blue-600">
+                {displayedText}
+                <span className={`inline-block w-1 h-[0.9em] bg-blue-600 ml-1 ${isTyping ? 'animate-pulse' : 'animate-blink'}`}></span>
               </span>
             </span>
           </h1>
@@ -221,75 +235,75 @@ export default function LandingPage() {
         </div>
       </section>      {/* Feature Sections */}
       <section ref={cardSectionRef} className={`px-6 py-20 max-w-7xl mx-auto ${isMobile ? 'min-h-auto' : 'min-h-[400vh]'}`}>
-        <div className={`grid md:grid-cols-2 lg:grid-cols-4 gap-8 ${isMobile ? 'space-y-8' : 'sticky top-1/2 transform -translate-y-1/2'}`}>
+        <div className={`grid md:grid-cols-2 lg:grid-cols-4 gap-12 ${isMobile ? 'space-y-12' : 'sticky top-1/2 transform -translate-y-1/2'}`}>
           {/* Auto-Schedule */}
           <div 
-            className={`text-center ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
+            className={`text-center p-8 ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
             style={isMobile ? {} : {
               opacity: currentCardIndex.card0,
               transform: `translateY(${(1 - currentCardIndex.card0) * 100}vh)`,
               transition: 'none' // Remove CSS transitions for direct scroll control
             }}
           >
-            <div className="w-16 h-16 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Brain className="w-8 h-8 text-blue-600" />
+            <div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <Brain className="w-10 h-10 text-blue-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Auto-Schedule</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">Auto-Schedule</h3>
+            <p className="text-gray-600 text-base leading-relaxed">
               Studycal will block out time for all of your tasks, keeping in mind your current events, optimally timed breaks, and perfectly spaced study sessions.
             </p>
           </div>
 
           {/* In-depth Analytics */}
           <div 
-            className={`text-center ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
+            className={`text-center p-8 ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
             style={isMobile ? {} : {
               opacity: currentCardIndex.card1,
               transform: `translateY(${(1 - currentCardIndex.card1) * 100}vh)`,
               transition: 'none' // Remove CSS transitions for direct scroll control
             }}
           >
-            <div className="w-16 h-16 bg-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Calendar className="w-8 h-8 text-purple-600" />
+            <div className="w-20 h-20 bg-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <Calendar className="w-10 h-10 text-purple-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">In-depth Analytics</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">In-depth Analytics</h3>
+            <p className="text-gray-600 text-base leading-relaxed">
               StudyCal classifies all of your events and provides you with insights into how you spend your time though beautiful charts and graphs.
             </p>
           </div>
 
           {/* Intelligent Suggestions */}
           <div 
-            className={`text-center ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
+            className={`text-center p-8 ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
             style={isMobile ? {} : {
               opacity: currentCardIndex.card2,
               transform: `translateY(${(1 - currentCardIndex.card2) * 100}vh)`,
               transition: 'none' // Remove CSS transitions for direct scroll control
             }}
           >
-            <div className="w-16 h-16 bg-green-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Share className="w-8 h-8 text-green-600" />
+            <div className="w-20 h-20 bg-green-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <Share className="w-10 h-10 text-green-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Intelligent Suggestions</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">Intelligent Suggestions</h3>
+            <p className="text-gray-600 text-base leading-relaxed">
               StudyCal analyzes your schedule and offers suggestions that optimize work-life balance, help you achieve your goals, and ensure you have the most optimal studying schedule.
             </p>
           </div>
 
           {/* Google Calendar Integration */}
           <div 
-            className={`text-center ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
+            className={`text-center p-8 ${isMobile ? 'animate-fade-up opacity-100' : ''}`}
             style={isMobile ? {} : {
               opacity: currentCardIndex.card3,
               transform: `translateY(${(1 - currentCardIndex.card3) * 100}vh)`,
               transition: 'none' // Remove CSS transitions for direct scroll control
             }}
           >
-            <div className="w-16 h-16 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Link2 className="w-8 h-8 text-orange-600" />
+            <div className="w-20 h-20 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <Link2 className="w-10 h-10 text-orange-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Google Calendar Sync</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">Google Calendar Sync</h3>
+            <p className="text-gray-600 text-base leading-relaxed">
               Seamlessly sync with your existing Google Calendar. All your events, classes, and commitments automatically integrate for complete schedule optimization.
             </p>
           </div>
