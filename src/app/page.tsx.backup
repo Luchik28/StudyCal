@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Calendar, Brain, Share, Link2, Menu, X } from 'lucide-react';
+import { Calendar, Brain, Share, CheckCircle, Link2, Menu, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 const rotatingTexts = [
@@ -270,7 +270,7 @@ export default function LandingPage() {
         
         <div className="pb-8">
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            StudyCal is an AI Calendar and task management platform for students that analyzes your schedule and offers intelligent suggestions to optimize your time blocks and focus time.
+            StudyCal is an AI Calendar for students that analyzes your schedule and offers intelligent suggestions to optimize your time.
           </p>
           
           <Link 
@@ -301,7 +301,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">Auto-Schedule</h3>
             <p className="text-gray-600 text-base leading-relaxed">
-              Studycal will automatically block out time for all of your tasks, keeping in mind your current events, optimally timed breaks, and perfectly spaced study sessions. This scheduler app helps you plan your day with intelligent time management.
+              Studycal will block out time for all of your tasks, keeping in mind your current events, optimally timed breaks, and perfectly spaced study sessions.
             </p>
           </div>
 
@@ -319,7 +319,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">In-depth Analytics</h3>
             <p className="text-gray-600 text-base leading-relaxed">
-              StudyCal classifies all of your events and provides you with insights into how you spend your focus time through beautiful charts and graphs. Get detailed schedule management analytics to optimize your productivity.
+              StudyCal classifies all of your events and provides you with insights into how you spend your time though beautiful charts and graphs.
             </p>
           </div>
 
@@ -337,7 +337,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">Intelligent Suggestions</h3>
             <p className="text-gray-600 text-base leading-relaxed">
-              StudyCal analyzes your schedule and offers suggestions that optimize work-life balance, help you achieve your goals, and ensure you have the most optimal studying schedule. Advanced time management tools help you plan your day more effectively.
+              StudyCal analyzes your schedule and offers suggestions that optimize work-life balance, help you achieve your goals, and ensure you have the most optimal studying schedule.
             </p>
           </div>
 
@@ -355,53 +355,98 @@ export default function LandingPage() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-4 font-mono">Google Calendar Sync</h3>
             <p className="text-gray-600 text-base leading-relaxed">
-              Seamlessly sync with your existing Google Calendar. All your events, classes, and commitments automatically integrate for complete schedule optimization and task management.
+              Seamlessly sync with your existing Google Calendar. All your events, classes, and commitments automatically integrate for complete schedule optimization.
             </p>
           </div>
         </div>
-      </section>      {/* Make Your Calendar Work Section */}
+      </section>      {/* Perfect For Section */}
       <section className="px-6 py-20 bg-gray-50">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4 font-mono">Make your Calendar Work as Hard as You Do</h2>
-          <p className="text-xl text-gray-600 mb-16">StudyCal squeezes every drop of performance from your calendar, turning it into a precision-engineered productivity machine with intelligent time blocks and schedule management.</p>
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">AI Calendar optimization works for</h2>
+          <p className="text-xl text-gray-600 mb-12">Every aspect of student life gets automatically optimized</p>
           
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="text-center">
-              <div className="text-4xl mb-6">⚡</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 font-mono">Maximum Efficiency</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                Every minute is optimized. StudyCal analyzes your energy patterns, deadlines, and commitments to create the most efficient schedule possible with dedicated focus time. No wasted time, no missed opportunities.
-              </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-gray-700">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>exam preparation timing</span>
             </div>
-            
-            <div className="text-center">
-              <div className="text-4xl mb-6">🎯</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 font-mono">Precision Scheduling</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                StudyCal makes intelligent, split-second decisions about your time blocks. It knows when you&apos;re most productive, when you need breaks, and how to perfectly balance work and life through smart time management.
-              </p>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>optimal study sessions</span>
             </div>
-            
-            <div className="text-center">
-              <div className="text-4xl mb-6">🚀</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 font-mono">Performance Amplification</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                Your calendar becomes a high-performance engine. StudyCal doesn&apos;t just organize your time—it amplifies your capabilities, turning ordinary schedules into extraordinary productivity systems.
-              </p>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>work-life balance</span>
             </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>social event scheduling</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>assignment deadlines</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>energy management</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>break timing</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>productivity patterns</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <span>stress prevention</span>
+            </div>
+          </div>
+        </div>
+      </section>      {/* Benefits Section */}
+      <section className="px-6 py-20 max-w-5xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">Why AI Calendar optimization changes everything</h2>
+          <p className="text-xl text-gray-600">Manual planning is exhausting. Let AI do the heavy lifting.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-16">
+          <div className="text-center">
+            <div className="text-3xl mb-6">🧠</div>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Thinks for you</h3>
+            <p className="text-gray-600 text-lg">
+              No more spending hours planning your week. AI analyzes thousands of variables instantly and creates the optimal schedule for your unique life.
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl mb-6">📈</div>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Improves constantly</h3>
+            <p className="text-gray-600 text-lg">
+              Every completed task teaches the AI more about you. Your calendar becomes smarter and more personalized each day you use it.
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl mb-6">⚡</div>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Works instantly</h3>
+            <p className="text-gray-600 text-lg">
+              Add an event and watch AI instantly reorganize everything else to optimize your time, energy, and academic performance.
+            </p>
           </div>
         </div>
       </section>      {/* CTA Section */}
       <section className="px-6 py-24 text-center bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 font-mono">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             Stop planning manually.
             <br />
-            <span className="text-blue-600 font-mono">Start using AI Calendar optimization.</span>
+            <span className="text-blue-600">Start using AI Calendar optimization.</span>
           </h2>
           
           <p className="text-xl text-gray-700 mb-12 max-w-2xl mx-auto">
-            Completely free, no download, no signup. Experience the future of student life management with AI-powered schedule management and task organization.
+            Completely free, no download, no signup. Experience the future of student life management with AI.
           </p>
           
           <Link 
