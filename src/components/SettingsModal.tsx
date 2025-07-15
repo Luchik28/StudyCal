@@ -273,22 +273,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </label>
                       
                       <p className="text-xs text-gray-500 ml-6">
-                        When enabled, events will be automatically synced between your local calendar and Google Calendar.
+                        When enabled, events will be automatically synced between your local calendar and Google Calendar. The use of raw or derived user data received from Workspace APIs will adhere to the Google User Data Policy, including the Limited Use requirements.
                       </p>
-                    </div>
-
-                    {/* Info Box */}
-                    <div className="flex items-start p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <AlertCircle className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-blue-700">
-                        <p className="font-medium mb-1">🎉 Easy Google Calendar Sync:</p>
-                        <ul className="list-disc list-inside space-y-1">
-                          <li>Click &quot;Connect&quot; to authenticate with your Google account</li>
-                          <li>Your events automatically sync in both directions</li>
-                          <li>No setup required - just click and authenticate!</li>
-                          <li>Your data stays private and secure</li>
-                        </ul>
-                      </div>
                     </div>
                   </div>
                 )}
