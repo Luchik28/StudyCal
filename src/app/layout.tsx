@@ -19,6 +19,17 @@ export const metadata: Metadata = {
   title: "StudyCal - Optimize Your Schedule",
   description: "StudyCal is an AI powered calendar for students that analyzes your schedule and offers suggestions to improve it.",
   keywords: "student calendar, academic calendar, AI calendar, school planner, university calendar, student life organizer, free, optimize schedule",
+  manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml', sizes: '16x16' },
+    ],
+    apple: [
+      { url: '/apple-icon.svg', type: 'image/svg+xml', sizes: 'any' },
+    ],
+    shortcut: '/icon.svg',
+  },
   openGraph: {
     title: "StudyCal - Optimize Your Schedule",
     description: "StudyCal is an AI powered calendar for students that analyzes your schedule and offers suggestions to improve it.",
@@ -33,6 +44,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="16x16" />
+        <link rel="apple-touch-icon" href="/apple-icon.svg" type="image/svg+xml" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
