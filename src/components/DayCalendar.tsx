@@ -14,6 +14,7 @@ import { DayColumn } from './DayColumn';
 import { CreateEventModal } from './CreateEventModal';
 import { EventEditModal } from './EventEditModal';
 import { InlineEventCreator } from './InlineEventCreator';
+import { InlineEventEditor } from './InlineEventEditor';
 
 export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
   const { events, moveEvent } = useEvents();
@@ -35,6 +36,12 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
     title: string;
     startTime: Date;
     endTime: Date;
+  } | null>(null);
+
+  // Inline event editing state
+  const [inlineEditEvent, setInlineEditEvent] = useState<{
+    event: Event;
+    eventElement: HTMLElement | null;
   } | null>(null);
   
   const dayColumnRef = useRef<HTMLDivElement>(null);
@@ -84,9 +91,14 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
     setInlineEvent(prev => prev ? { ...prev, ...updates } : null);
   }, []); // Empty dependency array - function never changes
 
-  const handleEventClick = (event: Event) => {
-    setSelectedEvent(event);
-    setIsEditModalOpen(true);
+  const handleEventClick = (event: Event, eventElement?: HTMLElement) => {
+    // Use inline editor if eventElement is provided, otherwise fall back to modal
+    if (eventElement) {
+      setInlineEditEvent({ event, eventElement });
+    } else {
+      setSelectedEvent(event);
+      setIsEditModalOpen(true);
+    }
   };
 
   const navigateDay = (direction: 'prev' | 'next') => {
@@ -190,6 +202,15 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
           initialTitle={inlineEvent.title}
           initialStartTime={inlineEvent.startTime}
           initialEndTime={inlineEvent.endTime}
+        />
+      )}
+
+      {/* Inline Event Editor */}
+      {inlineEditEvent && (
+        <InlineEventEditor
+          event={inlineEditEvent.event}
+          eventElement={inlineEditEvent.eventElement}
+          onCancel={() => setInlineEditEvent(null)}
         />
       )}
 

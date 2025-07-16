@@ -13,7 +13,7 @@ import { EventPopupMenu } from './EventPopupMenu';
 
 interface EventCardProps {
   event: PositionedEvent;
-  onEventEdit?: (event: Event) => void;
+  onEventEdit?: (event: Event, eventElement?: HTMLElement) => void;
 }
 
 export function EventCard({ event, onEventEdit }: EventCardProps) {
@@ -24,9 +24,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [isDragDisabled, setIsDragDisabled] = useState(true); // Start with drag disabled
   const containerRef = useRef<HTMLDivElement>(null);
-  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
-  const isDragStarted = useRef(false);
-  const dragTimer = useRef<NodeJS.Timeout | null>(null);
   
   const {
     attributes,
@@ -47,84 +44,25 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     opacity: isDragging ? 0 : 1, // Completely hide original during drag
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isResizing) return;
+  const handleContainerClick = (e: React.MouseEvent) => {
+    if (isResizing) {
+      return;
+    }
     
-    // Prevent text selection
-    e.preventDefault();
+    e.stopPropagation();
     
-    // Store the initial mouse position
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
-    isDragStarted.current = false;
+    // Close any existing popup menu
+    setShowPopupMenu(false);
     
-    // Set a timer to enable dragging after 300ms
-    dragTimer.current = setTimeout(() => {
-      if (!isDragStarted.current) {
-        isDragStarted.current = true;
-        setIsDragDisabled(false);
-        
-        // Clean up the mouse listeners since we're now dragging
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      }
-    }, 300);
-    
-    // Add global mouse move listener to detect drag threshold
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!dragStartPos.current) return;
-      
-      // Don't check distance if we've already started dragging via timer
-      if (isDragStarted.current) return;
-      
-      const deltaX = moveEvent.clientX - dragStartPos.current.x;
-      const deltaY = moveEvent.clientY - dragStartPos.current.y;
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      
-      // If moved more than 5 pixels, start dragging
-      if (distance > 5) {
-        isDragStarted.current = true;
-        setIsDragDisabled(false);
-        
-        // Clear the timer since we're starting drag via distance
-        if (dragTimer.current) {
-          clearTimeout(dragTimer.current);
-          dragTimer.current = null;
-        }
-        
-        // Remove the move listener since we've started dragging
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      }
-    };
-    
-    const handleMouseUp = () => {
-      // Clean up listeners and timer
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      
-      // Clear the timer
-      if (dragTimer.current) {
-        clearTimeout(dragTimer.current);
-        dragTimer.current = null;
-      }
-      
-      // If we didn't start dragging, it's a click
-      if (!isDragStarted.current) {
-        handleClick(e);
-      }
-      
-      // Reset drag state
-      dragStartPos.current = null;
-      isDragStarted.current = false;
-      setIsDragDisabled(true);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Trigger inline editing with the event element for any click on the event
+    if (onEventEdit && containerRef.current) {
+      console.log('Event clicked, calling onEventEdit with element:', containerRef.current);
+      onEventEdit(event, containerRef.current);
+    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isResizing || isDragStarted.current) {
+    if (isResizing) {
       return;
     }
     
@@ -227,7 +165,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
 
   const handleEditEvent = (event: Event) => {
     if (onEventEdit) {
-      onEventEdit(event);
+      onEventEdit(event); // For popup menu, no element reference
     }
   };
 
@@ -286,13 +224,12 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       
       {/* Event content */}
       <div
-        className={`p-2 h-full flex flex-col overflow-hidden select-none ${
+        className={`p-2 h-full flex flex-col overflow-hidden select-none event-background ${
           isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-pointer'
         }`}
         {...(isResizing || isDragDisabled ? {} : listeners)}
         {...(isResizing || isDragDisabled ? {} : attributes)}
-        onMouseDown={handleMouseDown}
-        onClick={handleClick}
+        onClick={handleContainerClick}
       >
         {/* Smart content layout based on available space */}
         {(() => {
@@ -303,7 +240,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 25) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-xs truncate leading-tight">
+                <div 
+                  className="font-medium text-white text-xs truncate leading-tight hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title}
                 </div>
               </div>
@@ -314,7 +253,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 50) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-xs truncate">
+                <div 
+                  className="font-medium text-white text-xs truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title} • {timeString}
                 </div>
               </div>
@@ -325,7 +266,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 70) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-sm truncate">
+                <div 
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title}
                 </div>
                 <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
@@ -345,7 +288,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 90) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-sm truncate">
+                <div 
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title}
                 </div>
                 <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
@@ -367,7 +312,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           // Large events (90px+): Everything including description
           return (
             <div className="flex-1 overflow-hidden">
-              <div className="font-medium text-white text-sm truncate">
+              <div 
+                className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+              >
                 {event.title}
               </div>
               <div className="flex items-center gap-1 text-white/80 text-xs mt-1">

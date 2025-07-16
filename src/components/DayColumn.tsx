@@ -144,7 +144,7 @@ interface DayColumnProps {
   date: Date;
   events: Event[];
   onTimeSlotClick: (date: Date, hour: number, minute: number) => void;
-  onEventEdit?: (event: Event) => void;
+  onEventEdit?: (event: Event, eventElement?: HTMLElement) => void;
   inlineEvent?: {
     startTime: Date;
     endTime: Date;

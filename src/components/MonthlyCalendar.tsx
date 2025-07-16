@@ -9,13 +9,14 @@ import { formatTime, formatTimeRange } from '@/utils/timeFormat';
 import { Event } from '@/types/events';
 import { CreateEventModal } from './CreateEventModal';
 import { EventEditModal } from './EventEditModal';
+import { InlineEventEditor } from './InlineEventEditor';
 
 // Create a single static month component
 const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, onEventEdit, timeFormat }: {
   monthDate: Date;
   events: Event[];
   onDayClick: (date: Date) => void;
-  onEventEdit?: (event: Event) => void;
+  onEventEdit?: (event: Event, eventElement?: HTMLElement) => void;
   timeFormat: '12h' | '24h';
 }) => {
   const monthStart = startOfMonth(monthDate);
@@ -133,6 +134,12 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
+
+  // Inline event editing state  
+  const [inlineEditEvent, setInlineEditEvent] = useState<{
+    event: Event;
+    eventElement: HTMLElement | null;
+  } | null>(null);
   
   // Track which months are currently loaded
   const [loadedMonths, setLoadedMonths] = useState<Set<string>>(new Set());
@@ -425,9 +432,14 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
     }
   };
 
-  const handleEventClick = (event: Event) => {
-    setSelectedEvent(event);
-    setIsEditModalOpen(true);
+  const handleEventClick = (event: Event, eventElement?: HTMLElement) => {
+    // Use inline editor if eventElement is provided, otherwise fall back to modal
+    if (eventElement) {
+      setInlineEditEvent({ event, eventElement });
+    } else {
+      setSelectedEvent(event);
+      setIsEditModalOpen(true);
+    }
   };
 
   // Create sorted array of months to render
@@ -500,6 +512,15 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
         }}
         event={selectedEvent}
       />
+
+      {/* Inline Event Editor */}
+      {inlineEditEvent && (
+        <InlineEventEditor
+          event={inlineEditEvent.event}
+          eventElement={inlineEditEvent.eventElement}
+          onCancel={() => setInlineEditEvent(null)}
+        />
+      )}
     </div>
   );
 }
