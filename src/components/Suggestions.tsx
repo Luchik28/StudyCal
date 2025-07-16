@@ -1371,7 +1371,7 @@ export function Suggestions({
       <div className={`p-6 flex flex-col h-full ${className}`}>
         <div className="flex items-center gap-2 mb-4 flex-shrink-0">
           <Lightbulb size={20} className="text-yellow-600" />
-          <h3 className="text-lg font-bold text-gray-900">Suggestions</h3>
+          <h3 className="text-lg font-bold text-gray-900 font-mono">Suggestions</h3>
         </div>
         <div className="flex-1 flex items-center justify-center min-h-0">
           <div className="text-center text-gray-500 max-w-xs">
@@ -1401,7 +1401,7 @@ export function Suggestions({
       <div className={`p-6 flex flex-col h-full ${className}`}>
         <div className="flex items-center gap-2 mb-4 flex-shrink-0">
           <Lightbulb size={20} className="text-yellow-600" />
-          <h3 className="text-lg font-bold text-gray-900">Suggestions</h3>
+          <h3 className="text-lg font-bold text-gray-900 font-mono">Suggestions</h3>
         </div>
         <div className="flex-1 flex items-center justify-center min-h-0">
           <div className="text-center text-gray-500 max-w-xs">
@@ -1420,7 +1420,7 @@ export function Suggestions({
     <div className={`p-6 flex flex-col h-full ${className}`}>
       <div className="flex items-center gap-2 mb-5 flex-shrink-0">
         <Lightbulb size={20} className="text-yellow-600" />
-        <h3 className="text-lg font-bold text-gray-900">Suggestions</h3>
+        <h3 className="text-lg font-bold text-gray-900 font-mono">Suggestions</h3>
       </div>
       
       <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
