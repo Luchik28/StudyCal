@@ -9,7 +9,6 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
-import { EventPopupMenu } from './EventPopupMenu';
 
 interface EventCardProps {
   event: PositionedEvent;
@@ -17,12 +16,10 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onEventEdit }: EventCardProps) {
-  const { resizeEvent, deleteEvent } = useEvents();
+  const { resizeEvent } = useEvents();
   const { timeFormat } = useSettings();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
-  const [showPopupMenu, setShowPopupMenu] = useState(false);
-  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const [isDragDisabled, setIsDragDisabled] = useState(true); // Start with drag disabled
+  const [isDragDisabled] = useState(true); // Start with drag disabled
   const containerRef = useRef<HTMLDivElement>(null);
   
   const {
@@ -51,31 +48,10 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     
     e.stopPropagation();
     
-    // Close any existing popup menu
-    setShowPopupMenu(false);
-    
     // Trigger inline editing with the event element for any click on the event
     if (onEventEdit && containerRef.current) {
       console.log('Event clicked, calling onEventEdit with element:', containerRef.current);
       onEventEdit(event, containerRef.current);
-    }
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isResizing) {
-      return;
-    }
-    
-    e.stopPropagation();
-    
-    // Calculate position relative to the event container
-    if (containerRef.current) {
-      const eventRect = containerRef.current.getBoundingClientRect();
-      // Position popup to the right of the event
-      const x = eventRect.right + 10; // 10px margin from right edge
-      const y = eventRect.top;
-      setPopupPosition({ x, y });
-      setShowPopupMenu(true);
     }
   };
 
@@ -157,31 +133,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleClosePopup = () => {
-    setShowPopupMenu(false);
-  };
-
-  const handleEditEvent = (event: Event) => {
-    if (onEventEdit) {
-      onEventEdit(event); // For popup menu, no element reference
-    }
-  };
-
-  const handleDeleteEvent = async (event: Event) => {
-    try {
-      // Close popup immediately to provide instant feedback
-      setShowPopupMenu(false);
-      
-      // Delete the event (this will trigger optimistic update)
-      await deleteEvent(event.id);
-      
-    } catch (error) {
-      console.error('Failed to delete event in EventCard:', error);
-      alert('Failed to delete event. Please try again.');
-      // Don't reopen popup on error - let user click again if needed
-    }
   };
 
   return (
@@ -355,16 +306,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           isResizing === 'bottom' ? 'bg-blue-200' : 'bg-white/60'
         }`} />
       </div>
-
-      {/* Popup menu */}
-      <EventPopupMenu
-        event={event}
-        isOpen={showPopupMenu}
-        position={popupPosition}
-        onClose={handleClosePopup}
-        onEdit={handleEditEvent}
-        onDelete={handleDeleteEvent}
-      />
     </div>
   );
 }

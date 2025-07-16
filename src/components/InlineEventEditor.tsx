@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
 import { Event } from '@/types/events';
-import { HOUR_HEIGHT } from '@/utils/calendar';
 import { format } from 'date-fns';
 
 interface InlineEventEditorProps {
@@ -144,10 +143,6 @@ export function InlineEventEditor({
       deleteEvent(event.id);
       onCancel();
     }
-  };
-
-  const formatDateTimeLocal = (date: Date) => {
-    return date.toISOString().slice(0, 16);
   };
 
   return (
