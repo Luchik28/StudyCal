@@ -19,7 +19,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
   const { resizeEvent } = useEvents();
   const { timeFormat } = useSettings();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
-  const [isDragDisabled] = useState(true); // Start with drag disabled
   const containerRef = useRef<HTMLDivElement>(null);
   
   const {
@@ -33,7 +32,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     data: {
       event,
     },
-    disabled: isResizing !== null || isDragDisabled, // Disable dragging when resizing or when not holding
+    disabled: isResizing !== null, // Only disable when resizing
   });
 
   const style = {
@@ -41,16 +40,17 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     opacity: isDragging ? 0 : 1, // Completely hide original during drag
   };
 
-  const handleContainerClick = (e: React.MouseEvent) => {
+  const handleContextMenu = (e: React.MouseEvent) => {
     if (isResizing) {
       return;
     }
     
+    e.preventDefault(); // Prevent the browser's default context menu
     e.stopPropagation();
     
-    // Trigger inline editing with the event element for any click on the event
+    // Trigger inline editing with the event element on right-click
     if (onEventEdit && containerRef.current) {
-      console.log('Event clicked, calling onEventEdit with element:', containerRef.current);
+      console.log('Event right-clicked, calling onEventEdit with element:', containerRef.current);
       onEventEdit(event, containerRef.current);
     }
   };
@@ -176,11 +176,13 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       {/* Event content */}
       <div
         className={`p-2 h-full flex flex-col overflow-hidden select-none event-background ${
-          isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-pointer'
+          isResizing ? 'cursor-default' : 
+          isDragging ? 'cursor-grabbing' : 
+          'cursor-grab'
         }`}
-        {...(isResizing || isDragDisabled ? {} : listeners)}
-        {...(isResizing || isDragDisabled ? {} : attributes)}
-        onClick={handleContainerClick}
+        {...(isResizing ? {} : listeners)}
+        {...(isResizing ? {} : attributes)}
+        onContextMenu={handleContextMenu}
       >
         {/* Smart content layout based on available space */}
         {(() => {
