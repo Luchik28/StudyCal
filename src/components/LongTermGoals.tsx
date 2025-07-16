@@ -119,7 +119,7 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
     <div className={`flex flex-col h-full ${className}`}>
       <div className="flex items-center gap-2 mb-4">
         <Target size={20} className="text-blue-600" />
-        <h3 className="text-lg font-bold text-gray-900">Long-Term Goals</h3>
+        <h3 className="text-lg font-bold text-gray-900 font-mono">Long-Term Goals</h3>
       </div>
 
       {/* Active Goals */}

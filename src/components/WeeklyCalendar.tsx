@@ -14,6 +14,7 @@ import { DayColumn } from './DayColumn';
 import { CreateEventModal } from './CreateEventModal';
 import { EventEditModal } from './EventEditModal';
 import { InlineEventCreator } from './InlineEventCreator';
+import { InlineEventEditor } from './InlineEventEditor';
 
 export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Date) => void }) {
   const { events, moveEvent } = useEvents();
@@ -35,6 +36,12 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
     title: string;
     startTime: Date;
     endTime: Date;
+  } | null>(null);
+
+  // Inline event editing state
+  const [inlineEditEvent, setInlineEditEvent] = useState<{
+    event: Event;
+    eventElement: HTMLElement | null;
   } | null>(null);
   
   const dayColumnRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -92,9 +99,27 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
     setInlineEvent(prev => prev ? { ...prev, ...updates } : null);
   }, []); // Empty dependency array - function never changes
 
-  const handleEventClick = (event: Event) => {
-    setSelectedEvent(event);
-    setIsEditModalOpen(true);
+  const handleEventClick = (event: Event, eventElement?: HTMLElement) => {
+    console.log('handleEventClick called with:', { 
+      event: event.title, 
+      hasElement: !!eventElement,
+      elementRect: eventElement ? eventElement.getBoundingClientRect() : null
+    });
+    
+    // Use inline editor if eventElement is provided, otherwise fall back to modal
+    if (eventElement) {
+      console.log('Setting inline edit event');
+      setInlineEditEvent({ event, eventElement });
+      
+      // Force a re-render to ensure the inline editor appears
+      setTimeout(() => {
+        console.log('InlineEditEvent state after timeout:', { event: event.title, element: !!eventElement });
+      }, 100);
+    } else {
+      console.log('Setting modal edit event');
+      setSelectedEvent(event);
+      setIsEditModalOpen(true);
+    }
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -199,6 +224,15 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
           initialTitle={inlineEvent.title}
           initialStartTime={inlineEvent.startTime}
           initialEndTime={inlineEvent.endTime}
+        />
+      )}
+
+      {/* Inline Event Editor */}
+      {inlineEditEvent && (
+        <InlineEventEditor
+          event={inlineEditEvent.event}
+          eventElement={inlineEditEvent.eventElement}
+          onCancel={() => setInlineEditEvent(null)}
         />
       )}
 

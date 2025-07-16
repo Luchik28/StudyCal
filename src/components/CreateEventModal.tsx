@@ -45,13 +45,13 @@ export function CreateEventModal({ isOpen, onClose, initialDate, initialHour }: 
   };
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} style={{ zIndex: 60, backgroundColor: 'rgba(0, 0, 0, 0.1)', backdropFilter: 'blur(1px)' }}>
-      <div className={`bg-white rounded-lg p-6 w-full max-w-md mx-4 transition-all duration-300 ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+    <div className={`fixed inset-0 flex items-center justify-center transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} style={{ zIndex: 60, backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(2px)' }}>
+      <div className={`bg-white rounded-lg p-6 w-full max-w-md mx-4 transition-all duration-300 shadow-2xl border border-gray-200 ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Create New Event</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Create New Event</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-500 hover:text-gray-700"
           >
             <X size={24} />
           </button>
@@ -59,7 +59,7 @@ export function CreateEventModal({ isOpen, onClose, initialDate, initialHour }: 
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="title" className="block text-sm font-medium text-gray-900 mb-1">
               Event Title *
             </label>
             <input
@@ -67,21 +67,23 @@ export function CreateEventModal({ isOpen, onClose, initialDate, initialHour }: 
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-500"
+              style={{ color: '#111827' }}
               placeholder="Enter event title"
               required
             />
           </div>
           
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-1">
               Description
             </label>
             <textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-500"
+              style={{ color: '#111827' }}
               placeholder="Enter event description"
               rows={3}
             />
@@ -89,7 +91,7 @@ export function CreateEventModal({ isOpen, onClose, initialDate, initialHour }: 
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="startTime" className="block text-sm font-medium text-gray-900 mb-1">
                 Start Time *
               </label>
               <input
@@ -97,13 +99,14 @@ export function CreateEventModal({ isOpen, onClose, initialDate, initialHour }: 
                 type="datetime-local"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-500"
+                style={{ color: '#111827', colorScheme: 'light' }}
                 required
               />
             </div>
             
             <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="endTime" className="block text-sm font-medium text-gray-900 mb-1">
                 End Time *
               </label>
               <input
@@ -111,7 +114,8 @@ export function CreateEventModal({ isOpen, onClose, initialDate, initialHour }: 
                 type="datetime-local"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-500"
+                style={{ color: '#111827', colorScheme: 'light' }}
                 required
               />
             </div>

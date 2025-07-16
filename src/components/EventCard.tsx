@@ -9,24 +9,17 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
-import { EventPopupMenu } from './EventPopupMenu';
 
 interface EventCardProps {
   event: PositionedEvent;
-  onEventEdit?: (event: Event) => void;
+  onEventEdit?: (event: Event, eventElement?: HTMLElement) => void;
 }
 
 export function EventCard({ event, onEventEdit }: EventCardProps) {
-  const { resizeEvent, deleteEvent } = useEvents();
+  const { resizeEvent } = useEvents();
   const { timeFormat } = useSettings();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
-  const [showPopupMenu, setShowPopupMenu] = useState(false);
-  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const [isDragDisabled, setIsDragDisabled] = useState(true); // Start with drag disabled
   const containerRef = useRef<HTMLDivElement>(null);
-  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
-  const isDragStarted = useRef(false);
-  const dragTimer = useRef<NodeJS.Timeout | null>(null);
   
   const {
     attributes,
@@ -39,7 +32,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     data: {
       event,
     },
-    disabled: isResizing !== null || isDragDisabled, // Disable dragging when resizing or when not holding
+    disabled: isResizing !== null, // Only disable when resizing
   });
 
   const style = {
@@ -47,97 +40,18 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     opacity: isDragging ? 0 : 1, // Completely hide original during drag
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isResizing) return;
-    
-    // Prevent text selection
-    e.preventDefault();
-    
-    // Store the initial mouse position
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
-    isDragStarted.current = false;
-    
-    // Set a timer to enable dragging after 300ms
-    dragTimer.current = setTimeout(() => {
-      if (!isDragStarted.current) {
-        isDragStarted.current = true;
-        setIsDragDisabled(false);
-        
-        // Clean up the mouse listeners since we're now dragging
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      }
-    }, 300);
-    
-    // Add global mouse move listener to detect drag threshold
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!dragStartPos.current) return;
-      
-      // Don't check distance if we've already started dragging via timer
-      if (isDragStarted.current) return;
-      
-      const deltaX = moveEvent.clientX - dragStartPos.current.x;
-      const deltaY = moveEvent.clientY - dragStartPos.current.y;
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      
-      // If moved more than 5 pixels, start dragging
-      if (distance > 5) {
-        isDragStarted.current = true;
-        setIsDragDisabled(false);
-        
-        // Clear the timer since we're starting drag via distance
-        if (dragTimer.current) {
-          clearTimeout(dragTimer.current);
-          dragTimer.current = null;
-        }
-        
-        // Remove the move listener since we've started dragging
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      }
-    };
-    
-    const handleMouseUp = () => {
-      // Clean up listeners and timer
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      
-      // Clear the timer
-      if (dragTimer.current) {
-        clearTimeout(dragTimer.current);
-        dragTimer.current = null;
-      }
-      
-      // If we didn't start dragging, it's a click
-      if (!isDragStarted.current) {
-        handleClick(e);
-      }
-      
-      // Reset drag state
-      dragStartPos.current = null;
-      isDragStarted.current = false;
-      setIsDragDisabled(true);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isResizing || isDragStarted.current) {
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (isResizing) {
       return;
     }
     
+    e.preventDefault(); // Prevent the browser's default context menu
     e.stopPropagation();
     
-    // Calculate position relative to the event container
-    if (containerRef.current) {
-      const eventRect = containerRef.current.getBoundingClientRect();
-      // Position popup to the right of the event
-      const x = eventRect.right + 10; // 10px margin from right edge
-      const y = eventRect.top;
-      setPopupPosition({ x, y });
-      setShowPopupMenu(true);
+    // Trigger inline editing with the event element on right-click
+    if (onEventEdit && containerRef.current) {
+      console.log('Event right-clicked, calling onEventEdit with element:', containerRef.current);
+      onEventEdit(event, containerRef.current);
     }
   };
 
@@ -221,31 +135,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const handleClosePopup = () => {
-    setShowPopupMenu(false);
-  };
-
-  const handleEditEvent = (event: Event) => {
-    if (onEventEdit) {
-      onEventEdit(event);
-    }
-  };
-
-  const handleDeleteEvent = async (event: Event) => {
-    try {
-      // Close popup immediately to provide instant feedback
-      setShowPopupMenu(false);
-      
-      // Delete the event (this will trigger optimistic update)
-      await deleteEvent(event.id);
-      
-    } catch (error) {
-      console.error('Failed to delete event in EventCard:', error);
-      alert('Failed to delete event. Please try again.');
-      // Don't reopen popup on error - let user click again if needed
-    }
-  };
-
   return (
     <div
       ref={(node) => {
@@ -286,13 +175,14 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       
       {/* Event content */}
       <div
-        className={`p-2 h-full flex flex-col overflow-hidden select-none ${
-          isResizing ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-pointer'
+        className={`p-2 h-full flex flex-col overflow-hidden select-none event-background ${
+          isResizing ? 'cursor-default' : 
+          isDragging ? 'cursor-grabbing' : 
+          'cursor-grab'
         }`}
-        {...(isResizing || isDragDisabled ? {} : listeners)}
-        {...(isResizing || isDragDisabled ? {} : attributes)}
-        onMouseDown={handleMouseDown}
-        onClick={handleClick}
+        {...(isResizing ? {} : listeners)}
+        {...(isResizing ? {} : attributes)}
+        onContextMenu={handleContextMenu}
       >
         {/* Smart content layout based on available space */}
         {(() => {
@@ -303,7 +193,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 25) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-xs truncate leading-tight">
+                <div 
+                  className="font-medium text-white text-xs truncate leading-tight hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title}
                 </div>
               </div>
@@ -314,7 +206,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 50) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-xs truncate">
+                <div 
+                  className="font-medium text-white text-xs truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title} • {timeString}
                 </div>
               </div>
@@ -325,7 +219,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 70) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-sm truncate">
+                <div 
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title}
                 </div>
                 <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
@@ -345,7 +241,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           if (height < 90) {
             return (
               <div className="flex-1 overflow-hidden">
-                <div className="font-medium text-white text-sm truncate">
+                <div 
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                >
                   {event.title}
                 </div>
                 <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
@@ -367,7 +265,9 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           // Large events (90px+): Everything including description
           return (
             <div className="flex-1 overflow-hidden">
-              <div className="font-medium text-white text-sm truncate">
+              <div 
+                className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+              >
                 {event.title}
               </div>
               <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
@@ -408,16 +308,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           isResizing === 'bottom' ? 'bg-blue-200' : 'bg-white/60'
         }`} />
       </div>
-
-      {/* Popup menu */}
-      <EventPopupMenu
-        event={event}
-        isOpen={showPopupMenu}
-        position={popupPosition}
-        onClose={handleClosePopup}
-        onEdit={handleEditEvent}
-        onDelete={handleDeleteEvent}
-      />
     </div>
   );
 }

@@ -179,7 +179,7 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
 
   return (
     <div className="p-6 border-b border-gray-200">
-      <h3 className="text-lg font-bold mb-3 text-gray-900">Analytics</h3>
+      <h3 className="text-lg font-bold mb-3 text-gray-900 font-mono">Analytics</h3>
       <div className="text-sm text-gray-700 mb-4">
         {getTimeFrameLabel()}: {totalEvents} event{totalEvents !== 1 ? 's' : ''}
         {totalTime > 0 && ` • ${formatDuration(totalTime)} total`}

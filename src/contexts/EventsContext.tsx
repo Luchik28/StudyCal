@@ -11,7 +11,7 @@ import { useSettings } from './SettingsContext';
 
 interface EventsContextType {
   events: Event[];
-  addEvent: (title: string, startTime: Date, endTime?: Date, description?: string) => void;
+  addEvent: (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string) => void;
   updateEvent: (id: string, updates: Partial<Event>) => void;
   deleteEvent: (id: string) => void;
   moveEvent: (id: string, newStartTime: Date) => void;
@@ -101,7 +101,7 @@ export function EventsProvider({ children }: EventsProviderProps) {
     }
   };
 
-  const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string) => {
+  const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string) => {
     const newEvent: Event = {
       id: Date.now().toString(),
       title,
@@ -110,40 +110,43 @@ export function EventsProvider({ children }: EventsProviderProps) {
       endTime: endTime || addHours(startTime, 1),
       color: getRandomColor(),
       dayOfWeek: startTime.getDay(),
-    };
+      category,
+      subcategory,
+    };    // Only classify if category/subcategory not provided
+    if (!category || !subcategory) {
+      // Simple rule-based classification as fallback
+      const getSimpleClassification = (title: string, description?: string) => {
+        const text = `${title} ${description || ''}`.toLowerCase();
+        
+        if (text.includes('meeting') || text.includes('conference') || text.includes('call')) {
+          return { category: 'Work', subcategory: 'Meeting' };
+        } else if (text.includes('doctor') || text.includes('appointment') || text.includes('health') || text.includes('medical')) {
+          return { category: 'Health', subcategory: 'Appointment' };
+        } else if (text.includes('lunch') || text.includes('dinner') || text.includes('eat') || text.includes('meal')) {
+          return { category: 'Personal', subcategory: 'Activity' };
+        } else if (text.includes('study') || text.includes('class') || text.includes('homework') || text.includes('exam')) {
+          return { category: 'Education', subcategory: 'Study Session' };
+        } else if (text.includes('workout') || text.includes('gym') || text.includes('exercise')) {
+          return { category: 'Health', subcategory: 'Activity' };
+        } else if (text.includes('travel') || text.includes('trip') || text.includes('vacation')) {
+          return { category: 'Travel', subcategory: 'Trip' };
+        } else if (text.includes('work') || text.includes('project') || text.includes('task')) {
+          return { category: 'Work', subcategory: 'Task/Project Work' };
+        } else {
+          return { category: 'Personal', subcategory: 'Other' };
+        }
+      };
 
-    // Simple rule-based classification as fallback
-    const getSimpleClassification = (title: string, description?: string) => {
-      const text = `${title} ${description || ''}`.toLowerCase();
-      
-      if (text.includes('meeting') || text.includes('conference') || text.includes('call')) {
-        return { category: 'Work', subcategory: 'Meeting' };
-      } else if (text.includes('doctor') || text.includes('appointment') || text.includes('health') || text.includes('medical')) {
-        return { category: 'Health', subcategory: 'Appointment' };
-      } else if (text.includes('lunch') || text.includes('dinner') || text.includes('eat') || text.includes('meal')) {
-        return { category: 'Personal', subcategory: 'Activity' };
-      } else if (text.includes('study') || text.includes('class') || text.includes('homework') || text.includes('exam')) {
-        return { category: 'Education', subcategory: 'Study Session' };
-      } else if (text.includes('workout') || text.includes('gym') || text.includes('exercise')) {
-        return { category: 'Health', subcategory: 'Activity' };
-      } else if (text.includes('travel') || text.includes('trip') || text.includes('vacation')) {
-        return { category: 'Travel', subcategory: 'Trip' };
-      } else if (text.includes('work') || text.includes('project') || text.includes('task')) {
-        return { category: 'Work', subcategory: 'Task/Project Work' };
-      } else {
-        return { category: 'Personal', subcategory: 'Other' };
+      // Try ML classification first, but use simple classification as fallback
+      try {
+        const classification = await classifyEvent(newEvent);
+        newEvent.category = classification.category;
+        newEvent.subcategory = classification.subcategory;
+      } catch {
+        const simpleClassification = getSimpleClassification(newEvent.title, newEvent.description);
+        newEvent.category = simpleClassification.category;
+        newEvent.subcategory = simpleClassification.subcategory;
       }
-    };
-
-    // Try ML classification first, but use simple classification as fallback
-    try {
-      const classification = await classifyEvent(newEvent);
-      newEvent.category = classification.category;
-      newEvent.subcategory = classification.subcategory;
-    } catch {
-      const simpleClassification = getSimpleClassification(newEvent.title, newEvent.description);
-      newEvent.category = simpleClassification.category;
-      newEvent.subcategory = simpleClassification.subcategory;
     }
 
     // Save to IndexedDB
