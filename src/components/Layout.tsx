@@ -8,6 +8,7 @@ import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { useModelLoader } from '@/hooks/useModelLoader';
 import { useEvents } from '@/contexts/EventsContext';
 import { taskScheduler, Task } from '@/utils/taskScheduler';
+import { classifyEvent } from '@/utils/eventClassification';
 import { startOfWeek } from 'date-fns';
 import { Settings, Clock, Calendar, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -34,6 +35,14 @@ function TaskList({
   view: CalendarView;
   currentDate: Date;
 }) {
+  // Category and subcategory options (matching the AI classification maps)
+  const categories = ['Work', 'Personal', 'Social', 'Health', 'Education', 'Travel'];
+  const subcategories = [
+    'Activity', 'Appointment', 'Chore/Errand', 'Class', 'Event',
+    'Extra-Curricular', 'Gathering', 'Logistics', 'Meeting', 'Other',
+    'Social/Family', 'Study Session', 'Task/Project Work', 'Test/Exam', 'Trip'
+  ];
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState('');
   const [isScheduling, setIsScheduling] = useState(false);
@@ -42,7 +51,7 @@ function TaskList({
   const [editValue, setEditValue] = useState('');
   const { events, addEvent } = useEvents();
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (input.trim()) {
       const newTask: Task = {
         id: `task_${Date.now()}`,
@@ -51,6 +60,30 @@ function TaskList({
         priority: 'low',
         // No manual category - let AI classify automatically
       };
+
+      // Immediately classify the task
+      try {
+        // Create a minimal Event object for classification
+        const tempEvent = {
+          id: 'temp',
+          title: input.trim(),
+          description: '',
+          startTime: new Date(),
+          endTime: new Date(),
+          color: '#3b82f6',
+          dayOfWeek: 0
+        };
+        
+        const classification = await classifyEvent(tempEvent);
+        if (classification) {
+          newTask.category = classification.category;
+          newTask.subcategory = classification.subcategory;
+        }
+      } catch (error) {
+        console.warn('Failed to classify task:', error);
+        // Continue without classification
+      }
+
       setTasks([...tasks, newTask]);
       setInput('');
       
@@ -78,6 +111,18 @@ function TaskList({
   const handleUpdateDuration = (idx: number, duration: number) => {
     setTasks(tasks.map((task, i) => 
       i === idx ? { ...task, estimatedDuration: duration } : task
+    ));
+  };
+
+  const handleUpdateCategory = (idx: number, category: string) => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, category } : task
+    ));
+  };
+
+  const handleUpdateSubcategory = (idx: number, subcategory: string) => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, subcategory } : task
     ));
   };
 
@@ -122,7 +167,16 @@ function TaskList({
 
       // Add scheduled events to the calendar
       for (const event of scheduledEvents) {
-        addEvent(event.title, event.startTime, event.endTime, event.description);
+        // Find the original task to get its classification
+        const originalTask = tasks.find(task => task.title === event.title);
+        addEvent(
+          event.title, 
+          event.startTime, 
+          event.endTime, 
+          event.description,
+          originalTask?.category,
+          originalTask?.subcategory
+        );
       }
 
       // Clear the task list after successful scheduling
@@ -189,12 +243,29 @@ function TaskList({
                   </select>
                 </div>
                 
-                {/* Show AI-detected category if available */}
-                {task.category && (
-                  <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded border">
-                    AI: {task.category}
-                  </span>
-                )}
+                {/* Category dropdown */}
+                <select
+                  value={task.category || ''}
+                  onChange={(e) => handleUpdateCategory(idx, e.target.value)}
+                  className="border rounded px-1 py-0.5 text-xs text-gray-900 bg-blue-50"
+                >
+                  <option value="">Category...</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+
+                {/* Subcategory dropdown */}
+                <select
+                  value={task.subcategory || ''}
+                  onChange={(e) => handleUpdateSubcategory(idx, e.target.value)}
+                  className="border rounded px-1 py-0.5 text-xs text-gray-900 bg-green-50"
+                >
+                  <option value="">Type...</option>
+                  {subcategories.map(subcat => (
+                    <option key={subcat} value={subcat}>{subcat}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
