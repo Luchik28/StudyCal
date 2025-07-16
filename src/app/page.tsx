@@ -220,6 +220,14 @@ export default function LandingPage() {
           >
             Privacy Policy →
           </Link>
+          <a 
+            href="https://forms.gle/AtnRLBGZjGq8h9eM7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            Give Feedback →
+          </a>
         </div>
 
         {/* Mobile Menu Button */}
@@ -249,6 +257,15 @@ export default function LandingPage() {
               >
                 Privacy Policy →
               </Link>
+              <a 
+                href="https://forms.gle/AtnRLBGZjGq8h9eM7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-gray-600 hover:text-gray-900 transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Give Feedback →
+              </a>
             </div>
           </div>
         )}
@@ -270,7 +287,7 @@ export default function LandingPage() {
         
         <div className="pb-8">
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            StudyCal is an AI Calendar and task management platform for students that analyzes your schedule and offers intelligent suggestions to optimize your time blocks and focus time.
+            StudyCal is an AI calendar and task management platform for students that analyzes your schedule and offers intelligent suggestions.
           </p>
           
           <Link 
@@ -452,6 +469,14 @@ export default function LandingPage() {
             >
               How to use →
             </Link>
+            <a 
+              href="https://forms.gle/AtnRLBGZjGq8h9eM7"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Give Feedback →
+            </a>
           </div>
         </div>
       </footer>
