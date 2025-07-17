@@ -1,30 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Calendar, ArrowLeft, Play, Settings, Zap, Users, Clock, CheckCircle } from 'lucide-react';
+import { Calendar, Play, Settings, Zap, Users, Clock, CheckCircle } from 'lucide-react';
+import TopBar from '../../components/TopBar';
 
 export default function HowToUsePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/"
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Link>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-blue-600" />
-              <span className="text-xl font-semibold text-gray-900">StudyCal - How to Use</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <TopBar />
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-12">
         {/* Quick Start */}

@@ -212,13 +212,13 @@ export default function LandingPage() {
             href="/how-to-use"
             className="text-gray-600 hover:text-gray-900 transition-colors"
           >
-            How to use →
+            How to use
           </Link>
           <Link 
-            href="https://studycal.app/privacy-policy/"
+            href="/blog"
             className="text-gray-600 hover:text-gray-900 transition-colors"
           >
-            Privacy Policy →
+            Blog
           </Link>
           <a 
             href="https://forms.gle/AtnRLBGZjGq8h9eM7"
@@ -226,7 +226,7 @@ export default function LandingPage() {
             rel="noopener noreferrer"
             className="text-gray-600 hover:text-gray-900 transition-colors"
           >
-            Give Feedback →
+            Give Feedback
           </a>
         </div>
 
@@ -248,14 +248,14 @@ export default function LandingPage() {
                 className="block text-gray-600 hover:text-gray-900 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                How to use →
+                How to use
               </Link>
               <Link 
-                href="https://studycal.app/privacy-policy/"
+                href="/blog"
                 className="block text-gray-600 hover:text-gray-900 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Privacy Policy →
+                Blog
               </Link>
               <a 
                 href="https://forms.gle/AtnRLBGZjGq8h9eM7"
@@ -264,7 +264,7 @@ export default function LandingPage() {
                 className="block text-gray-600 hover:text-gray-900 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Give Feedback →
+                Give Feedback
               </a>
             </div>
           </div>
@@ -457,17 +457,23 @@ export default function LandingPage() {
             >
               Give it a spin
             </Link>
+            <Link 
+              href="/blog"
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Blog
+            </Link>
             <a
               href="https://studycal.app/privacy-policy/"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              Privacy →
+              Privacy
             </a>
             <Link 
               href="/how-to-use"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              How to use →
+              How to use
             </Link>
             <a 
               href="https://forms.gle/AtnRLBGZjGq8h9eM7"
@@ -475,7 +481,7 @@ export default function LandingPage() {
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              Give Feedback →
+              Give Feedback
             </a>
           </div>
         </div>
