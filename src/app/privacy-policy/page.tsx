@@ -1,31 +1,13 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowLeft, Shield, Calendar } from 'lucide-react';
+import TopBar from '../../components/TopBar';
+import { Shield, Calendar } from 'lucide-react';
 import { privacyPolicyContent } from './privacy-policy-content';
 
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Home
-            </Link>
-            <div className="inline-flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-blue-600" />
-              <span className="text-lg font-semibold text-gray-800">StudyCal</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <TopBar />
       {/* Hero Section */}
       <section className="py-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">

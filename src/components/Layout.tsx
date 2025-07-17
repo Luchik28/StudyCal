@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import * as tf from '@tensorflow/tfjs';
 import { WeeklyCalendar } from './WeeklyCalendar';
 import { EventAnalytics } from './EventAnalytics';
 import { SettingsModal } from './SettingsModal';
@@ -8,6 +9,7 @@ import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { useModelLoader } from '@/hooks/useModelLoader';
 import { useEvents } from '@/contexts/EventsContext';
 import { taskScheduler, Task } from '@/utils/taskScheduler';
+import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
 import { classifyEvent } from '@/utils/eventClassification';
 import { startOfWeek } from 'date-fns';
 import { Settings, Clock, Calendar, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -44,6 +46,9 @@ function TaskList({
   ];
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [model, setModel] = useState<tf.GraphModel|null>(null);
+  const [vocabMap, setVocabMap] = useState<Map<string, number>|null>(null);
+  const [predictingIdx, setPredictingIdx] = useState<number|null>(null);
   const [input, setInput] = useState('');
   const [isScheduling, setIsScheduling] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,19 +56,39 @@ function TaskList({
   const [editValue, setEditValue] = useState('');
   const { events, addEvent } = useEvents();
 
+  // Load model and vocab on mount
+  useEffect(() => {
+    loadTimePredictionModel().then(({ model, vocabMap }) => {
+      setModel(model);
+      setVocabMap(vocabMap);
+    });
+  }, []);
+
   const handleAdd = async () => {
     if (input.trim()) {
+      let predictedDuration = 60;
+      if (model && vocabMap) {
+        setPredictingIdx(tasks.length);
+        predictedDuration = await predictTaskDuration(model, vocabMap, input.trim());
+        setPredictingIdx(null);
+      }
+      // Clamp to at least 1 minute
+      predictedDuration = Math.max(1, predictedDuration);
+      // Use crypto.randomUUID if available, else fallback
+      let uniqueId = '';
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        uniqueId = crypto.randomUUID();
+      } else {
+        uniqueId = `task_${Date.now()}_${Math.floor(Math.random()*1e6)}`;
+      }
       const newTask: Task = {
-        id: `task_${Date.now()}`,
+        id: uniqueId,
         title: input.trim(),
-        estimatedDuration: 60, // Default 1 hour
+        estimatedDuration: predictedDuration,
         priority: 'low',
-        // No manual category - let AI classify automatically
       };
-
-      // Immediately classify the task
+      // Classification (unchanged)
       try {
-        // Create a minimal Event object for classification
         const tempEvent = {
           id: 'temp',
           title: input.trim(),
@@ -73,20 +98,17 @@ function TaskList({
           color: '#3b82f6',
           dayOfWeek: 0
         };
-        
         const classification = await classifyEvent(tempEvent);
         if (classification) {
           newTask.category = classification.category;
           newTask.subcategory = classification.subcategory;
         }
       } catch (error) {
-        console.warn('Failed to classify task:', error);
         // Continue without classification
+        console.error('Failed to classify event:', error);
       }
-
       setTasks([...tasks, newTask]);
       setInput('');
-      
       inputRef.current?.focus();
     }
   };
@@ -100,18 +122,34 @@ function TaskList({
     setEditValue(tasks[idx].title);
   };
 
-  const handleEditSave = (idx: number) => {
+  const handleUpdateDuration = (idx: number, value: string) => {
+    // Allow any number, but always store as number (NaN if empty)
+    const num = value === '' ? NaN : Number(value);
     setTasks(tasks.map((task, i) => 
-      i === idx ? { ...task, title: editValue } : task
+      i === idx ? { ...task, estimatedDuration: num } : task
+    ));
+  };
+
+  // On blur, if empty, set to 1
+  const handleDurationBlur = (idx: number) => {
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, estimatedDuration: isNaN(task.estimatedDuration) ? 1 : task.estimatedDuration } : task
+    ));
+  };
+
+  // Predict duration when editing task title
+  const handleEditSave = async (idx: number) => {
+    let duration = tasks[idx].estimatedDuration;
+    if (model && vocabMap && editValue.trim()) {
+      setPredictingIdx(idx);
+      duration = await predictTaskDuration(model, vocabMap, editValue.trim());
+      setPredictingIdx(null);
+    }
+    setTasks(tasks.map((task, i) => 
+      i === idx ? { ...task, title: editValue, estimatedDuration: duration } : task
     ));
     setEditingIndex(null);
     setEditValue('');
-  };
-
-  const handleUpdateDuration = (idx: number, duration: number) => {
-    setTasks(tasks.map((task, i) => 
-      i === idx ? { ...task, estimatedDuration: duration } : task
-    ));
   };
 
   const handleUpdateCategory = (idx: number, category: string) => {
@@ -182,8 +220,8 @@ function TaskList({
       // Clear the task list after successful scheduling
       setTasks([]);
       
-    } catch (error) {
-      console.error('Failed to schedule tasks:', error);
+    } catch {
+      console.error('Failed to schedule tasks');
       alert('Failed to schedule tasks. Please try again.');
     } finally {
       setIsScheduling(false);
@@ -228,19 +266,17 @@ function TaskList({
               <div className="flex items-center gap-2 text-xs flex-wrap">
                 <div className="flex items-center gap-1">
                   <Clock size={12} className="text-gray-600" />
-                  <select
-                    value={task.estimatedDuration}
-                    onChange={(e) => handleUpdateDuration(idx, parseInt(e.target.value))}
-                    className="border rounded px-1 py-0.5 text-xs text-gray-900"
-                  >
-                    <option value={15}>15 min</option>
-                    <option value={30}>30 min</option>
-                    <option value={45}>45 min</option>
-                    <option value={60}>1 hour</option>
-                    <option value={90}>1.5 hours</option>
-                    <option value={120}>2 hours</option>
-                    <option value={180}>3 hours</option>
-                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    value={isNaN(task.estimatedDuration) ? '' : task.estimatedDuration}
+                    onChange={e => handleUpdateDuration(idx, e.target.value)}
+                    onBlur={() => handleDurationBlur(idx)}
+                    className="border rounded px-1 py-0.5 text-xs text-gray-900 w-16"
+                    disabled={predictingIdx === idx}
+                  />
+                  <span className="text-xs text-gray-500">min</span>
+                  {predictingIdx === idx && <span className="text-xs text-gray-400 ml-1">AI…</span>}
                 </div>
                 
                 {/* Category dropdown */}

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import * as tf from '@tensorflow/tfjs';
+import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
 import { X } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
 import { HOUR_HEIGHT } from '@/utils/calendar';
@@ -32,6 +34,10 @@ export function InlineEventCreator({
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
+  const [duration, setDuration] = useState(60); // default 60 min
+  const [model, setModel] = useState<tf.GraphModel|null>(null);
+  const [vocabMap, setVocabMap] = useState<Map<string, number>|null>(null);
+  const [predicting, setPredicting] = useState(false);
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +45,11 @@ export function InlineEventCreator({
   // Focus the title input when component mounts
   useEffect(() => {
     titleInputRef.current?.focus();
+    // Load model and vocab on mount
+    loadTimePredictionModel().then(({ model, vocabMap }) => {
+      setModel(model);
+      setVocabMap(vocabMap);
+    }).catch(() => {});
   }, []);
 
   // Calculate position for the popup form
@@ -67,7 +78,25 @@ export function InlineEventCreator({
     }
   }, [dayColumnRef, initialHour, initialMinute]);
 
-  // Update parent component when title or times change
+  // Predict duration when title changes
+  useEffect(() => {
+    let cancelled = false;
+    if (model && vocabMap && title.trim()) {
+      setPredicting(true);
+      predictTaskDuration(model, vocabMap, title.trim()).then((pred) => {
+        if (!cancelled) {
+          setDuration(pred);
+          // Update end time based on prediction
+          const newEnd = new Date(startTime.getTime() + pred * 60000);
+          setEndTime(newEnd);
+        }
+      }).finally(() => setPredicting(false));
+    }
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, model, startTime]);
+
+  // Update parent component when title, times, or duration change
   useEffect(() => {
     onUpdate({ title, startTime, endTime });
   }, [title, startTime, endTime, onUpdate]);
@@ -83,21 +112,17 @@ export function InlineEventCreator({
   const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStartTime = new Date(e.target.value);
     setStartTime(newStartTime);
-    
-    // Ensure end time is at least 15 minutes after start time
-    if (endTime <= newStartTime) {
-      const newEndTime = new Date(newStartTime.getTime() + 15 * 60 * 1000);
-      setEndTime(newEndTime);
-    }
+    // Update end time based on duration
+    setEndTime(new Date(newStartTime.getTime() + duration * 60000));
   };
 
-  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEndTime = new Date(e.target.value);
-    
-    // Ensure end time is at least 15 minutes after start time
-    if (newEndTime > startTime) {
-      setEndTime(newEndTime);
-    }
+  // Duration input handler
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = parseInt(e.target.value, 10);
+    if (isNaN(val) || val < 5) val = 5;
+    val = Math.round(val / 5) * 5;
+    setDuration(val);
+    setEndTime(new Date(startTime.getTime() + val * 60000));
   };
 
   const formatDateTimeLocal = (date: Date) => {
@@ -137,7 +162,7 @@ export function InlineEventCreator({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Start
@@ -151,13 +176,28 @@ export function InlineEventCreator({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Duration (min)
+              </label>
+              <input
+                type="number"
+                min={5}
+                step={5}
+                value={duration}
+                onChange={handleDurationChange}
+                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                disabled={predicting}
+              />
+              {predicting && <span className="text-xs text-gray-400">AI predicting…</span>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 End
               </label>
               <input
                 type="datetime-local"
                 value={formatDateTimeLocal(endTime)}
-                onChange={handleEndTimeChange}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                readOnly
+                className="w-full px-2 py-1 border border-gray-300 rounded-md bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
               />
             </div>
           </div>
