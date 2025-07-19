@@ -524,19 +524,7 @@ export class TaskScheduler {
           usedSlots.add(optimalSlot.slotIndex + i);
         }
         
-        // Schedule a break after long tasks
-        if (this.shouldScheduleBreakAfter(task, optimalSlot.slotIndex, timeSlots, usedSlots)) {
-          const breakEvent = this.scheduleBreakAfterTask(
-            event, 
-            optimalSlot.slotIndex + slotsNeeded, 
-            timeSlots,
-            usedSlots
-          );
-          
-          if (breakEvent) {
-            scheduledEvents.push(breakEvent);
-          }
-        }
+        // TODO: If a task is long and a break is recommended, add a suggestion to the suggestions list instead of scheduling a break event.
       }
     }
     

@@ -69,8 +69,26 @@ function TaskList({
       let predictedDuration = 60;
       if (model && vocabMap) {
         setPredictingIdx(tasks.length);
-        predictedDuration = await predictTaskDuration(model, vocabMap, input.trim());
-        setPredictingIdx(null);
+        // --- Historical override logic (copied from InlineEventCreator) ---
+        const normalize = (str: string) => str.trim().toLowerCase().replace(/[^\w\s]/g, '');
+        const normalizedTitle = normalize(input.trim());
+        const similarEvents = events.filter(ev =>
+          ev.title && normalize(ev.title) === normalizedTitle
+        );
+        if (similarEvents.length >= 3) {
+          const durations = similarEvents.map(ev => Math.round((ev.endTime.getTime() - ev.startTime.getTime()) / 60000));
+          const uniqueDurations = Array.from(new Set(durations));
+          if (uniqueDurations.length === 1) {
+            predictedDuration = Math.round(uniqueDurations[0] / 5) * 5;
+            setPredictingIdx(null);
+          } else {
+            predictedDuration = await predictTaskDuration(model, vocabMap, input.trim());
+            setPredictingIdx(null);
+          }
+        } else {
+          predictedDuration = await predictTaskDuration(model, vocabMap, input.trim());
+          setPredictingIdx(null);
+        }
       }
       // Clamp to at least 1 minute
       predictedDuration = Math.max(1, predictedDuration);
