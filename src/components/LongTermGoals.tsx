@@ -125,48 +125,46 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
       {/* Active Goals */}
       <div className="flex-1 overflow-y-auto mb-2 space-y-2">
         {activeGoals.map((goal, idx) => (
-          <div key={goal.id} className="border rounded-lg p-3 bg-white shadow-sm">
-            {editingIndex === idx ? (
-              <div className="space-y-2">
-        <input
-          className="w-full border rounded px-2 py-1 text-sm text-gray-900 dark:text-gray-900 bg-white dark:bg-white"
-          value={editValue}
-          onChange={e => setEditValue(e.target.value)}
-          onKeyDown={e => handleEditKeyDown(e, idx)}
-          onBlur={() => handleEditSave(idx)}
-          autoFocus
-        />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2 flex-1">
-                    <button
-                      className="w-4 h-4 rounded border-2 border-gray-300 hover:border-green-500 flex items-center justify-center transition-colors"
-                      onClick={() => handleToggleComplete(idx)}
-                    >
-                      {goal.isCompleted && <Check size={12} className="text-green-600" />}
-                    </button>
-                    <span className="text-sm font-medium flex-1 text-gray-900 dark:text-gray-900">{goal.title}</span>
-                  </div>
-                  
-                  <div className="flex gap-1">
-                    <button
-                      className="text-xs px-2 py-1 bg-blue-100 rounded hover:bg-blue-200"
+          <div key={goal.id} className="border rounded-lg p-3 bg-white shadow-sm group">
+            <div className="space-y-2">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2 flex-1">
+                  <button
+                    className="w-4 h-4 rounded border-2 border-gray-300 hover:border-green-500 flex items-center justify-center transition-colors"
+                    onClick={() => handleToggleComplete(idx)}
+                  >
+                    {goal.isCompleted && <Check size={12} className="text-green-600" />}
+                  </button>
+                  {editingIndex === idx ? (
+                    <input
+                      className="flex-1 border rounded px-2 py-1 text-sm text-gray-900 dark:text-gray-900 bg-white dark:bg-white"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onKeyDown={e => handleEditKeyDown(e, idx)}
+                      onBlur={() => handleEditSave(idx)}
+                      autoFocus
+                      style={{ marginRight: '0.75rem', cursor: 'text' }}
+                    />
+                  ) : (
+                    <span
+                      className="text-sm font-medium flex-1 text-gray-900 dark:text-gray-900 cursor-text group-hover:bg-gray-50 group-hover:border group-hover:border-gray-300 group-hover:rounded px-1 py-0.5 -mx-1 -my-0.5 transition-all"
                       onClick={() => handleEdit(idx)}
+                      style={{ marginRight: '0.75rem' }}
                     >
-                      Edit
-                    </button>
-                    <button
-                      className="text-xs px-2 py-1 bg-red-100 rounded hover:bg-red-200"
-                      onClick={() => handleRemoveGoal(idx)}
-                    >
-                      ×
-                    </button>
-                  </div>
+                      {goal.title}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    className="text-xs px-2 py-1 font-bold text-red-800 bg-red-100 rounded hover:bg-red-200"
+                    onClick={() => handleRemoveGoal(idx)}
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>

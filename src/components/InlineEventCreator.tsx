@@ -241,13 +241,13 @@ export function InlineEventCreator({
             <button
               type="button"
               onClick={onCancel}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              className="px-3 py-1.5 text-sm font-bold text-gray-800 hover:bg-gray-200 rounded-md transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              className="px-3 py-1.5 text-sm font-bold text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors"
             >
               Save
             </button>
