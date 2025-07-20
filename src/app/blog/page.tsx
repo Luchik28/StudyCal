@@ -4,13 +4,19 @@ import TopBar from '../../components/TopBar';
 
 const posts = [
 	{
+		slug: 'how-to-use-synthetic-data-to-train-AI-models',
+		title: 'How to Use Synthetic Data to Train AI Models',
+		date: '2025-07-19',
+		image: '/blog/data.png',
+		preview: `AI models need a lot of data, which can sometimes be hard to get. This is especially true for sensitive, private data like the calendar data Studycal’s models use. So how can you get sensitive data easily, quickly, and for free...`,
+	},
+	{
 		slug: 'why-ai-calendars-arent-entirely-ai',
 		title: "Why AI Calendars Aren't Entirely AI",
 		date: '2025-07-16',
 		image: '/blog/ai-calendar.png',
 		preview: `You’ve probably experienced the magic of AI calendars. But how does AI plan your day? How does it know if you’ll need a break after an intense meeting but not after a quick call? “AI” calendars have somewhat misleading names because they aren’t entirely AI, although they certainly rely heavily on the technology...`,
 	},
-	// Add more posts here as needed
 ];
 
 export default function BlogIndex() {
