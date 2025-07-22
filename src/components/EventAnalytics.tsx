@@ -1,4 +1,4 @@
-'use client';
+
 
 import React, { useState } from 'react';
 import { useEvents } from '@/contexts/EventsContext';
@@ -17,168 +17,98 @@ interface EventAnalyticsProps {
   currentMonth?: Date;
 }
 
-interface CategoryTimeData {
-  [category: string]: {
-    totalMinutes: number;
-    subcategories: {
-      [subcategory: string]: number;
-    };
-  };
-}
-
-interface PieChartData {
+interface PieChartDatum {
   category: string;
   minutes: number;
-  hours: string;
   color: string;
 }
 
-export function EventAnalytics({ currentView, selectedDate, currentWeek, currentMonth }: EventAnalyticsProps) {
+export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, selectedDate, currentWeek, currentMonth }) => {
   const { events } = useEvents();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const getTimeData = (): CategoryTimeData => {
-    let filteredEvents = events;
+  // Helper: get time frame label
+  function getTimeFrameLabel() {
     const now = new Date();
-
-    // Filter events based on the current view
     switch (currentView) {
-      case 'day': {
-        const targetDate = selectedDate || now;
-        filteredEvents = events.filter(event => 
-          isSameDay(event.startTime, targetDate)
-        );
-        break;
-      }
-      case 'week': {
-        const weekStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
-        filteredEvents = events.filter(event => 
-          isWithinInterval(event.startTime, { start: weekStart, end: weekEnd })
-        );
-        break;
-      }
-      case 'month': {
-        const monthStart = startOfMonth(currentMonth || now);
-        const monthEnd = endOfMonth(currentMonth || now);
-        filteredEvents = events.filter(event => 
-          isWithinInterval(event.startTime, { start: monthStart, end: monthEnd })
-        );
-        break;
-      }
-    }
-
-    // Calculate time spent by category and subcategory
-    const timeData: CategoryTimeData = {};
-    
-    filteredEvents.forEach(event => {
-      const category = event.category || 'Uncategorized';
-      const subcategory = event.subcategory || 'Other';
-      
-      // Calculate duration in minutes
-      const durationMinutes = (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
-      
-      if (!timeData[category]) {
-        timeData[category] = {
-          totalMinutes: 0,
-          subcategories: {}
-        };
-      }
-      
-      timeData[category].totalMinutes += durationMinutes;
-      
-      if (!timeData[category].subcategories[subcategory]) {
-        timeData[category].subcategories[subcategory] = 0;
-      }
-      
-      timeData[category].subcategories[subcategory] += durationMinutes;
-    });
-    
-    return timeData;
-  };
-
-  const formatDuration = (minutes: number): string => {
-    if (minutes < 60) {
-      return `${Math.round(minutes)}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = Math.round(minutes % 60);
-    if (remainingMinutes === 0) {
-      return `${hours}h`;
-    }
-    return `${hours}h ${remainingMinutes}m`;
-  };
-
-  const getPieChartData = (): PieChartData[] => {
-    const timeData = getTimeData();
-    return Object.entries(timeData)
-      .filter(([, data]) => data.totalMinutes > 0)
-      .map(([category, data]) => ({
-        category,
-        minutes: data.totalMinutes,
-        hours: formatDuration(data.totalMinutes),
-        color: getCategoryColor(category)
-      }))
-      .sort((a, b) => b.minutes - a.minutes);
-  };
-
-  const getTimeFrameLabel = (): string => {
-    const now = new Date();
-    
-    switch (currentView) {
-      case 'day': {
-        const targetDate = selectedDate || now;
-        return format(targetDate, 'MMMM d, yyyy');
-      }
+      case 'day':
+        return selectedDate ? format(selectedDate, 'EEEE, MMM d, yyyy') : format(now, 'EEEE, MMM d, yyyy');
       case 'week': {
         const weekStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
         const weekEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
         return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
       }
       case 'month': {
-        const targetMonth = currentMonth || now;
-        return format(targetMonth, 'MMMM yyyy');
+        const monthStart = startOfMonth(currentMonth || now);
+        return format(monthStart, 'MMMM yyyy');
       }
       default:
-        return 'Current Period';
+        return '';
     }
-  };
+  }
 
-  const getCategoryColor = (category: string): string => {
-    const colors: { [key: string]: string } = {
-      'Work': '#3B82F6',
-      'Personal': '#10B981',
-      'Health': '#EF4444',
-      'Education': '#8B5CF6',
-      'Travel': '#F59E0B',
-      'Uncategorized': '#6B7280'
-    };
-    return colors[category] || '#6B7280';
-  };
+  // Helper: get pie chart data
+  function getPieChartData(): PieChartDatum[] {
+    const now = new Date();
+    let periodStart: Date, periodEnd: Date;
+    switch (currentView) {
+      case 'day':
+        periodStart = startOfDay(selectedDate || now);
+        periodEnd = endOfDay(selectedDate || now);
+        break;
+      case 'week':
+        periodStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
+        periodEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
+        break;
+      case 'month':
+        periodStart = startOfMonth(currentMonth || now);
+        periodEnd = endOfMonth(currentMonth || now);
+        break;
+      default:
+        periodStart = startOfWeek(now, { weekStartsOn: 0 });
+        periodEnd = endOfWeek(now, { weekStartsOn: 0 });
+    }
+    const periodEvents = events.filter(e => e.startTime >= periodStart && e.endTime <= periodEnd);
+    const categoryMap: Record<string, { minutes: number; color: string }> = {};
+    periodEvents.forEach(e => {
+      const cat = e.category || 'Uncategorized';
+      const color = e.color || '#8884d8';
+      const minutes = differenceInMinutes(e.endTime, e.startTime);
+      if (!categoryMap[cat]) {
+        categoryMap[cat] = { minutes: 0, color };
+      }
+      categoryMap[cat].minutes += minutes;
+    });
+    return Object.entries(categoryMap).map(([category, { minutes, color }]) => ({ category, minutes, color }));
+  }
+
+
 
   const pieChartData = getPieChartData();
-  const totalEvents = events.filter(event => {
-    const now = new Date();
-    switch (currentView) {
-      case 'day': {
-        const targetDate = selectedDate || now;
-        return isSameDay(event.startTime, targetDate);
-      }
-      case 'week': {
-        const weekStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
-        return isWithinInterval(event.startTime, { start: weekStart, end: weekEnd });
-      }
-      case 'month': {
-        const monthStart = startOfMonth(currentMonth || now);
-        const monthEnd = endOfMonth(currentMonth || now);
-        return isWithinInterval(event.startTime, { start: monthStart, end: monthEnd });
-      }
-      default:
-        return false;
-    }
-  }).length;
+  const totalEvents = pieChartData.reduce((sum, item) => sum + item.minutes, 0) > 0
+    ? events.filter(event => {
+        const now = new Date();
+        switch (currentView) {
+          case 'day': {
+            const targetDate = selectedDate || now;
+            return isSameDay(event.startTime, targetDate);
+          }
+          case 'week': {
+            const weekStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
+            const weekEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
+            return isWithinInterval(event.startTime, { start: weekStart, end: weekEnd });
+          }
+          case 'month': {
+            const monthStart = startOfMonth(currentMonth || now);
+            const monthEnd = endOfMonth(currentMonth || now);
+            return isWithinInterval(event.startTime, { start: monthStart, end: monthEnd });
+          }
+          default:
+            return false;
+        }
+      }).length
+    : 0;
   const totalTime = pieChartData.reduce((sum, item) => sum + item.minutes, 0);
 
   return (
@@ -188,7 +118,6 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
         {getTimeFrameLabel()}: {totalEvents} event{totalEvents !== 1 ? 's' : ''}
         {totalTime > 0 && ` • ${formatDuration(totalTime)} total`}
       </div>
-      
       {totalEvents === 0 ? (
         <div className="text-center text-gray-600 py-4">
           No events for {getTimeFrameLabel().toLowerCase()}
@@ -263,78 +192,112 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
           See more
         </button>
       </div>
-        <AnalyticsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          {/* Date Range */}
-          <div className="mb-6">
-            <div className="text-base font-semibold text-gray-900 mb-1">{getTimeFrameLabel()}</div>
-            <div className="text-sm text-gray-600">Detailed statistics for this period</div>
-          </div>
-
-          {/* Classification Pie Chart */}
-          <div className="mb-8">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Time by Category</h4>
-            <div className="w-full h-64">
-              <ResponsiveContainer width="100%" height="100%">
+      <AnalyticsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        {/* Date and Title at Top */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-lg font-bold text-gray-900">Detailed Analytics</div>
+          <div className="text-base text-gray-700">{getTimeFrameLabel()}</div>
+        </div>
+        {/* Responsive Grid Layout: Left 2/3 for main pie, right 1/3 for stats */}
+        <div className="flex w-full h-[70vh] min-h-[400px] max-h-[600px] gap-6">
+          {/* Left: Large Category Pie Chart with lines and labels */}
+          <div className="relative flex-1 flex flex-col items-center justify-center" style={{flexBasis: '66%'}}>
+            <div className="w-full h-full flex items-center justify-center">
+              <ResponsiveContainer width="90%" height="90%">
                 <PieChart>
                   <Pie
                     data={pieChartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={100}
+                    innerRadius={80}
+                    outerRadius={140}
                     paddingAngle={2}
                     dataKey="minutes"
                     nameKey="category"
+                    label={renderCategoryLabelWithLine(pieChartData, getCategoryChangeData())}
                   >
                     {pieChartData.map((entry, index) => (
                       <Cell key={`cat-cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: number) => [formatDuration(value), 'Time']} />
-                  <Legend formatter={(value) => {
-                    const data = pieChartData.find(item => item.category === value);
-                    return `${value} (${data ? formatDuration(data.minutes) : ''})`;
-                  }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
-
-          {/* Scheduled vs Free Time Pie Chart */}
-          <ScheduledVsFreePieChart
-            events={events}
-            currentView={currentView}
-            selectedDate={selectedDate}
-            currentWeek={currentWeek}
-            currentMonth={currentMonth}
-          />
-
-          {/* Comparative Stats */}
-          <ComparativeStats
-            events={events}
-            currentView={currentView}
-            selectedDate={selectedDate}
-            currentWeek={currentWeek}
-            currentMonth={currentMonth}
-            formatDuration={formatDuration}
-          />
-        </AnalyticsModal>
+          {/* Right: Small Pie Charts and Category List */}
+          <div className="flex flex-col justify-between items-stretch w-1/3 min-w-[220px] max-w-[320px]">
+            {/* Scheduled vs Free Time Pie Chart */}
+            <div className="mb-4">
+              <div className="text-xs font-semibold text-gray-700 mb-1">Scheduled vs. Free</div>
+              <div className="w-full h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={28}
+                      outerRadius={48}
+                      paddingAngle={2}
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry, idx) => (
+                        <Cell key={`free-cell-${idx}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            {/* Category List with time and change */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="text-xs font-semibold text-gray-700 mb-1">Categories</div>
+              <ul className="divide-y divide-gray-200">
+                {pieChartData.map((cat, idx) => {
+                  const change = getCategoryChangeData()[cat.category] || 0;
+                  return (
+                    <li key={cat.category} className="flex items-center justify-between py-1 text-sm">
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block w-3 h-3 rounded-full" style={{background: cat.color}}></span>
+                        {cat.category}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        {formatDuration(cat.minutes)}
+                        <span className={`text-xs ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                          {change > 0 ? `▲ ${formatDuration(Math.abs(change))}` : change < 0 ? `▼ ${formatDuration(Math.abs(change))}` : '—'}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </AnalyticsModal>
     </div>
   );
+};
+
+
+
+// --- Helper functions: must be after all component exports ---
+
+function getCategoryChangeData(): Record<string, number> {
+  // This is a placeholder. You should implement logic to compare with previous period's data.
+  // For now, return 0 for all categories.
+  return {};
 }
 
-// --- Scheduled vs Free Time Pie Chart ---
-import { Event } from '@/types/events';
-
-interface ScheduledVsFreePieChartProps {
-  events: Event[];
-  currentView: 'day' | 'week' | 'month';
-  selectedDate: Date | null;
-  currentWeek?: Date;
-  currentMonth?: Date;
-}
-
-function ScheduledVsFreePieChart({ events, currentView, selectedDate, currentWeek, currentMonth }: ScheduledVsFreePieChartProps) {
+function getScheduledVsFreeData(
+  events: any[],
+  currentView: 'day' | 'week' | 'month',
+  selectedDate: Date | null,
+  currentWeek?: Date,
+  currentMonth?: Date
+): { name: string; value: number; color: string }[] {
   const now = new Date();
   let periodStart, periodEnd;
   switch (currentView) {
@@ -354,87 +317,44 @@ function ScheduledVsFreePieChart({ events, currentView, selectedDate, currentWee
       periodStart = startOfWeek(now, { weekStartsOn: 0 });
       periodEnd = endOfWeek(now, { weekStartsOn: 0 });
   }
-  const periodEvents = events.filter((e: Event) => e.startTime >= periodStart && e.endTime <= periodEnd);
-  const scheduledMinutes = periodEvents.reduce((sum: number, e: Event) => sum + differenceInMinutes(e.endTime, e.startTime), 0);
+  const periodEvents = events.filter((e) => e.startTime >= periodStart && e.endTime <= periodEnd);
+  const scheduledMinutes = periodEvents.reduce((sum, e) => sum + differenceInMinutes(e.endTime, e.startTime), 0);
   const totalMinutes = differenceInMinutes(periodEnd, periodStart) + 1;
   const freeMinutes = Math.max(totalMinutes - scheduledMinutes, 0);
-  const data = [
+  return [
     { name: 'Scheduled', value: scheduledMinutes, color: '#3B82F6' },
     { name: 'Free', value: freeMinutes, color: '#10B981' },
   ];
-  return (
-    <div className="mb-8">
-      <h4 className="text-sm font-medium text-gray-900 mb-2">Scheduled vs. Free Time</h4>
-      <div className="w-full h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={100}
-              paddingAngle={2}
-              dataKey="value"
-              nameKey="name"
-            >
-              {data.map((entry, idx) => (
-                <Cell key={`free-cell-${idx}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value: number) => [`${Math.round(value)} min`, 'Time']} />
-            <Legend formatter={(value) => {
-              const d = data.find(item => item.name === value);
-              return `${value} (${d ? Math.round(d.value) + ' min' : ''})`;
-            }} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
 }
 
-// --- Comparative Stats ---
-interface ComparativeStatsProps {
-  events: Event[];
-  currentView: 'day' | 'week' | 'month';
-  selectedDate: Date | null;
-  currentWeek?: Date;
-  currentMonth?: Date;
-  formatDuration: (minutes: number) => string;
+function renderCategoryLabelWithLine(pieChartData: any[], changeData: Record<string, number>) {
+  return function renderLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 18;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const entry = pieChartData[index];
+    const change = changeData[entry.category] || 0;
+    return (
+      <g>
+        {/* Line from arc to label */}
+        <line x1={cx + (outerRadius-2) * Math.cos(-midAngle * RADIAN)} y1={cy + (outerRadius-2) * Math.sin(-midAngle * RADIAN)} x2={x} y2={y} stroke={entry.color} strokeWidth={2} />
+        {/* Label text */}
+        <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-xs" fill="#222">
+          {entry.category} ({formatDuration(entry.minutes)})
+          <tspan dx="6" className={change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-400'}>
+            {change > 0 ? `▲ ${formatDuration(Math.abs(change))}` : change < 0 ? `▼ ${formatDuration(Math.abs(change))}` : '—'}
+          </tspan>
+        </text>
+      </g>
+    );
+  };
 }
 
-function ComparativeStats({ events, currentView, selectedDate, currentWeek, currentMonth, formatDuration }: ComparativeStatsProps) {
-  const now = new Date();
-  let weekStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
-  let weekEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
-  let monthStart = startOfMonth(currentMonth || now);
-  let monthEnd = endOfMonth(currentMonth || now);
-  let yearStart = new Date(now.getFullYear(), 0, 1);
-  let yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
-  const weekEvents = events.filter((e: Event) => e.startTime >= weekStart && e.endTime <= weekEnd);
-  const weekMinutes = weekEvents.reduce((sum: number, e: Event) => sum + (e.endTime.getTime() - e.startTime.getTime()) / 60000, 0);
-  const monthEvents = events.filter((e: Event) => e.startTime >= monthStart && e.endTime <= monthEnd);
-  const monthMinutes = monthEvents.reduce((sum: number, e: Event) => sum + (e.endTime.getTime() - e.startTime.getTime()) / 60000, 0);
-  const yearEvents = events.filter((e: Event) => e.startTime >= yearStart && e.endTime <= yearEnd);
-  const yearMinutes = yearEvents.reduce((sum: number, e: Event) => sum + (e.endTime.getTime() - e.startTime.getTime()) / 60000, 0);
-  const avgWeek = yearMinutes / 52;
-  const avgMonth = yearMinutes / 12;
-  return (
-    <div className="mb-4">
-      <h4 className="text-sm font-medium text-gray-900 mb-2">Comparative Statistics</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-1">This week vs. average</div>
-          <div className="text-lg font-bold text-blue-700">{formatDuration(weekMinutes)}</div>
-          <div className="text-xs text-gray-600">Weekly avg: {formatDuration(avgWeek)}</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-1">This month vs. average</div>
-          <div className="text-lg font-bold text-blue-700">{formatDuration(monthMinutes)}</div>
-          <div className="text-xs text-gray-600">Monthly avg: {formatDuration(avgMonth)}</div>
-        </div>
-      </div>
-    </div>
-  );
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
+
