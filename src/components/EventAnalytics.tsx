@@ -4,8 +4,11 @@ import React, { useState } from 'react';
 import { useEvents } from '@/contexts/EventsContext';
 import { CalendarView } from './Layout';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, isSameDay, format } from 'date-fns';
+
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { AnalyticsModal } from './AnalyticsModal';
+import { startOfDay, endOfDay, differenceInMinutes } from 'date-fns';
 
 interface EventAnalyticsProps {
   currentView: CalendarView;
@@ -33,6 +36,7 @@ interface PieChartData {
 export function EventAnalytics({ currentView, selectedDate, currentWeek, currentMonth }: EventAnalyticsProps) {
   const { events } = useEvents();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const getTimeData = (): CategoryTimeData => {
     let filteredEvents = events;
@@ -250,6 +254,187 @@ export function EventAnalytics({ currentView, selectedDate, currentWeek, current
           )}
         </div>
       )}
+      {/* See more button */}
+      <div className="flex justify-end mt-4">
+        <button
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+          onClick={() => setIsModalOpen(true)}
+        >
+          See more
+        </button>
+      </div>
+        <AnalyticsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          {/* Date Range */}
+          <div className="mb-6">
+            <div className="text-base font-semibold text-gray-900 mb-1">{getTimeFrameLabel()}</div>
+            <div className="text-sm text-gray-600">Detailed statistics for this period</div>
+          </div>
+
+          {/* Classification Pie Chart */}
+          <div className="mb-8">
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Time by Category</h4>
+            <div className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="minutes"
+                    nameKey="category"
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell key={`cat-cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [formatDuration(value), 'Time']} />
+                  <Legend formatter={(value) => {
+                    const data = pieChartData.find(item => item.category === value);
+                    return `${value} (${data ? formatDuration(data.minutes) : ''})`;
+                  }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Scheduled vs Free Time Pie Chart */}
+          <ScheduledVsFreePieChart
+            events={events}
+            currentView={currentView}
+            selectedDate={selectedDate}
+            currentWeek={currentWeek}
+            currentMonth={currentMonth}
+          />
+
+          {/* Comparative Stats */}
+          <ComparativeStats
+            events={events}
+            currentView={currentView}
+            selectedDate={selectedDate}
+            currentWeek={currentWeek}
+            currentMonth={currentMonth}
+            formatDuration={formatDuration}
+          />
+        </AnalyticsModal>
+    </div>
+  );
+}
+
+// --- Scheduled vs Free Time Pie Chart ---
+import { Event } from '@/types/events';
+
+interface ScheduledVsFreePieChartProps {
+  events: Event[];
+  currentView: 'day' | 'week' | 'month';
+  selectedDate: Date | null;
+  currentWeek?: Date;
+  currentMonth?: Date;
+}
+
+function ScheduledVsFreePieChart({ events, currentView, selectedDate, currentWeek, currentMonth }: ScheduledVsFreePieChartProps) {
+  const now = new Date();
+  let periodStart, periodEnd;
+  switch (currentView) {
+    case 'day':
+      periodStart = startOfDay(selectedDate || now);
+      periodEnd = endOfDay(selectedDate || now);
+      break;
+    case 'week':
+      periodStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
+      periodEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
+      break;
+    case 'month':
+      periodStart = startOfMonth(currentMonth || now);
+      periodEnd = endOfMonth(currentMonth || now);
+      break;
+    default:
+      periodStart = startOfWeek(now, { weekStartsOn: 0 });
+      periodEnd = endOfWeek(now, { weekStartsOn: 0 });
+  }
+  const periodEvents = events.filter((e: Event) => e.startTime >= periodStart && e.endTime <= periodEnd);
+  const scheduledMinutes = periodEvents.reduce((sum: number, e: Event) => sum + differenceInMinutes(e.endTime, e.startTime), 0);
+  const totalMinutes = differenceInMinutes(periodEnd, periodStart) + 1;
+  const freeMinutes = Math.max(totalMinutes - scheduledMinutes, 0);
+  const data = [
+    { name: 'Scheduled', value: scheduledMinutes, color: '#3B82F6' },
+    { name: 'Free', value: freeMinutes, color: '#10B981' },
+  ];
+  return (
+    <div className="mb-8">
+      <h4 className="text-sm font-medium text-gray-900 mb-2">Scheduled vs. Free Time</h4>
+      <div className="w-full h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={50}
+              outerRadius={100}
+              paddingAngle={2}
+              dataKey="value"
+              nameKey="name"
+            >
+              {data.map((entry, idx) => (
+                <Cell key={`free-cell-${idx}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value: number) => [`${Math.round(value)} min`, 'Time']} />
+            <Legend formatter={(value) => {
+              const d = data.find(item => item.name === value);
+              return `${value} (${d ? Math.round(d.value) + ' min' : ''})`;
+            }} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// --- Comparative Stats ---
+interface ComparativeStatsProps {
+  events: Event[];
+  currentView: 'day' | 'week' | 'month';
+  selectedDate: Date | null;
+  currentWeek?: Date;
+  currentMonth?: Date;
+  formatDuration: (minutes: number) => string;
+}
+
+function ComparativeStats({ events, currentView, selectedDate, currentWeek, currentMonth, formatDuration }: ComparativeStatsProps) {
+  const now = new Date();
+  let weekStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
+  let weekEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
+  let monthStart = startOfMonth(currentMonth || now);
+  let monthEnd = endOfMonth(currentMonth || now);
+  let yearStart = new Date(now.getFullYear(), 0, 1);
+  let yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+  const weekEvents = events.filter((e: Event) => e.startTime >= weekStart && e.endTime <= weekEnd);
+  const weekMinutes = weekEvents.reduce((sum: number, e: Event) => sum + (e.endTime.getTime() - e.startTime.getTime()) / 60000, 0);
+  const monthEvents = events.filter((e: Event) => e.startTime >= monthStart && e.endTime <= monthEnd);
+  const monthMinutes = monthEvents.reduce((sum: number, e: Event) => sum + (e.endTime.getTime() - e.startTime.getTime()) / 60000, 0);
+  const yearEvents = events.filter((e: Event) => e.startTime >= yearStart && e.endTime <= yearEnd);
+  const yearMinutes = yearEvents.reduce((sum: number, e: Event) => sum + (e.endTime.getTime() - e.startTime.getTime()) / 60000, 0);
+  const avgWeek = yearMinutes / 52;
+  const avgMonth = yearMinutes / 12;
+  return (
+    <div className="mb-4">
+      <h4 className="text-sm font-medium text-gray-900 mb-2">Comparative Statistics</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-xs text-gray-500 mb-1">This week vs. average</div>
+          <div className="text-lg font-bold text-blue-700">{formatDuration(weekMinutes)}</div>
+          <div className="text-xs text-gray-600">Weekly avg: {formatDuration(avgWeek)}</div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-xs text-gray-500 mb-1">This month vs. average</div>
+          <div className="text-lg font-bold text-blue-700">{formatDuration(monthMinutes)}</div>
+          <div className="text-xs text-gray-600">Monthly avg: {formatDuration(avgMonth)}</div>
+        </div>
+      </div>
     </div>
   );
 }
