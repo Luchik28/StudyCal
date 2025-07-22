@@ -1,26 +1,67 @@
 
-
+// Strict vertical label for small pie chart: only top and bottom
+function renderStrictVerticalPieLabel(props: any) {
+  if (!props || typeof props !== 'object') return null;
+  const { cx, cy, midAngle, outerRadius, name, value } = props;
+  const RADIAN = Math.PI / 180;
+  // Only render at top (0deg) or bottom (180deg)
+  const isTop = midAngle < 180;
+  const radius = (outerRadius || 0) + 18;
+  const x = cx;
+  const y = cy + (isTop ? -radius : radius);
+  // Only render for the two slices: top (0) and bottom (180)
+  if (isTop && Math.abs(midAngle) > 45) return null;
+  if (!isTop && Math.abs(midAngle - 180) > 45) return null;
+  return (
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" className="font-mono text-xs" fill="#222">
+      {name}: {formatDuration(value ?? 0)}
+    </text>
+  );
+}
+// Custom label for vertical positioning on small pie chart
+export function renderVerticalPieLabel(props: any) {
+  if (!props || typeof props !== 'object') return null;
+  const { cx, cy, midAngle, outerRadius, name, value } = props;
+  const RADIAN = Math.PI / 180;
+  // Place label above or below depending on angle
+  const isTop = midAngle < 180;
+  const radius = (outerRadius || 0) + 24;
+  const x = cx;
+  const y = cy + (isTop ? -radius : radius);
+  return (
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" className="font-mono text-xs" fill="#222">
+      {name}: {formatDuration(value ?? 0)}
+    </text>
+  );
+}
 import React, { useState } from 'react';
-import { useEvents } from '@/contexts/EventsContext';
-import { CalendarView } from './Layout';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, isSameDay, format } from 'date-fns';
-
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  isWithinInterval,
+  isSameDay,
+  format,
+  startOfDay,
+  endOfDay,
+  differenceInMinutes
+} from 'date-fns';
+import { AnalyticsModal } from './AnalyticsModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { AnalyticsModal } from './AnalyticsModal';
-import { startOfDay, endOfDay, differenceInMinutes } from 'date-fns';
-
-interface EventAnalyticsProps {
-  currentView: CalendarView;
-  selectedDate: Date | null;
-  currentWeek?: Date;
-  currentMonth?: Date;
-}
+import { useEvents } from '@/contexts/EventsContext';
 
 interface PieChartDatum {
   category: string;
   minutes: number;
   color: string;
+}
+interface EventAnalyticsProps {
+  currentView: 'day' | 'week' | 'month';
+  selectedDate: Date | null;
+  currentWeek?: Date;
+  currentMonth?: Date;
 }
 
 export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, selectedDate, currentWeek, currentMonth }) => {
@@ -113,11 +154,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
 
   return (
     <div className="p-6 border-b border-gray-200">
-      <h3 className="text-lg font-bold mb-3 text-gray-900 font-mono">Analytics</h3>
-      <div className="text-sm text-gray-700 mb-4">
-        {getTimeFrameLabel()}: {totalEvents} event{totalEvents !== 1 ? 's' : ''}
-        {totalTime > 0 && ` • ${formatDuration(totalTime)} total`}
-      </div>
+      {/* Top bar fully removed as requested. If any heading or bar remains above modal, it is now removed. */}
       {totalEvents === 0 ? (
         <div className="text-center text-gray-600 py-4">
           No events for {getTimeFrameLabel().toLowerCase()}
@@ -193,55 +230,72 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
         </button>
       </div>
       <AnalyticsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        {/* Date and Title at Top */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-lg font-bold text-gray-900">Detailed Analytics</div>
-          <div className="text-base text-gray-700">{getTimeFrameLabel()}</div>
+        {/* Single Header: left (title), center (date), right (X) */}
+        <div className="flex items-center justify-between mb-2 w-full px-2" style={{ minHeight: 48 }}>
+          <div className="text-lg font-bold text-gray-900">Detailed Statistics</div>
+          <div className="text-base text-gray-700 text-center flex-1">{getTimeFrameLabel()}</div>
+          <button onClick={() => setIsModalOpen(false)} className="ml-2 text-gray-400 hover:text-gray-700 focus:outline-none" aria-label="Close analytics modal">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
-        {/* Responsive Grid Layout: Left 2/3 for main pie, right 1/3 for stats */}
-        <div className="flex w-full h-[70vh] min-h-[400px] max-h-[600px] gap-6">
+        <div className="flex w-full h-[65vh] min-h-[350px] max-h-[600px] gap-8">
           {/* Left: Large Category Pie Chart with lines and labels */}
-          <div className="relative flex-1 flex flex-col items-center justify-center" style={{flexBasis: '66%'}}>
+          <div className="relative flex-1 flex flex-col items-center justify-center" style={{flexBasis: '70%'}}>
             <div className="w-full h-full flex items-center justify-center">
-              <ResponsiveContainer width="90%" height="90%">
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={140}
-                    paddingAngle={2}
-                    dataKey="minutes"
-                    nameKey="category"
-                    label={renderCategoryLabelWithLine(pieChartData, getCategoryChangeData())}
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell key={`cat-cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [formatDuration(value), 'Time']} />
-                </PieChart>
-              </ResponsiveContainer>
+              {pieChartData.length === 0 ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-1/2 h-2 bg-gray-200 rounded overflow-hidden">
+                    <div className="h-full bg-blue-400 animate-pulse" style={{ width: '100%' }} />
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={90}
+                      outerRadius={180}
+                      paddingAngle={2}
+                      dataKey="minutes"
+                      nameKey="category"
+                      label={renderCategoryLabelWithLine(
+                        pieChartData,
+                        getCategoryChangeData(events, currentView, selectedDate, currentWeek, currentMonth),
+                        true
+                      )}
+                      isAnimationActive={false}
+                    >
+                      {pieChartData.map((entry, index) => (
+                        <Cell key={`cat-cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
-          {/* Right: Small Pie Charts and Category List */}
-          <div className="flex flex-col justify-between items-stretch w-1/3 min-w-[220px] max-w-[320px]">
-            {/* Scheduled vs Free Time Pie Chart */}
-            <div className="mb-4">
+          {/* Right: Scheduled vs Free Time Pie Chart and Category List */}
+          <div className="flex flex-col justify-between items-stretch w-[420px] min-w-[320px] max-w-[500px] gap-2">
+            {/* Scheduled vs Free Time Pie Chart (smaller, with labels strictly at top and bottom) */}
+            <div className="mb-2 flex flex-col items-center">
               <div className="text-xs font-semibold text-gray-700 mb-1">Scheduled vs. Free</div>
-              <div className="w-full h-32">
+              <div className="w-full h-40 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth)}
                       cx="50%"
                       cy="50%"
-                      innerRadius={28}
-                      outerRadius={48}
-                      paddingAngle={2}
+                      innerRadius={40}
+                      outerRadius={65}
+                      paddingAngle={0}
                       dataKey="value"
                       nameKey="name"
+                      labelLine={false}
+                      label={renderStrictVerticalPieLabel}
+                      isAnimationActive={false}
                     >
                       {getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry, idx) => (
                         <Cell key={`free-cell-${idx}`} fill={entry.color} />
@@ -251,31 +305,50 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                 </ResponsiveContainer>
               </div>
             </div>
-            {/* Category List with time and change */}
+
+            {/* Category List as a table: Category | This | Last | Change */}
             <div className="flex-1 overflow-y-auto">
-              <div className="text-xs font-semibold text-gray-700 mb-1">Categories</div>
-              <ul className="divide-y divide-gray-200">
-                {pieChartData.map((cat, idx) => {
-                  const change = getCategoryChangeData()[cat.category] || 0;
-                  return (
-                    <li key={cat.category} className="flex items-center justify-between py-1 text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 rounded-full" style={{background: cat.color}}></span>
-                        {cat.category}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        {formatDuration(cat.minutes)}
-                        <span className={`text-xs ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                          {change > 0 ? `▲ ${formatDuration(Math.abs(change))}` : change < 0 ? `▼ ${formatDuration(Math.abs(change))}` : '—'}
-                        </span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+              <div className="grid grid-cols-4 gap-2 w-full px-2 pb-1 text-xs text-gray-500 font-semibold border-b border-gray-200 items-end">
+                <div className="text-left pl-2">Category</div>
+                <div className="text-center">This</div>
+                <div className="text-center">Last</div>
+                <div className="text-center">Change</div>
+              </div>
+              {pieChartData.map((cat, idx) => {
+                const changes = getCategoryChangeData(events, currentView, selectedDate, currentWeek, currentMonth, true);
+                const prevCatMinutes = changes._prev && changes._prev[cat.category] ? changes._prev[cat.category] : 0;
+                const change = changes[cat.category] || 0;
+                let percentChange = prevCatMinutes > 0 ? (change / prevCatMinutes) * 100 : 0;
+                let arrow = null;
+                if (prevCatMinutes > 0) {
+                  if (percentChange > 0.01) {
+                    arrow = <svg className="inline-block mr-1" width="10" height="10" viewBox="0 0 10 10"><path d="M5 2l3 6H2l3-6z" fill="currentColor"/></svg>;
+                  } else if (percentChange < -0.01) {
+                    arrow = <svg className="inline-block mr-1" width="10" height="10" viewBox="0 0 10 10"><path d="M5 8l-3-6h6l-3 6z" fill="currentColor"/></svg>;
+                  } else {
+                    percentChange = 0;
+                  }
+                }
+                return (
+                  <div key={cat.category} className="grid grid-cols-4 gap-2 w-full px-2 py-1 items-center border-b border-gray-50">
+                    <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background: cat.color}}></span>{cat.category}</div>
+                    <div className="text-center tabular-nums">{formatDuration(cat.minutes)}</div>
+                    <div className="text-center tabular-nums text-gray-400">{formatDuration(prevCatMinutes)}</div>
+                    <div className={`text-center tabular-nums text-xs ${percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}`}>{prevCatMinutes > 0 ? (<>{arrow}{`${Math.abs(percentChange).toFixed(1)}%`}</>) : '—'}</div>
+                  </div>
+                );
+              })}
             </div>
+
           </div>
         </div>
+        {/* Remove blue outline on all focusable elements in modal */}
+        <style jsx global>{`
+          .focus\:outline-none:focus, button:focus, [tabindex]:focus, input:focus, select:focus, textarea:focus {
+            outline: none !important;
+            box-shadow: none !important;
+          }
+        `}</style>
       </AnalyticsModal>
     </div>
   );
@@ -285,10 +358,79 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
 
 // --- Helper functions: must be after all component exports ---
 
-function getCategoryChangeData(): Record<string, number> {
-  // This is a placeholder. You should implement logic to compare with previous period's data.
-  // For now, return 0 for all categories.
-  return {};
+// Returns a map of category to change in minutes compared to previous period
+// Returns a map of category to change in minutes and previous period minutes, and _prev for prev period values
+function getCategoryChangeData(
+  events: any[],
+  currentView: 'day' | 'week' | 'month',
+  selectedDate: Date | null,
+  currentWeek?: Date,
+  currentMonth?: Date,
+  includePrev?: boolean
+): Record<string, number> & { _prev?: Record<string, number> } {
+  // Get current period range
+  const now = new Date();
+  let periodStart: Date, periodEnd: Date, prevStart: Date, prevEnd: Date;
+  switch (currentView) {
+    case 'day': {
+      const base = selectedDate || now;
+      periodStart = startOfDay(base);
+      periodEnd = endOfDay(base);
+      prevStart = startOfDay(new Date(base.getTime() - 24 * 60 * 60 * 1000));
+      prevEnd = endOfDay(new Date(base.getTime() - 24 * 60 * 60 * 1000));
+      break;
+    }
+    case 'week': {
+      const base = currentWeek || now;
+      periodStart = startOfWeek(base, { weekStartsOn: 0 });
+      periodEnd = endOfWeek(base, { weekStartsOn: 0 });
+      prevStart = startOfWeek(new Date(periodStart.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 0 });
+      prevEnd = endOfWeek(new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 0 });
+      break;
+    }
+    case 'month': {
+      const base = currentMonth || now;
+      periodStart = startOfMonth(base);
+      periodEnd = endOfMonth(base);
+      const prevMonth = new Date(periodStart);
+      prevMonth.setMonth(prevMonth.getMonth() - 1);
+      prevStart = startOfMonth(prevMonth);
+      prevEnd = endOfMonth(prevMonth);
+      break;
+    }
+    default: {
+      periodStart = startOfWeek(now, { weekStartsOn: 0 });
+      periodEnd = endOfWeek(now, { weekStartsOn: 0 });
+      prevStart = startOfWeek(new Date(periodStart.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 0 });
+      prevEnd = endOfWeek(new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 0 });
+    }
+  }
+  // Get events for current and previous period
+  const currEvents = events.filter(e => e.startTime >= periodStart && e.endTime <= periodEnd);
+  const prevEvents = events.filter(e => e.startTime >= prevStart && e.endTime <= prevEnd);
+  // Aggregate minutes by category
+  const currCat: Record<string, number> = {};
+  currEvents.forEach(e => {
+    const cat = e.category || 'Uncategorized';
+    const minutes = differenceInMinutes(e.endTime, e.startTime);
+    currCat[cat] = (currCat[cat] || 0) + minutes;
+  });
+  const prevCat: Record<string, number> = {};
+  prevEvents.forEach(e => {
+    const cat = e.category || 'Uncategorized';
+    const minutes = differenceInMinutes(e.endTime, e.startTime);
+    prevCat[cat] = (prevCat[cat] || 0) + minutes;
+  });
+  // Compute change
+  const allCats = new Set([...Object.keys(currCat), ...Object.keys(prevCat)]);
+  const changes: Record<string, number> & { _prev?: Record<string, number> } = {};
+  allCats.forEach(cat => {
+    changes[cat] = (currCat[cat] || 0) - (prevCat[cat] || 0);
+  });
+  if (includePrev) {
+    changes._prev = prevCat;
+  }
+  return changes;
 }
 
 function getScheduledVsFreeData(
@@ -327,24 +469,37 @@ function getScheduledVsFreeData(
   ];
 }
 
-function renderCategoryLabelWithLine(pieChartData: any[], changeData: Record<string, number>) {
+function renderCategoryLabelWithLine(pieChartData: any[], changeData: Record<string, number> & { _prev?: Record<string, number> }, percentMode = false) {
   return function renderLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 18;
+    const radius = outerRadius + 32;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const entry = pieChartData[index];
     const change = changeData[entry.category] || 0;
+    const prev = changeData._prev && changeData._prev[entry.category] ? changeData._prev[entry.category] : 0;
+    let percentChange = prev > 0 ? (change / prev) * 100 : 0;
+    let arrow = null;
+    if (prev > 0) {
+      if (percentChange > 0.01) {
+        arrow = <svg className="inline-block mr-1" width="10" height="10" viewBox="0 0 10 10"><path d="M5 2l3 6H2l3-6z" fill="currentColor"/></svg>;
+      } else if (percentChange < -0.01) {
+        arrow = <svg className="inline-block mr-1" width="10" height="10" viewBox="0 0 10 10"><path d="M5 8l-3-6h6l-3 6z" fill="currentColor"/></svg>;
+      } else {
+        percentChange = 0;
+      }
+    }
     return (
       <g>
-        {/* Line from arc to label */}
-        <line x1={cx + (outerRadius-2) * Math.cos(-midAngle * RADIAN)} y1={cy + (outerRadius-2) * Math.sin(-midAngle * RADIAN)} x2={x} y2={y} stroke={entry.color} strokeWidth={2} />
-        {/* Label text */}
-        <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-xs" fill="#222">
-          {entry.category} ({formatDuration(entry.minutes)})
-          <tspan dx="6" className={change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-400'}>
-            {change > 0 ? `▲ ${formatDuration(Math.abs(change))}` : change < 0 ? `▼ ${formatDuration(Math.abs(change))}` : '—'}
-          </tspan>
+        <line x1={cx + (outerRadius+8) * Math.cos(-midAngle * RADIAN)} y1={cy + (outerRadius+8) * Math.sin(-midAngle * RADIAN)} x2={x} y2={y} stroke={entry.color} strokeWidth={2} />
+        <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-xs" fill="#222" style={{letterSpacing: 1, fontSize: 13, whiteSpace: 'pre'}}>
+          <tspan>{entry.category} ({Math.round(percent * 100)}%)</tspan>
+          {prev > 0 && (
+            <tspan dx="10" className={percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}>
+              {arrow}
+              {`${Math.abs(percentChange).toFixed(1)}%`}
+            </tspan>
+          )}
         </text>
       </g>
     );
