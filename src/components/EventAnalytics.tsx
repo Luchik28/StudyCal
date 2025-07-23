@@ -1,4 +1,3 @@
-
 // Strict vertical label for small pie chart: only top and bottom
 function renderStrictVerticalPieLabel(props: any) {
   if (!props || typeof props !== 'object') return null;
@@ -64,6 +63,9 @@ interface EventAnalyticsProps {
   currentMonth?: Date;
 }
 
+// Move chartCategoryLabels to module scope so it's truly global for this file
+const chartCategoryLabels: Record<string, string> = {};
+
 export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, selectedDate, currentWeek, currentMonth }) => {
   const { events } = useEvents();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -121,7 +123,12 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
       }
       categoryMap[cat].minutes += minutes;
     });
-    return Object.entries(categoryMap).map(([category, { minutes, color }]) => ({ category, minutes, color }));
+    const result = Object.entries(categoryMap).map(([category, { minutes, color }]) => ({ category, minutes, color }));
+    // Save chart label values globally for use in pie chart labels
+    result.forEach(item => {
+      chartCategoryLabels[item.category] = `${item.category} | ${formatDuration(item.minutes)}`;
+    });
+    return result;
   }
 
 
@@ -469,36 +476,38 @@ function getScheduledVsFreeData(
   ];
 }
 
-function renderCategoryLabelWithLine(pieChartData: any[], changeData: Record<string, number> & { _prev?: Record<string, number> }, percentMode = false) {
-  return function renderLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) {
+function renderCategoryLabelWithLine(
+  pieChartData: any[],
+  changeData: Record<string, number>,
+  percentMode = false
+) {
+  return function renderLabel({ cx, cy, midAngle, outerRadius, index }: any) {
     const RADIAN = Math.PI / 180;
+    const entry = pieChartData[index];
     const radius = outerRadius + 32;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    const entry = pieChartData[index];
-    // Use the same logic as the category table for percent change and arrow
-    const changes = changeData;
-    const prevCatMinutes = changes._prev && changes._prev[entry.category] ? changes._prev[entry.category] : 0;
-    const change = changes[entry.category] || 0;
-    let percentChange = prevCatMinutes > 0 ? (change / prevCatMinutes) * 100 : 0;
-    let arrow = null;
-    if (prevCatMinutes > 0) {
-      if (percentChange > 0.01) {
-        arrow = <svg className="inline-block align-middle mr-1" width="12" height="12" viewBox="0 0 10 10"><path d="M5 2l3 6H2l3-6z" fill="currentColor"/></svg>;
-      } else if (percentChange < -0.01) {
-        arrow = <svg className="inline-block align-middle mr-1" width="12" height="12" viewBox="0 0 10 10"><path d="M5 8l-3-6h6l-3 6z" fill="currentColor"/></svg>;
-      } else {
-        percentChange = 0;
-      }
-    }
+    // Only show category and time spent
     return (
       <g>
-        <line x1={cx + (outerRadius+8) * Math.cos(-midAngle * RADIAN)} y1={cy + (outerRadius+8) * Math.sin(-midAngle * RADIAN)} x2={x} y2={y} stroke={entry.color} strokeWidth={2} />
-        <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-sm" fill="#222" style={{letterSpacing: 1, fontSize: 15, whiteSpace: 'pre'}}>
-          <tspan>{entry.category} ({Math.round(percent * 100)}%)</tspan>
-          <tspan dx="10" className={percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}>
-            {prevCatMinutes > 0 ? (<>{arrow}{`${Math.abs(percentChange).toFixed(1)}%`}</>) : '—'}
-          </tspan>
+        <line
+          x1={cx + (outerRadius + 8) * Math.cos(-midAngle * RADIAN)}
+          y1={cy + (outerRadius + 8) * Math.sin(-midAngle * RADIAN)}
+          x2={x}
+          y2={y}
+          stroke={entry.color}
+          strokeWidth={2}
+        />
+        <text
+          x={x}
+          y={y}
+          textAnchor={x > cx ? 'start' : 'end'}
+          dominantBaseline="central"
+          className="font-mono text-sm"
+          fill="#222"
+          style={{ letterSpacing: 1, fontSize: 15, whiteSpace: 'pre' }}
+        >
+          {entry.category}: {formatDuration(entry.minutes)}
         </text>
       </g>
     );
@@ -511,4 +520,3 @@ function formatDuration(minutes: number): string {
   const m = minutes % 60;
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
-
