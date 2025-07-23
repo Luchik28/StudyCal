@@ -480,10 +480,11 @@ function renderSubcategoryPieLabel(props: {
   outerRadius?: number;
   name?: string;
   value?: number;
+  percent?: number;
   index?: number;
 }) {
   if (!props || typeof props !== 'object') return null;
-  const { cx, cy, midAngle, outerRadius, name, value, index } = props;
+  const { cx, cy, midAngle, outerRadius, name, value, percent, index } = props;
   if (
     cx === undefined ||
     cy === undefined ||
@@ -491,12 +492,17 @@ function renderSubcategoryPieLabel(props: {
     outerRadius === undefined ||
     name === undefined
   ) return null;
+  // Hide label for very small slices (<4% of pie)
+  if (percent !== undefined && percent < 0.04) return null;
   const RADIAN = Math.PI / 180;
-  const radius = outerRadius + 18;
+  // Spread labels further out if there are many slices
+  const baseRadius = outerRadius + 18;
+  const spread = (percent !== undefined && percent < 0.08) ? 32 : 18;
+  const radius = outerRadius + spread;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   return (
-    <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-xs" fill="#222">
+    <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-xs" fill="#222" style={{ pointerEvents: 'none' }}>
       {name}: {formatDuration(value ?? 0)}
     </text>
   );
