@@ -294,7 +294,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                       dataKey="value"
                       nameKey="name"
                       labelLine={false}
-                      label={renderStrictVerticalPieLabel}
+                      label={renderVerticalPieLabel}
                       isAnimationActive={false}
                     >
                       {getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry, idx) => (
