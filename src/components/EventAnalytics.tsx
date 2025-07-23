@@ -1,27 +1,23 @@
 // Strict vertical label for small pie chart: only top and bottom
-function renderStrictVerticalPieLabel(props: any) {
-  if (!props || typeof props !== 'object') return null;
-  const { cx, cy, midAngle, outerRadius, name, value } = props;
-  const RADIAN = Math.PI / 180;
-  // Only render at top (0deg) or bottom (180deg)
-  const isTop = midAngle < 180;
-  const radius = (outerRadius || 0) + 18;
-  const x = cx;
-  const y = cy + (isTop ? -radius : radius);
-  // Only render for the two slices: top (0) and bottom (180)
-  if (isTop && Math.abs(midAngle) > 45) return null;
-  if (!isTop && Math.abs(midAngle - 180) > 45) return null;
-  return (
-    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" className="font-mono text-xs" fill="#222">
-      {name}: {formatDuration(value ?? 0)}
-    </text>
-  );
-}
+// Removed unused renderStrictVerticalPieLabel function
 // Custom label for vertical positioning on small pie chart
-export function renderVerticalPieLabel(props: any) {
+export function renderVerticalPieLabel(props: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  outerRadius?: number;
+  name?: string;
+  value?: number;
+}) {
   if (!props || typeof props !== 'object') return null;
   const { cx, cy, midAngle, outerRadius, name, value } = props;
-  const RADIAN = Math.PI / 180;
+  if (
+    cx === undefined ||
+    cy === undefined ||
+    midAngle === undefined ||
+    outerRadius === undefined ||
+    name === undefined
+  ) return null;
   // Place label above or below depending on angle
   const isTop = midAngle < 180;
   const radius = (outerRadius || 0) + 24;
@@ -157,7 +153,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
         }
       }).length
     : 0;
-  const totalTime = pieChartData.reduce((sum, item) => sum + item.minutes, 0);
+  // Removed unused totalTime variable
 
   return (
     <div className="p-6 border-b border-gray-200">
@@ -267,11 +263,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                       paddingAngle={2}
                       dataKey="minutes"
                       nameKey="category"
-                      label={renderCategoryLabelWithLine(
-                        pieChartData,
-                        getCategoryChangeData(events, currentView, selectedDate, currentWeek, currentMonth),
-                        true
-                      )}
+                      label={renderCategoryLabelWithLine(pieChartData)}
                       isAnimationActive={false}
                     >
                       {pieChartData.map((entry, index) => (
@@ -304,9 +296,9 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                       label={renderVerticalPieLabel}
                       isAnimationActive={false}
                     >
-                      {getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry, idx) => (
-                        <Cell key={`free-cell-${idx}`} fill={entry.color} />
-                      ))}
+              {getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry) => (
+                <Cell key={`free-cell-${entry.name}`} fill={entry.color} />
+              ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
@@ -321,7 +313,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                 <div className="text-center">Last</div>
                 <div className="text-center">Change</div>
               </div>
-              {pieChartData.map((cat, idx) => {
+              {pieChartData.map((cat) => {
                 const changes = getCategoryChangeData(events, currentView, selectedDate, currentWeek, currentMonth, true);
                 const prevCatMinutes = changes._prev && changes._prev[cat.category] ? changes._prev[cat.category] : 0;
                 const change = changes[cat.category] || 0;
@@ -368,7 +360,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
 // Returns a map of category to change in minutes compared to previous period
 // Returns a map of category to change in minutes and previous period minutes, and _prev for prev period values
 function getCategoryChangeData(
-  events: any[],
+  events: Array<{ startTime: Date; endTime: Date; category?: string }>,
   currentView: 'day' | 'week' | 'month',
   selectedDate: Date | null,
   currentWeek?: Date,
@@ -441,7 +433,7 @@ function getCategoryChangeData(
 }
 
 function getScheduledVsFreeData(
-  events: any[],
+  events: Array<{ startTime: Date; endTime: Date; category?: string; color?: string }>,
   currentView: 'day' | 'week' | 'month',
   selectedDate: Date | null,
   currentWeek?: Date,
@@ -477,11 +469,28 @@ function getScheduledVsFreeData(
 }
 
 function renderCategoryLabelWithLine(
-  pieChartData: any[],
-  changeData: Record<string, number>,
-  percentMode = false
+  pieChartData: Array<{ category: string; minutes: number; color: string }>
 ) {
-  return function renderLabel({ cx, cy, midAngle, outerRadius, index }: any) {
+  return function renderLabel({
+    cx,
+    cy,
+    midAngle,
+    outerRadius,
+    index
+  }: {
+    cx?: number;
+    cy?: number;
+    midAngle?: number;
+    outerRadius?: number;
+    index?: number;
+  }) {
+    if (
+      cx === undefined ||
+      cy === undefined ||
+      midAngle === undefined ||
+      outerRadius === undefined ||
+      index === undefined
+    ) return null;
     const RADIAN = Math.PI / 180;
     const entry = pieChartData[index];
     const radius = outerRadius + 32;
