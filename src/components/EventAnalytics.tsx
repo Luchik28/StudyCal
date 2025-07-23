@@ -76,16 +76,16 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
       case 'day':
         return selectedDate ? format(selectedDate, 'EEEE, MMM d, yyyy') : format(now, 'EEEE, MMM d, yyyy');
       case 'week': {
+        // Fix: show week range as start - start+6 days
         const weekStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
         return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
       }
       case 'month': {
-        // Fix: show correct month by adding one month
+        // Fix: show correct month (do not add one month)
         let baseMonth = currentMonth || now;
-        let displayMonth = new Date(baseMonth);
-        displayMonth.setMonth(displayMonth.getMonth() + 1);
-        return format(displayMonth, 'MMMM yyyy');
+        return format(baseMonth, 'MMMM yyyy');
       }
       default:
         return '';
@@ -172,7 +172,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
         <div className="space-y-6">
           {/* Analytics Title */}
           <div className="w-full flex items-left justify-left mb-2">
-            <h2 className="text-lg font-bold text-gray-900">Analytics</h2>
+            <h2 className="font-bold font-mono text-lg text-gray-900">Analytics</h2>
           </div>
           {/* Pie Chart */}
           {pieChartData.length > 0 && (

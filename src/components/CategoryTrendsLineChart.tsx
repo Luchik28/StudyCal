@@ -44,7 +44,7 @@ function getTimePeriods(currentView: 'day' | 'week' | 'month', selectedDate: Dat
         const weekStart = startOfWeek(new Date(base.getTime() - i * 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 0 });
         const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
         periods.push({
-          label: `${format(weekStart, 'MMM d')}`,
+          label: `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'd')}`,
           start: weekStart,
           end: weekEnd
         });
@@ -96,7 +96,20 @@ export const CategoryTrendsLineChart: React.FC<CategoryTrendsLineChartProps> = (
       <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 40 }}>
         <XAxis dataKey="label" stroke="#888" fontSize={12} />
         <YAxis stroke="#888" fontSize={12} label={{ value: 'Hours', angle: -90, position: 'insideLeft', offset: 10 }} />
-        <Tooltip formatter={(value: number) => `${value}h`} />
+        <Tooltip 
+          formatter={(value: number) => `${value}h`}
+          labelFormatter={(label, payload) => {
+            // For weekly view, show range
+            if (payload && payload.length && payload[0].payload && payload[0].payload.start && payload[0].payload.end) {
+              const start = payload[0].payload.start;
+              const end = payload[0].payload.end;
+              if (start && end && start instanceof Date && end instanceof Date) {
+                return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
+              }
+            }
+            return label;
+          }}
+        />
         <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: 13, marginTop: 12 }} />
         {categories.map(cat => (
           <Line
