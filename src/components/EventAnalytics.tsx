@@ -46,6 +46,7 @@ import { AnalyticsModal } from './AnalyticsModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
+import { CategoryTrendsLineChart } from './CategoryTrendsLineChart';
 
 interface PieChartDatum {
   category: string;
@@ -248,9 +249,9 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
           </button>
         </div>
         <div className="flex w-full h-[70vh] min-h-[400px] max-h-[700px] gap-8 overflow-hidden">
-          {/* Left: Large Category Pie Chart with lines and labels */}
-          <div className="relative flex-1 flex flex-col items-center justify-center" style={{flexBasis: '70%', minHeight: 0}}>
-            <div className="w-full flex-1 flex items-center justify-center min-h-[350px] max-h-[600px]">
+          {/* Left: Large Category Pie Chart with lines and labels, and new bottom bar */}
+          <div className="relative flex-1 flex flex-col items-center justify-start" style={{flexBasis: '70%', minHeight: 0}}>
+            <div className="w-full flex-1 flex items-center justify-center min-h-[300px] max-h-[500px]">
               {pieChartData.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="w-1/2 h-2 bg-gray-200 rounded overflow-hidden">
@@ -265,7 +266,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                       cx="50%"
                       cy="50%"
                       innerRadius={90}
-                      outerRadius={180}
+                      outerRadius={150}
                       paddingAngle={2}
                       dataKey="minutes"
                       nameKey="category"
@@ -280,21 +281,44 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                 </ResponsiveContainer>
               )}
             </div>
-          </div>
-          {/* Right: Scheduled vs Free Time Pie Chart and Category List */}
-          <div className="flex flex-col justify-between items-stretch w-[420px] min-w-[320px] max-w-[500px] gap-2">
-            {/* Scheduled vs Free Time Pie Chart (smaller, with labels strictly at top and bottom) */}
-            <div className="mb-2 flex flex-col items-center">
-              <div className="text-xs font-semibold text-gray-700 mb-1">Scheduled vs. Free</div>
-              <div className="w-full h-80 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
+            {/* New bottom bar for subcategory pie chart and scheduled/free pie chart */}
+            <div className="w-full flex flex-row items-stretch justify-between gap-4 mt-2 bg-gray-100 rounded-lg p-3" style={{ minHeight: 180 }}>
+              {/* Subcategory Pie Chart */}
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <h6 className="text-xs font-semibold text-gray-700 mb-1">Subcategories</h6>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={getSubcategoryPieChartData(events, currentView, selectedDate, currentWeek, currentMonth)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={65}
+                      paddingAngle={2}
+                      dataKey="minutes"
+                      nameKey="subcategory"
+                      labelLine={false}
+                      label={renderSubcategoryPieLabel}
+                      isAnimationActive={false}
+                    >
+                      {getSubcategoryPieChartData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry, index) => (
+                        <Cell key={`subcat-cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Scheduled vs Free Pie Chart */}
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <h6 className="text-xs font-semibold text-gray-700 mb-1">Scheduled vs. Free</h6>
+                <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
                       data={getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth)}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={95}
+                      innerRadius={40}
+                      outerRadius={65}
                       paddingAngle={0}
                       dataKey="value"
                       nameKey="name"
@@ -302,16 +326,17 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                       label={renderVerticalPieLabel}
                       isAnimationActive={false}
                     >
-              {getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry) => (
-                <Cell key={`free-cell-${entry.name}`} fill={entry.color} />
-              ))}
+                      {getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth).map((entry) => (
+                        <Cell key={`free-cell-${entry.name}`} fill={entry.color} />
+                      ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
-
-            {/* Category List as a table: Category | This | Last | Change */}
+          </div>
+          {/* Right sidebar: Category analytics (table + line chart) full height */}
+          <div className="flex flex-col items-stretch w-[420px] min-w-[320px] max-w-[500px] gap-2 h-full">
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-5 gap-2 w-full px-2 pb-1 text-xs text-gray-500 font-semibold border-b border-gray-200 items-end">
                 <div className="text-left pl-2">Category</div>
@@ -348,8 +373,12 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                   </div>
                 );
               })}
+              {/* Category Time Over Time Line Chart */}
+              <div className="mt-8">
+                <h5 className="text-sm font-semibold text-gray-700 mb-2">Category Trends Over Time</h5>
+                <CategoryTrendsLineChart events={events} currentView={currentView} selectedDate={selectedDate} currentWeek={currentWeek} currentMonth={currentMonth} />
+              </div>
             </div>
-
           </div>
         </div>
         {/* Remove blue outline on all focusable elements in modal */}
@@ -367,6 +396,111 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
 
 
 // --- Helper functions: must be after all component exports ---
+
+// Helper: Generate subcategory pie chart data with color shades
+function getSubcategoryPieChartData(
+  events: Array<{ startTime: Date; endTime: Date; category?: string; subcategory?: string; color?: string }>,
+  currentView: 'day' | 'week' | 'month',
+  selectedDate: Date | null,
+  currentWeek?: Date,
+  currentMonth?: Date
+): Array<{ category: string; subcategory: string; minutes: number; color: string }> {
+  const now = new Date();
+  let periodStart: Date, periodEnd: Date;
+  switch (currentView) {
+    case 'day':
+      periodStart = startOfDay(selectedDate || now);
+      periodEnd = endOfDay(selectedDate || now);
+      break;
+    case 'week':
+      periodStart = startOfWeek(currentWeek || now, { weekStartsOn: 0 });
+      periodEnd = endOfWeek(currentWeek || now, { weekStartsOn: 0 });
+      break;
+    case 'month':
+      periodStart = startOfMonth(currentMonth || now);
+      periodEnd = endOfMonth(currentMonth || now);
+      break;
+    default:
+      periodStart = startOfWeek(now, { weekStartsOn: 0 });
+      periodEnd = endOfWeek(now, { weekStartsOn: 0 });
+  }
+  const periodEvents = events.filter(e => e.startTime >= periodStart && e.endTime <= periodEnd);
+  // Group by category and subcategory
+  const subcatMap: Record<string, { category: string; subcategory: string; minutes: number; color: string }> = {};
+  // Get all categories and their base color
+  const categoryColors: Record<string, string> = {};
+  periodEvents.forEach(e => {
+    const cat = e.category || 'Uncategorized';
+    const subcat = e.subcategory || 'Other';
+    const color = e.color || '#8884d8';
+    categoryColors[cat] = color;
+    const minutes = differenceInMinutes(e.endTime, e.startTime);
+    const key = `${cat}__${subcat}`;
+    if (!subcatMap[key]) {
+      subcatMap[key] = { category: cat, subcategory: subcat, minutes: 0, color: '' };
+    }
+    subcatMap[key].minutes += minutes;
+  });
+  // Assign color shades to subcategories
+  const subcatKeys = Object.keys(subcatMap);
+  const catSubcatCount: Record<string, number> = {};
+  subcatKeys.forEach(key => {
+    const cat = subcatMap[key].category;
+    catSubcatCount[cat] = (catSubcatCount[cat] || 0) + 1;
+  });
+  // For each category, assign shades to subcategories
+  const result: Array<{ category: string; subcategory: string; minutes: number; color: string }> = [];
+  const shade = (hex: string, percent: number) => {
+    // Simple shade function for hex colors
+    let r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    r = Math.min(255, Math.max(0, Math.floor(r + (percent/100)*255)));
+    g = Math.min(255, Math.max(0, Math.floor(g + (percent/100)*255)));
+    b = Math.min(255, Math.max(0, Math.floor(b + (percent/100)*255)));
+    return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+  };
+  const catSubcatIndex: Record<string, number> = {};
+  subcatKeys.forEach(key => {
+    const entry = subcatMap[key];
+    const cat = entry.category;
+    catSubcatIndex[cat] = (catSubcatIndex[cat] || 0) + 1;
+    const total = catSubcatCount[cat];
+    // Spread shades from -30% to +30%
+    const percent = -30 + (catSubcatIndex[cat]-1) * (60/(total>1?total-1:1));
+    entry.color = shade(categoryColors[cat], percent);
+    result.push(entry);
+  });
+  return result;
+}
+
+// Helper: Render subcategory pie label
+function renderSubcategoryPieLabel(props: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  outerRadius?: number;
+  name?: string;
+  value?: number;
+  index?: number;
+}) {
+  if (!props || typeof props !== 'object') return null;
+  const { cx, cy, midAngle, outerRadius, name, value, index } = props;
+  if (
+    cx === undefined ||
+    cy === undefined ||
+    midAngle === undefined ||
+    outerRadius === undefined ||
+    name === undefined
+  ) return null;
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius + 18;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-xs" fill="#222">
+      {name}: {formatDuration(value ?? 0)}
+    </text>
+  );
+}
 
 // Returns a map of category to change in minutes compared to previous period
 // Returns a map of category to change in minutes and previous period minutes, and _prev for prev period values
