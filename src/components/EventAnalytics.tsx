@@ -51,6 +51,7 @@ interface PieChartDatum {
   category: string;
   minutes: number;
   color: string;
+  count: number;
 }
 interface EventAnalyticsProps {
   currentView: 'day' | 'week' | 'month';
@@ -109,17 +110,18 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
         periodEnd = endOfWeek(now, { weekStartsOn: 0 });
     }
     const periodEvents = events.filter(e => e.startTime >= periodStart && e.endTime <= periodEnd);
-    const categoryMap: Record<string, { minutes: number; color: string }> = {};
+    const categoryMap: Record<string, { minutes: number; color: string; count: number }> = {};
     periodEvents.forEach(e => {
       const cat = e.category || 'Uncategorized';
       const color = e.color || '#8884d8';
       const minutes = differenceInMinutes(e.endTime, e.startTime);
       if (!categoryMap[cat]) {
-        categoryMap[cat] = { minutes: 0, color };
+        categoryMap[cat] = { minutes: 0, color, count: 0 };
       }
       categoryMap[cat].minutes += minutes;
+      categoryMap[cat].count += 1;
     });
-    const result = Object.entries(categoryMap).map(([category, { minutes, color }]) => ({ category, minutes, color }));
+    const result = Object.entries(categoryMap).map(([category, { minutes, color, count }]) => ({ category, minutes, color, count }));
     // Save chart label values globally for use in pie chart labels
     result.forEach(item => {
       chartCategoryLabels[item.category] = `${item.category} | ${formatDuration(item.minutes)}`;
@@ -311,8 +313,9 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
 
             {/* Category List as a table: Category | This | Last | Change */}
             <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-4 gap-2 w-full px-2 pb-1 text-xs text-gray-500 font-semibold border-b border-gray-200 items-end">
+              <div className="grid grid-cols-5 gap-2 w-full px-2 pb-1 text-xs text-gray-500 font-semibold border-b border-gray-200 items-end">
                 <div className="text-left pl-2">Category</div>
+                <div className="text-center">Events</div>
                 <div className="text-center">This</div>
                 <div className="text-center">Last</div>
                 <div className="text-center">Change</div>
@@ -333,8 +336,12 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                   }
                 }
                 return (
-                  <div key={cat.category} className="grid grid-cols-4 gap-2 w-full px-2 py-1 items-center border-b border-gray-50">
-                    <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background: cat.color}}></span><span className="font-bold text-sm text-gray-900">{cat.category}</span></div>
+                  <div key={cat.category} className="grid grid-cols-5 gap-2 w-full px-2 py-1 items-center border-b border-gray-50">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded-full" style={{background: cat.color}}></span>
+                      <span className="font-bold text-sm text-gray-900">{cat.category}</span>
+                    </div>
+                    <div className="text-center tabular-nums text-gray-900 font-mono">{cat.count}</div>
                     <div className="text-center tabular-nums text-gray-900 font-mono">{formatDuration(cat.minutes)}</div>
                     <div className="text-center tabular-nums text-gray-900 font-mono">{formatDuration(prevCatMinutes)}</div>
                     <div className={`text-center tabular-nums text-xs ${percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}`}>{prevCatMinutes > 0 ? (<>{arrow}{`${Math.abs(percentChange).toFixed(1)}%`}</>) : '—'}</div>
@@ -473,7 +480,7 @@ function getScheduledVsFreeData(
 }
 
 function renderCategoryLabelWithLine(
-  pieChartData: Array<{ category: string; minutes: number; color: string }>
+  pieChartData: Array<{ category: string; minutes: number; color: string; count: number }>
 ) {
   return function renderLabel({
     cx,
@@ -500,7 +507,7 @@ function renderCategoryLabelWithLine(
     const radius = outerRadius + 32;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    // Only show category and time spent
+    // Show category, time spent, and event count
     return (
       <g>
         <line
