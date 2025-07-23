@@ -157,13 +157,17 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
 
   return (
     <div className="p-6 border-b border-gray-200">
-      {/* Top bar fully removed as requested. If any heading or bar remains above modal, it is now removed. */}
+      {/* Analytics Title and Pie Chart Section */}
       {totalEvents === 0 ? (
         <div className="text-center text-gray-600 py-4">
           No events for {getTimeFrameLabel().toLowerCase()}
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Analytics Title */}
+          <div className="w-full flex items-left justify-left mb-2">
+            <h2 className="text-lg font-bold text-gray-900">Analytics</h2>
+          </div>
           {/* Pie Chart */}
           {pieChartData.length > 0 && (
             <div className="bg-gray-50 rounded-lg p-4">
@@ -188,7 +192,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                   </button>
                 )}
               </div>
-              <div className={`transition-all duration-300 ${isExpanded ? 'h-96' : 'h-64'}`}>
+              <div className={`transition-all duration-300 ${isExpanded ? 'h-96' : 'h-64'}`}> 
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -223,8 +227,8 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
           )}
         </div>
       )}
-      {/* See more button */}
-      <div className="flex justify-end mt-4">
+      {/* Centered See more button */}
+      <div className="flex justify-center mt-4">
         <button
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
           onClick={() => setIsModalOpen(true)}
@@ -235,7 +239,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
       <AnalyticsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {/* Single Header: left (title), center (date), right (X) */}
         <div className="flex items-center justify-between mb-2 w-full px-2" style={{ minHeight: 48 }}>
-          <div className="text-lg font-bold text-gray-900">Detailed Statistics</div>
+          <div className="text-lg font-bold text-gray-900">How you spend your time:</div>
           <div className="text-base text-gray-700 text-center flex-1">{getTimeFrameLabel()}</div>
           <button onClick={() => setIsModalOpen(false)} className="ml-2 text-gray-400 hover:text-gray-700 focus:outline-none" aria-label="Close analytics modal">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -280,15 +284,15 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
             {/* Scheduled vs Free Time Pie Chart (smaller, with labels strictly at top and bottom) */}
             <div className="mb-2 flex flex-col items-center">
               <div className="text-xs font-semibold text-gray-700 mb-1">Scheduled vs. Free</div>
-              <div className="w-full h-60 flex items-center justify-center">
+              <div className="w-full h-80 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={getScheduledVsFreeData(events, currentView, selectedDate, currentWeek, currentMonth)}
                       cx="50%"
                       cy="50%"
-                      innerRadius={40}
-                      outerRadius={65}
+                      innerRadius={60}
+                      outerRadius={95}
                       paddingAngle={0}
                       dataKey="value"
                       nameKey="name"
