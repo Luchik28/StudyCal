@@ -481,10 +481,9 @@ function renderSubcategoryPieLabel(props: {
   name?: string;
   value?: number;
   percent?: number;
-  index?: number;
 }) {
   if (!props || typeof props !== 'object') return null;
-  const { cx, cy, midAngle, outerRadius, name, value, percent, index } = props;
+  const { cx, cy, midAngle, outerRadius, name, value, percent } = props;
   if (
     cx === undefined ||
     cy === undefined ||
@@ -496,7 +495,6 @@ function renderSubcategoryPieLabel(props: {
   if (percent !== undefined && percent < 0.04) return null;
   const RADIAN = Math.PI / 180;
   // Spread labels further out if there are many slices
-  const baseRadius = outerRadius + 18;
   const spread = (percent !== undefined && percent < 0.08) ? 32 : 18;
   const radius = outerRadius + spread;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
