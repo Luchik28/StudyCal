@@ -4,6 +4,13 @@ import TopBar from '../../components/TopBar';
 
 const posts = [
 	{
+		slug: 'how-to-use-studycal-analytics',
+		title: "How to Use StudyCal's new Analytics",
+		date: "2025-07-23",
+		image: '/blog/FullAnalytics.png',
+		preview: `A guide to the new analytics features in StudyCal, including category breakdowns, subcategory charts, and more.`,
+	},
+	{
 		slug: 'how-to-use-synthetic-data-to-train-AI-models',
 		title: 'How to Use Synthetic Data to Train AI Models',
 		date: '2025-07-19',
