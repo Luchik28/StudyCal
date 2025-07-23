@@ -238,10 +238,10 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
-        <div className="flex w-full h-[65vh] min-h-[350px] max-h-[600px] gap-8">
+        <div className="flex w-full h-[70vh] min-h-[400px] max-h-[700px] gap-8 overflow-hidden">
           {/* Left: Large Category Pie Chart with lines and labels */}
-          <div className="relative flex-1 flex flex-col items-center justify-center" style={{flexBasis: '70%'}}>
-            <div className="w-full h-full flex items-center justify-center">
+          <div className="relative flex-1 flex flex-col items-center justify-center" style={{flexBasis: '70%', minHeight: 0}}>
+            <div className="w-full flex-1 flex items-center justify-center min-h-[350px] max-h-[600px]">
               {pieChartData.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="w-1/2 h-2 bg-gray-200 rounded overflow-hidden">
@@ -281,7 +281,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
             {/* Scheduled vs Free Time Pie Chart (smaller, with labels strictly at top and bottom) */}
             <div className="mb-2 flex flex-col items-center">
               <div className="text-xs font-semibold text-gray-700 mb-1">Scheduled vs. Free</div>
-              <div className="w-full h-40 flex items-center justify-center">
+              <div className="w-full h-60 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -331,9 +331,9 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                 }
                 return (
                   <div key={cat.category} className="grid grid-cols-4 gap-2 w-full px-2 py-1 items-center border-b border-gray-50">
-                    <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background: cat.color}}></span>{cat.category}</div>
-                    <div className="text-center tabular-nums">{formatDuration(cat.minutes)}</div>
-                    <div className="text-center tabular-nums text-gray-400">{formatDuration(prevCatMinutes)}</div>
+                    <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{background: cat.color}}></span><span className="font-bold text-sm text-gray-900">{cat.category}</span></div>
+                    <div className="text-center tabular-nums text-gray-900 font-mono">{formatDuration(cat.minutes)}</div>
+                    <div className="text-center tabular-nums text-gray-900 font-mono">{formatDuration(prevCatMinutes)}</div>
                     <div className={`text-center tabular-nums text-xs ${percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}`}>{prevCatMinutes > 0 ? (<>{arrow}{`${Math.abs(percentChange).toFixed(1)}%`}</>) : '—'}</div>
                   </div>
                 );
@@ -476,15 +476,17 @@ function renderCategoryLabelWithLine(pieChartData: any[], changeData: Record<str
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const entry = pieChartData[index];
-    const change = changeData[entry.category] || 0;
-    const prev = changeData._prev && changeData._prev[entry.category] ? changeData._prev[entry.category] : 0;
-    let percentChange = prev > 0 ? (change / prev) * 100 : 0;
+    // Use the same logic as the category table for percent change and arrow
+    const changes = changeData;
+    const prevCatMinutes = changes._prev && changes._prev[entry.category] ? changes._prev[entry.category] : 0;
+    const change = changes[entry.category] || 0;
+    let percentChange = prevCatMinutes > 0 ? (change / prevCatMinutes) * 100 : 0;
     let arrow = null;
-    if (prev > 0) {
+    if (prevCatMinutes > 0) {
       if (percentChange > 0.01) {
-        arrow = <svg className="inline-block mr-1" width="10" height="10" viewBox="0 0 10 10"><path d="M5 2l3 6H2l3-6z" fill="currentColor"/></svg>;
+        arrow = <svg className="inline-block align-middle mr-1" width="12" height="12" viewBox="0 0 10 10"><path d="M5 2l3 6H2l3-6z" fill="currentColor"/></svg>;
       } else if (percentChange < -0.01) {
-        arrow = <svg className="inline-block mr-1" width="10" height="10" viewBox="0 0 10 10"><path d="M5 8l-3-6h6l-3 6z" fill="currentColor"/></svg>;
+        arrow = <svg className="inline-block align-middle mr-1" width="12" height="12" viewBox="0 0 10 10"><path d="M5 8l-3-6h6l-3 6z" fill="currentColor"/></svg>;
       } else {
         percentChange = 0;
       }
@@ -492,14 +494,11 @@ function renderCategoryLabelWithLine(pieChartData: any[], changeData: Record<str
     return (
       <g>
         <line x1={cx + (outerRadius+8) * Math.cos(-midAngle * RADIAN)} y1={cy + (outerRadius+8) * Math.sin(-midAngle * RADIAN)} x2={x} y2={y} stroke={entry.color} strokeWidth={2} />
-        <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-xs" fill="#222" style={{letterSpacing: 1, fontSize: 13, whiteSpace: 'pre'}}>
+        <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-mono text-sm" fill="#222" style={{letterSpacing: 1, fontSize: 15, whiteSpace: 'pre'}}>
           <tspan>{entry.category} ({Math.round(percent * 100)}%)</tspan>
-          {prev > 0 && (
-            <tspan dx="10" className={percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}>
-              {arrow}
-              {`${Math.abs(percentChange).toFixed(1)}%`}
-            </tspan>
-          )}
+          <tspan dx="10" className={percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}>
+            {prevCatMinutes > 0 ? (<>{arrow}{`${Math.abs(percentChange).toFixed(1)}%`}</>) : '—'}
+          </tspan>
         </text>
       </g>
     );
