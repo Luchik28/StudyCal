@@ -84,7 +84,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
       }
       case 'month': {
         // Fix: show correct month (do not add one month)
-        let baseMonth = currentMonth || now;
+        const baseMonth = currentMonth || now;
         return format(baseMonth, 'MMMM yyyy');
       }
       default:

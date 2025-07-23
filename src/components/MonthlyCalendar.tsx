@@ -10,7 +10,6 @@ import { Event } from '@/types/events';
 import { CreateEventModal } from './CreateEventModal';
 import { EventEditModal } from './EventEditModal';
 import { InlineEventEditor } from './InlineEventEditor';
-import { analytics } from 'googleapis/build/src/apis/analytics';
 
 // Create a single static month component
 const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, onEventEdit, timeFormat }: {
@@ -213,9 +212,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
               const monthKey = element.getAttribute('data-month');
               if (monthKey && monthKey !== currentMonthKey) {
                 const detectedMonthDate = new Date(monthKey + '-01');
-                const analyticsMonthDate = addMonths(detectedMonthDate, 1); // Add one month for analytics
-                console.log('Detected:' , detectedMonthDate, 'Analytics Month:', analyticsMonthDate);
-                setHeaderMonth(analyticsMonthDate);
+                const analyticsMonthDate = addMonths(detectedMonthDate, 1); // Add one month for analytics                setHeaderMonth(analyticsMonthDate);
                 onMonthChange?.(analyticsMonthDate);
                 return; // Exit early, skip throttled update
               }
@@ -282,9 +279,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
         // Update header month
         if (selectedMonth) {
           const detectedMonthDate = new Date(selectedMonth + '-01');
-          const analyticsMonthDate = addMonths(detectedMonthDate, 1);
-          console.log('Analytics Month:', analyticsMonthDate);
-          // Header should show the analytics month (detected + 1)
+          const analyticsMonthDate = addMonths(detectedMonthDate, 1);          // Header should show the analytics month (detected + 1)
           setHeaderMonth(analyticsMonthDate);
           // Analytics should use detected month + 1
           onMonthChange?.(analyticsMonthDate);
