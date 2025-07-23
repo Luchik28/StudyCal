@@ -81,8 +81,11 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
         return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
       }
       case 'month': {
-        const monthStart = startOfMonth(currentMonth || now);
-        return format(monthStart, 'MMMM yyyy');
+        // Fix: show correct month by adding one month
+        let baseMonth = currentMonth || now;
+        let displayMonth = new Date(baseMonth);
+        displayMonth.setMonth(displayMonth.getMonth() + 1);
+        return format(displayMonth, 'MMMM yyyy');
       }
       default:
         return '';
