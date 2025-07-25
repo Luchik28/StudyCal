@@ -5,6 +5,7 @@ import * as tf from '@tensorflow/tfjs';
 import { WeeklyCalendar } from './WeeklyCalendar';
 import { EventAnalytics } from './EventAnalytics';
 import { SettingsModal } from './SettingsModal';
+import { OnboardingOverlay } from './OnboardingOverlay';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { useModelLoader } from '@/hooks/useModelLoader';
 import { useEvents } from '@/contexts/EventsContext';
@@ -642,6 +643,8 @@ function LayoutContent() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+      {/* Onboarding overlay, always rendered above all content */}
+      <OnboardingOverlay />
     </div>
   );
 }
