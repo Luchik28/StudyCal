@@ -3,64 +3,115 @@ import React, { useEffect, useState } from "react";
 
 // ...existing code...
 const steps = [
+  // 1) Welcome
   {
     key: "welcome",
     selector: null,
-    title: "Welcome to Your Student Planner!",
+    title: "Welcome to StudyCal!",
     description: (
       <>
-        <div className="mb-2">Let's take a quick tour to help you get started.</div>
-        <div className="mb-2">You can skip onboarding at any time.</div>
+        <div className="mb-2">Let&apos;s take a quick tour to show you around and get you started. It&apos;ll only take a few minutes.</div>
+        <div className="mb-2">You can skip onboarding at any time using the button below.</div>
       </>
     ),
     primary: true,
   },
+  // 1.5) Switch between Time frames
   {
-    key: "settings",
-    selector: "#settings-button, [aria-label='Settings']",
-    title: "Settings & Google Calendar Integration",
+    key: "switch-timeframe",
+    selector: "#timeframe-group",
+    title: "Switch between Time Frames",
     description: (
       <>
-        <div>Click the <b>Settings</b> button (gear icon) to open app settings.</div>
-        <div className="mt-2">You can integrate with Google Calendar from the settings panel.</div>
+        <div>You can switch between one day, week, and monthly views here in the top left.</div>
+      </>
+    ),
+    auto: () => {
+      // No-op: don't change view, just highlight
+    }
+  },
+  // 2) Add Events (select calendar area)
+  {
+    key: "add-event",
+    selector: "#calendar-container", // select the main calendar grid
+    title: "Add Events",
+    description: (
+      <>
+        <div>Click anywhere on the calendar to add an event.</div>
+        <div className="mt-2">When you finish editing the title, StudyCal will estimate the time your event will take, but you can change it by editing the times in the add event popup.</div>
       </>
     ),
   },
-  {
-    key: "add-event",
-    selector: "#add-event-button, [aria-label='Add Event']",
-    title: "Add Events",
-    description: "Click the add button or double-click a time slot to create a new event.",
-  },
+  // 3) Modify Events
   {
     key: "modify-event",
-    selector: ".event-card",
+    selector: null, // no highlight
     title: "Modify Events",
-    description: "Drag events to reschedule, or click them to edit details.",
+    description: (
+      <>
+        <div>You can change how long an event lasts by clicking on the top or bottom of its box, and then dragging it until the event reaches the desired length.</div>
+        <div className="mt-2">To move an event, simply left click and drag it wherever you want. To change its time using a text box, or to change its category or subcategory, right click on the event.</div>
+      </>
+    ),
   },
-  {
-    key: "analytics",
-    selector: "#open-analytics, [aria-label='Analytics']",
-    title: "View Analytics",
-    description: "Open the analytics section to see how you spend your time.",
-  },
+  // 4) Schedule My Day (tasks section)
   {
     key: "tasks",
     selector: "#tasks-section, [aria-label='Tasks']",
-    title: "Manage Tasks",
-    description: "Track and manage your tasks in the tasks section.",
+    title: "Schedule My Day",
+    description: (
+      <>
+        <div>Type your tasks in the bottom bar of this section. StudyCal will estimate the time, category, and subcategory, but you can change them if needed.</div>
+        <div className="mt-2">When you have finished adding all your tasks, click the schedule button at the very bottom, and StudyCal will turn all your tasks into events and place them inside the selected time frame.</div>
+      </>
+    ),
   },
+  // 5) Analytics
+  {
+    key: "analytics",
+    selector: "#open-analytics, [aria-label='Analytics']",
+    title: "Analytics",
+    description: (
+      <>
+        <div>See how you spend your time, track your progress, and view trends in the analytics section.</div>
+      </>
+    ),
+  },
+  // 5.5) Long Term Goals
+  {
+    key: "long-term-goals",
+    selector: ".flex-1.p-6.overflow-y-auto > .flex.flex-col.h-full > .flex.items-center.gap-2.mb-4, .flex-1.p-6.overflow-y-auto > .flex.flex-col.h-full > .flex.items-center.gap-2.mb-4 .text-lg, .flex-1.p-6.overflow-y-auto > .flex.flex-col.h-full > .flex.items-center.gap-2.mb-4 h3",
+    title: "Long Term Goals",
+    description: (
+      <>
+        <div>This is where you can add your long term goals. StudyCal will schedule time to work on these in your calendar, ensuring you make steady progress on accomplishing your dreams.</div>
+        <div className="mt-2">You can find this section on the left sidebar after switching to the Later view.</div>
+      </>
+    ),
+    auto: () => {
+      // Switch to the Later view (month)
+      const laterBtn = document.querySelector(".flex.items-center.justify-between button:last-child");
+      if (laterBtn) (laterBtn as HTMLElement).click();
+    }
+  },
+  // 6) AI Suggestions
   {
     key: "suggestions",
     selector: "#suggestions-panel, [aria-label='Suggestions']",
     title: "AI Suggestions",
-    description: "Check out the suggestions panel for AI-powered recommendations.",
+    description: (
+      <>
+        <div>StudyCal will analyze your schedule and offer events to add in order to create a more balanced schedule.</div>
+        <div className="mt-2">It will also suggest you block out time to work on your goals here.</div>
+      </>
+    ),
   },
+  // Done
   {
     key: "done",
     selector: null,
     title: "You're all set!",
-    description: "Enjoy using the planner. You can revisit onboarding from settings anytime.",
+    description: "Enjoy using StudyCal. You can revisit onboarding from settings anytime.",
   },
 ];
 
@@ -74,7 +125,7 @@ export const OnboardingOverlay: React.FC = () => {
 
   useEffect(() => {
     const flag = localStorage.getItem(ONBOARDING_FLAG);
-    // eslint-disable-next-line no-console
+    // (console.debug is allowed by default)
     console.debug("[OnboardingOverlay] onboardingComplete flag:", flag);
     if (flag === "true") setShow(false);
     else setShow(true);
@@ -82,6 +133,25 @@ export const OnboardingOverlay: React.FC = () => {
 
   useEffect(() => {
     if (!show) return;
+    // If the step has an auto() function, call it to trigger view changes
+    if (typeof steps[step].auto === 'function') {
+      steps[step].auto();
+      // Wait a bit for the UI to update before measuring
+      setTimeout(() => {
+        const selector = steps[step].selector;
+        if (!selector) {
+          setHighlightRect(null);
+          return;
+        }
+        const el = document.querySelector(selector) as HTMLElement | null;
+        if (el) {
+          setHighlightRect(el.getBoundingClientRect());
+        } else {
+          setHighlightRect(null);
+        }
+      }, 350);
+      return;
+    }
     const selector = steps[step].selector;
     if (!selector) {
       setHighlightRect(null);
@@ -150,7 +220,7 @@ export const OnboardingOverlay: React.FC = () => {
             borderRadius: 12,
             border: "3px solid #2563eb",
             boxShadow: "0 0 0 4px rgba(37,99,235,0.2)",
-            pointerEvents: "none" as const,
+            pointerEvents: "none",
             zIndex: 1001,
           }}
         />
@@ -163,13 +233,15 @@ export const OnboardingOverlay: React.FC = () => {
           <div className="flex gap-2 justify-end">
             {step === 0 ? (
               <>
-                <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300" onClick={handleSkip}>Skip onboarding</button>
+                <button className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300" onClick={handleSkip}>Skip onboarding</button>
                 <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleStart}>Start tour</button>
               </>
+            ) : step === steps.length - 1 ? (
+              <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleNext}>Finish</button>
             ) : (
               <>
-                <button className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300" onClick={handleSkip}>Skip</button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleNext}>{step === steps.length - 1 ? "Finish" : "Next"}</button>
+                <button className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded hover:bg-gray-300" onClick={handleSkip}>Skip</button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleNext}>Next</button>
               </>
             )}
           </div>
@@ -177,4 +249,4 @@ export const OnboardingOverlay: React.FC = () => {
       </div>
     </div>
   );
-};
+}

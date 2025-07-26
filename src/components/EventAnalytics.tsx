@@ -162,7 +162,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
   // Removed unused totalTime variable
 
   return (
-    <div className="p-6 border-b border-gray-200">
+    <div id="open-analytics" aria-label="Analytics" className="p-6 border-b border-gray-200">
       {/* Analytics Title and Pie Chart Section */}
       {totalEvents === 0 ? (
         <div className="text-center text-gray-600 py-4">

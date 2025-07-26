@@ -248,7 +248,7 @@ function TaskList({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div id="tasks-section" aria-label="Tasks" className="flex flex-col h-full">
       <h3 className="text-lg font-bold mb-2 text-gray-900 font-mono">{title}</h3>
       <div className="flex-1 overflow-y-auto mb-2 space-y-2">
         {tasks.map((task, idx) => (
@@ -339,6 +339,8 @@ function TaskList({
               onKeyDown={handleInputKeyDown}
             />
             <button
+              id="add-event-button"
+              aria-label="Add Event"
               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
               onClick={handleAdd}
             >
@@ -471,7 +473,7 @@ function LayoutContent() {
       `}>
         <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0">
           {/* Dynamic View Switching Buttons */}
-          <div className="flex items-center justify-between">
+          <div id="timeframe-group" className="flex items-center justify-between">
             <button
               onClick={() => handleViewChange('day')}
               className={`text-lg font-semibold transition-all duration-300 ease-out group ${
@@ -583,6 +585,8 @@ function LayoutContent() {
             </button>
             
             <button
+              id="settings-button"
+              aria-label="Settings"
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 hover:bg-gray-100 rounded-md transition-colors"
               title="Settings"
