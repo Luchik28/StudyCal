@@ -273,7 +273,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </label>
                       
                       <p className="text-xs text-gray-500 ml-6">
-                        When enabled, events will be automatically synced between your local calendar and Google Calendar. The use of raw or derived user data received from Workspace APIs will adhere to the <a href="https://developers.google.com/workspace/workspace-api-user-data-developer-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Google User Data Policy</a>, including the <a href="https://developers.google.com/workspace/workspace-api-user-data-developer-policy#limited-use" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Limited Use requirements</a>.
+                        When enabled, events will be automatically synced between your local calendar and Google Calendar. The use of raw or derived user data received from Workspace APIs will adhere to the <a href="https://developers.google.com/workspace/workspace-api-user-data-developer-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Google User Data Policy</a>, including the <a href="https://developers.google.com/workspace/workspace-api-user-data-developer-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Limited Use requirements</a>.
                       </p>
                     </div>
                   </div>
@@ -290,21 +290,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
           
           {/* Footer */}
-          <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              disabled={isSaving}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
+          <div className="flex flex-col gap-2 p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex justify-between items-center mb-2">
+              <button
+                onClick={() => {
+                  localStorage.removeItem('onboardingComplete');
+                  window.location.reload();
+                }}
+                className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded hover:bg-blue-200 transition-colors"
+              >
+                Relaunch Onboarding
+              </button>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

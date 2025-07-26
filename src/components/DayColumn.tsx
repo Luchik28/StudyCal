@@ -161,18 +161,45 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
     const showInlineEvent = inlineEvent && 
       inlineEvent.startTime.toDateString() === date.toDateString();
 
+    // Current time indicator logic
+    const [now, setNow] = useState(new Date());
+    useEffect(() => {
+      // Update every second for smooth movement
+      const interval = setInterval(() => setNow(new Date()), 1000);
+      return () => clearInterval(interval);
+    }, []);
+
+    const isToday = date.toDateString() === now.toDateString();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const currentTimeTop = (currentMinutes / 60) * HOUR_HEIGHT;
+
     return (
       <div ref={ref} className="border-r border-gray-200 last:border-r-0 flex flex-col h-full">
         {/* Day Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 p-2 text-center z-10 flex-shrink-0">
           <ResponsiveDayHeader date={date} />
         </div>
-        
         {/* Time Slots */}
         <div 
           className="relative flex-1"
           style={{ minHeight: `${timeSlots.length * HOUR_HEIGHT}px` }}
         >
+          {/* Current time line */}
+          {isToday && (
+            <div
+              className="absolute left-0 right-0 z-30 pointer-events-none"
+              style={{
+                top: `${currentTimeTop}px`,
+                height: '0',
+                borderTop: '2px solid #ef4444', // Tailwind red-500
+                boxShadow: '0 0 2px 0 #ef4444',
+              }}
+            >
+              <span className="absolute -left-12 text-xs text-red-500 bg-white px-1 rounded shadow" style={{top: '-0.75em'}}>
+                {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          )}
         {/* Hour time slots for visual grid */}
         {timeSlots.map((_, hourIndex) => (
           <div

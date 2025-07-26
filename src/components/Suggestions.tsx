@@ -1417,7 +1417,7 @@ export function Suggestions({
   }
 
   return (
-    <div className={`p-6 flex flex-col h-full ${className}`}>
+    <div id="suggestions-panel" aria-label="Suggestions" className={`p-6 flex flex-col h-full ${className}`}>
       <div className="flex items-center gap-2 mb-5 flex-shrink-0">
         <Lightbulb size={20} className="text-yellow-600" />
         <h3 className="text-lg font-bold text-gray-900 font-mono">Suggestions</h3>

@@ -212,8 +212,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
               const monthKey = element.getAttribute('data-month');
               if (monthKey && monthKey !== currentMonthKey) {
                 const detectedMonthDate = new Date(monthKey + '-01');
-                const analyticsMonthDate = addMonths(detectedMonthDate, 1); // Add one month for analytics
-                setHeaderMonth(detectedMonthDate);
+                const analyticsMonthDate = addMonths(detectedMonthDate, 1); // Add one month for analytics                setHeaderMonth(analyticsMonthDate);
                 onMonthChange?.(analyticsMonthDate);
                 return; // Exit early, skip throttled update
               }
@@ -280,11 +279,10 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
         // Update header month
         if (selectedMonth) {
           const detectedMonthDate = new Date(selectedMonth + '-01');
-          const analyticsMonthDate = addMonths(detectedMonthDate, 1); // Add one month for analytics
-          if (format(detectedMonthDate, 'yyyy-MM') !== format(headerMonth, 'yyyy-MM')) {
-            setHeaderMonth(detectedMonthDate);
-            onMonthChange?.(analyticsMonthDate);
-          }
+          const analyticsMonthDate = addMonths(detectedMonthDate, 1);          // Header should show the analytics month (detected + 1)
+          setHeaderMonth(analyticsMonthDate);
+          // Analytics should use detected month + 1
+          onMonthChange?.(analyticsMonthDate);
         }
       }, 50); // Reduced delay for more responsive updates
 

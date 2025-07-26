@@ -5,6 +5,7 @@ import * as tf from '@tensorflow/tfjs';
 import { WeeklyCalendar } from './WeeklyCalendar';
 import { EventAnalytics } from './EventAnalytics';
 import { SettingsModal } from './SettingsModal';
+import { OnboardingOverlay } from './OnboardingOverlay';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import { useModelLoader } from '@/hooks/useModelLoader';
 import { useEvents } from '@/contexts/EventsContext';
@@ -69,8 +70,26 @@ function TaskList({
       let predictedDuration = 60;
       if (model && vocabMap) {
         setPredictingIdx(tasks.length);
-        predictedDuration = await predictTaskDuration(model, vocabMap, input.trim());
-        setPredictingIdx(null);
+        // --- Historical override logic (copied from InlineEventCreator) ---
+        const normalize = (str: string) => str.trim().toLowerCase().replace(/[^\w\s]/g, '');
+        const normalizedTitle = normalize(input.trim());
+        const similarEvents = events.filter(ev =>
+          ev.title && normalize(ev.title) === normalizedTitle
+        );
+        if (similarEvents.length >= 3) {
+          const durations = similarEvents.map(ev => Math.round((ev.endTime.getTime() - ev.startTime.getTime()) / 60000));
+          const uniqueDurations = Array.from(new Set(durations));
+          if (uniqueDurations.length === 1) {
+            predictedDuration = Math.round(uniqueDurations[0] / 5) * 5;
+            setPredictingIdx(null);
+          } else {
+            predictedDuration = await predictTaskDuration(model, vocabMap, input.trim());
+            setPredictingIdx(null);
+          }
+        } else {
+          predictedDuration = await predictTaskDuration(model, vocabMap, input.trim());
+          setPredictingIdx(null);
+        }
       }
       // Clamp to at least 1 minute
       predictedDuration = Math.max(1, predictedDuration);
@@ -229,7 +248,7 @@ function TaskList({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div id="tasks-section" aria-label="Tasks" className="flex flex-col h-full">
       <h3 className="text-lg font-bold mb-2 text-gray-900 font-mono">{title}</h3>
       <div className="flex-1 overflow-y-auto mb-2 space-y-2">
         {tasks.map((task, idx) => (
@@ -320,6 +339,8 @@ function TaskList({
               onKeyDown={handleInputKeyDown}
             />
             <button
+              id="add-event-button"
+              aria-label="Add Event"
               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
               onClick={handleAdd}
             >
@@ -452,7 +473,7 @@ function LayoutContent() {
       `}>
         <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0">
           {/* Dynamic View Switching Buttons */}
-          <div className="flex items-center justify-between">
+          <div id="timeframe-group" className="flex items-center justify-between">
             <button
               onClick={() => handleViewChange('day')}
               className={`text-lg font-semibold transition-all duration-300 ease-out group ${
@@ -564,6 +585,8 @@ function LayoutContent() {
             </button>
             
             <button
+              id="settings-button"
+              aria-label="Settings"
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 hover:bg-gray-100 rounded-md transition-colors"
               title="Settings"
@@ -624,6 +647,8 @@ function LayoutContent() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+      {/* Onboarding overlay, always rendered above all content */}
+      <OnboardingOverlay />
     </div>
   );
 }

@@ -29,7 +29,7 @@ export function InlineEventCreator({
   initialStartTime,
   initialEndTime
 }: InlineEventCreatorProps) {
-  const { addEvent } = useEvents();
+  const { addEvent, events } = useEvents();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState(initialStartTime);
@@ -78,12 +78,37 @@ export function InlineEventCreator({
     }
   }, [dayColumnRef, initialHour, initialMinute]);
 
-  // Predict duration when title changes
+  // Predict duration when title changes, with historical override
   useEffect(() => {
     let cancelled = false;
-    if (model && vocabMap && title.trim()) {
+    const trimmedTitle = title.trim();
+    if (model && vocabMap && trimmedTitle) {
+      // 1. Check for similar past events with identical lengths
+      // Improved: normalize title (trim, lowercase, remove punctuation)
+      console.log("Sce=anning for similar past events...");
+      const normalize = (str: string) => str.trim().toLowerCase().replace(/[^\w\s]/g, '');
+      const normalizedTitle = normalize(trimmedTitle);
+      // Find all events with normalized title match
+      const similarEvents = events.filter(ev =>
+        ev.title && normalize(ev.title) === normalizedTitle
+      );
+      console.log(similarEvents);
+      // Only override if all similar events have the same duration and there are at least 3
+      if (similarEvents.length >= 3) {
+        const durations = similarEvents.map(ev => Math.round((ev.endTime.getTime() - ev.startTime.getTime()) / 60000));
+        const uniqueDurations = Array.from(new Set(durations));
+        if (uniqueDurations.length === 1) {
+          const dur = Math.round(uniqueDurations[0] / 5) * 5;
+          setDuration(dur);
+          const newEnd = new Date(startTime.getTime() + dur * 60000);
+          setEndTime(newEnd);
+          setPredicting(false);
+          return;
+        }
+      }
+      // Otherwise, use AI prediction
       setPredicting(true);
-      predictTaskDuration(model, vocabMap, title.trim()).then((pred) => {
+      predictTaskDuration(model, vocabMap, trimmedTitle).then((pred) => {
         if (!cancelled) {
           setDuration(pred);
           // Update end time based on prediction
@@ -94,7 +119,7 @@ export function InlineEventCreator({
     }
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, model, startTime]);
+  }, [title, model, startTime, events]);
 
   // Update parent component when title, times, or duration change
   useEffect(() => {
@@ -216,13 +241,13 @@ export function InlineEventCreator({
             <button
               type="button"
               onClick={onCancel}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              className="px-3 py-1.5 text-sm font-bold text-gray-800 hover:bg-gray-200 rounded-md transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              className="px-3 py-1.5 text-sm font-bold text-white bg-blue-700 hover:bg-blue-800 rounded-md transition-colors"
             >
               Save
             </button>
