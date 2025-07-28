@@ -15,6 +15,7 @@ import { CreateEventModal } from './CreateEventModal';
 import { EventEditModal } from './EventEditModal';
 import { InlineEventCreator } from './InlineEventCreator';
 import { InlineEventEditor } from './InlineEventEditor';
+import { SettingsModal } from './SettingsModal';
 
 export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
   const { events, moveEvent } = useEvents();
@@ -26,6 +27,7 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
   const [modalInitialHour, setModalInitialHour] = useState<number>();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Inline event creation state
   const [inlineEvent, setInlineEvent] = useState<{
@@ -116,11 +118,12 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
+      {/* Unified Top Bar: Add Event, Date Range, Navigation, Settings */}
+      <div className="bg-white border-b border-gray-200 h-16 px-6 py-4 flex items-center">
+        {/* Left: Add Event Button */}
         <div className="flex items-center gap-2">
           <button
-            className="px-3 py-1 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-sm"
+            className="px-2.5 py-1.5 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-base flex items-center gap-1.5"
             onClick={() => {
               setModalInitialDate(currentDate);
               setModalInitialHour(12);
@@ -128,13 +131,15 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
             }}
             aria-label="Add Event"
           >
-            + Add Event
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+            Add Event
           </button>
         </div>
-        <div className="flex items-center space-x-2">
+        {/* Center: Date Range & Navigation */}
+        <div className="flex-1 flex justify-center items-center gap-4">
           <button
             onClick={() => navigateDay('prev')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900"
           >
             <ChevronLeft size={20} />
           </button>
@@ -143,10 +148,23 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
           </span>
           <button
             onClick={() => navigateDay('next')}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900"
           >
             <ChevronRight size={20} />
           </button>
+        </div>
+        {/* Right: Settings Button */}
+        <div className="flex items-center ml-4">
+          <button
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            onClick={() => setIsSettingsOpen(true)}
+            aria-label="Settings"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-settings text-gray-600" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+          {typeof isSettingsOpen !== 'undefined' && (
+            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+          )}
         </div>
       </div>
 

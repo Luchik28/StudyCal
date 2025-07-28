@@ -567,37 +567,7 @@ function LayoutContent() {
       {/* Main Calendar Area - Independently scrollable */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Calendar Header with Settings and mobile controls */}
-        <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
-          {/* Mobile menu button for left sidebar */}
-          <button
-            onClick={() => setLeftSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-md transition-colors"
-            title="Open tasks"
-          >
-            <Menu size={20} className="text-gray-600" />
-          </button>
-          
-          <div className="flex items-center gap-2">
-            {/* Mobile menu button for right sidebar */}
-            <button
-              onClick={() => setRightSidebarOpen(true)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-md transition-colors"
-              title="Open insights"
-            >
-              <Clock size={20} className="text-gray-600" />
-            </button>
-            
-            <button
-              id="settings-button"
-              aria-label="Settings"
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              title="Settings"
-            >
-              <Settings size={20} className="text-gray-600" />
-            </button>
-          </div>
-        </div>
+        
         {/* Calendar Content - This area scrolls independently */}
         <div className="flex-1 overflow-hidden">
           {renderCalendar()}
