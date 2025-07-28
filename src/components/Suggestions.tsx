@@ -1456,7 +1456,21 @@ export function Suggestions({
                     {suggestion.title}
                   </h4>
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    {suggestion.description}
+                    {suggestion.type === 'goal' && suggestion.actionLabel ? (
+                      <>
+                        {suggestion.description}
+                        <br />
+                        <span className="block mt-2 text-blue-700 font-semibold">Event: {suggestion.actionLabel}</span>
+                        <span className="block text-xs text-gray-400 mt-1">Click the blue button below to add this event to your schedule.</span>
+                      </>
+                    ) : (
+                      <>
+                        {suggestion.description}
+                        {suggestion.actionLabel && (
+                          <span className="block text-xs text-gray-400 mt-2">Click the blue button below to add this event to your schedule.</span>
+                        )}
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
@@ -1469,9 +1483,12 @@ export function Suggestions({
                   <button
                     onClick={suggestion.onAction}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+                    aria-label={suggestion.type === 'goal' ? `Add '${suggestion.actionLabel}' to schedule` : `Add suggestion to schedule`}
                   >
                     <Plus size={16} />
-                    <span className="truncate">{suggestion.actionLabel}</span>
+                    <span className="truncate">
+                      {suggestion.type === 'goal' ? 'Add to Schedule' : suggestion.actionLabel}
+                    </span>
                   </button>
                 )}
                 <button
