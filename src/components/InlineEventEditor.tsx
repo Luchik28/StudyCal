@@ -54,7 +54,6 @@ export function InlineEventEditor({
     if (eventElement && formRef.current) {
       const eventRect = eventElement.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
       // If the event is in the daily view (width > 300px), center the popup over the event
       if (eventRect.width > 300) {
         setFormPosition({

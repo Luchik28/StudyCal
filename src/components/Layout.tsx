@@ -13,7 +13,7 @@ import { taskScheduler, Task } from '@/utils/taskScheduler';
 import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
 import { classifyEvent } from '@/utils/eventClassification';
 import { startOfWeek } from 'date-fns';
-import { Settings, Clock, Calendar, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';

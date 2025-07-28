@@ -1,11 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
-import { X } from 'lucide-react';
-import { useEvents } from '@/contexts/EventsContext';
-import { HOUR_HEIGHT } from '@/utils/calendar';
+import React, { useState, useRef, useEffect } from "react";
+import { X } from "lucide-react";
+import { useEvents } from "@/contexts/EventsContext";
+import { HOUR_HEIGHT } from "@/utils/calendar";
 
 interface InlineEventCreatorProps {
   date: Date;
@@ -32,12 +30,12 @@ export function InlineEventCreator({
   weekDays,
   date
 }: InlineEventCreatorProps) {
-  const { addEvent, events } = useEvents();
+  const { addEvent } = useEvents();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
-  const [duration, setDuration] = useState(60); // default 60 min
+  // ...existing code...
   // Removed AI model and vocab logic
 
   const formRef = useRef<HTMLDivElement>(null);

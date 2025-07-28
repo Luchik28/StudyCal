@@ -155,8 +155,13 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
         position: 'absolute',
         minHeight: '15px',
         zIndex: event.position.zIndex,
+        ...( ((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? {
+          padding: 0,
+          margin: 0,
+          borderRadius: 0,
+        } : {} ),
       }}
-      className="rounded-lg border border-white/20 text-white text-sm shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02] overflow-hidden"
+      className={`text-white text-sm overflow-hidden ${((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? '' : 'rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]'}`}
     >
       {/* Top resize handle */}
       {showResizeHandles && (
@@ -191,15 +196,18 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
         {(() => {
           const height = event.position.height;
           const timeString = formatTimeRange(event.startTime, event.endTime, timeFormat);
-          // Tiny events (< 25px, ~15 mins): Only title in tiny font
-          if (height < 25) {
+          const durationMinutes = (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
+          // For events 15 min or less, render only the event title, no wrappers or extra styles
+          if (durationMinutes <= 15) {
+            // Short event: left-aligned title, time on right, no dragging
             return (
-              <div className="flex-1 overflow-hidden">
-                <div 
-                  className="font-medium text-white text-xs truncate leading-tight hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
-                >
+              <div className="flex items-center justify-between w-full h-full rounded" style={{padding: '0 4px', borderRadius: '30px'}}>
+                <span className="font-medium text-white text-xs truncate leading-tight">
                   {event.title}
-                </div>
+                </span>
+                <span className="text-white/80 text-xs ml-2 whitespace-nowrap">
+                  {formatTimeRange(event.startTime, event.endTime, timeFormat)}
+                </span>
               </div>
             );
           }
