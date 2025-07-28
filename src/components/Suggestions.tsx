@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { launchConfetti } from './Confetti';
 import { Lightbulb, Clock, Target, Plus, X } from 'lucide-react';
 import { useEvents } from '../contexts/EventsContext';
 import { LongTermGoal } from './LongTermGoals';
@@ -1481,7 +1482,10 @@ export function Suggestions({
               <div className="flex flex-col gap-3">
                 {suggestion.actionLabel && (
                   <button
-                    onClick={suggestion.onAction}
+                    onClick={() => {
+                      suggestion.onAction();
+                      launchConfetti();
+                    }}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
                     aria-label={suggestion.type === 'goal' ? `Add '${suggestion.actionLabel}' to schedule` : `Add suggestion to schedule`}
                   >
