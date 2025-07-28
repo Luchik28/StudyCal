@@ -192,7 +192,7 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
       {/* Calendar */}
       <div className="flex-1 flex overflow-hidden">
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div id="calendar-container" className="flex-1 grid overflow-auto" style={{ gridTemplateColumns: '64px 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr' }}>
+          <div id="calendar-container" className="flex-1 grid overflow-auto" style={{ gridTemplateColumns: '64px 1fr 1fr 1fr 1fr 1fr 1fr 1fr' }}>
             <TimeSlots />
             {weekDays.map((day, index) => (
               <DayColumn
@@ -259,6 +259,7 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
           initialTitle={inlineEvent.title}
           initialStartTime={inlineEvent.startTime}
           initialEndTime={inlineEvent.endTime}
+          weekDays={weekDays}
         />
       )}
 

@@ -17,6 +17,7 @@ interface InlineEventCreatorProps {
   initialTitle: string;
   initialStartTime: Date;
   initialEndTime: Date;
+  weekDays?: Date[];
 }
 
 export function InlineEventCreator({ 
@@ -27,7 +28,9 @@ export function InlineEventCreator({
   onUpdate,
   initialTitle,
   initialStartTime,
-  initialEndTime
+  initialEndTime,
+  weekDays,
+  date
 }: InlineEventCreatorProps) {
   const { addEvent, events } = useEvents();
   const [title, setTitle] = useState(initialTitle);
@@ -62,20 +65,29 @@ export function InlineEventCreator({
     if (dayColumnRef && formRef.current) {
       const dayRect = dayColumnRef.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-      
       // Calculate vertical position based on the click time
       const topOffset = (initialHour + initialMinute / 60) * HOUR_HEIGHT;
-      
-      // Determine which side to show the form on
-      const showOnLeft = dayRect.right + 320 > viewportWidth; // 320px is form width
-      
+      let left = dayRect.right + 10;
+      let side: 'left' | 'right' = 'right';
+      // Use side logic from InlineEventEditor
+      if (dayRect.right + 320 > viewportWidth) {
+        left = dayRect.left - 320 - 10;
+        side = 'left';
+      }
+      if (weekDays && date) {
+        const dayIndex = weekDays.findIndex(day => day.toDateString() === date.toDateString());
+        if (dayIndex === 6) {
+          left = dayRect.left - 320 - 10;
+          side = 'left';
+        }
+      }
       setFormPosition({
-        left: showOnLeft ? dayRect.left - 320 - 10 : dayRect.right + 10,
-        top: dayRect.top + topOffset + 64, // 64px for header height
-        side: showOnLeft ? 'left' : 'right'
+        left,
+        top: dayRect.top + topOffset + 64, // original vertical logic
+        side
       });
     }
-  }, [dayColumnRef, initialHour, initialMinute]);
+  }, [dayColumnRef, initialHour, initialMinute, weekDays, date]);
 
   // Predict duration when title changes, with historical override
   // Removed AI prediction logic
@@ -109,26 +121,34 @@ export function InlineEventCreator({
 
   return (
     <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 z-[60]"
+        onClick={onCancel}
+      />
       {/* Popup form */}
       <div
         ref={formRef}
-        className="fixed bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80 z-50"
+        className="fixed bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 w-80 z-[70]"
         style={{
           left: formPosition.left,
           top: formPosition.top,
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">New Event</h3>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg font-semibold text-gray-900">New Event</span>
+            <button
+              onClick={onCancel}
+              className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+              type="button"
+              aria-label="Cancel"
+            >
+              <X size={20} />
+            </button>
+          </div>
           <div>
             <input
               ref={titleInputRef}

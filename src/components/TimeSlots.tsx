@@ -11,7 +11,7 @@ export function TimeSlots() {
   return (
     <div className="w-16 border-r border-gray-200 sticky left-0 bg-white z-20 flex flex-col">
       {/* Header spacer - matches day column headers */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-2 text-center z-10 flex-shrink-0">
+      <div className="sticky top-0 bg-white border-b border-gray-200 p-3 text-center z-10 flex-shrink-0">
         <div className="font-semibold text-gray-900 text-xs">Time</div>
       </div>
       
