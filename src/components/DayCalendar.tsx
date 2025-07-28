@@ -233,6 +233,19 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
           initialTitle={inlineEvent.title}
           initialStartTime={inlineEvent.startTime}
           initialEndTime={inlineEvent.endTime}
+          position={(() => {
+            if (!inlineEvent.dayColumnRef) return undefined;
+            const colRect = inlineEvent.dayColumnRef.getBoundingClientRect();
+            // Calculate the top/left for the event slot
+            const slotHeight = 48; // px per hour slot
+            const eventStartMinutes = inlineEvent.hour * 60 + inlineEvent.minute;
+            const eventDurationMinutes = (inlineEvent.endTime.getTime() - inlineEvent.startTime.getTime()) / 60000;
+            const eventCenterMinutes = eventStartMinutes + eventDurationMinutes / 2;
+            const popupWidth = 320, popupHeight = 240;
+            const top = colRect.top + (eventCenterMinutes / 60) * slotHeight - popupHeight / 2;
+            const left = colRect.left + colRect.width / 2 - popupWidth / 2;
+            return { top, left };
+          })()}
         />
       )}
 

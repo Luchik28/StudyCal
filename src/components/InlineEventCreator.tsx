@@ -16,6 +16,7 @@ interface InlineEventCreatorProps {
   initialStartTime: Date;
   initialEndTime: Date;
   weekDays?: Date[];
+  position?: { top: number; left: number };
 }
 
 export function InlineEventCreator({ 
@@ -28,7 +29,8 @@ export function InlineEventCreator({
   initialStartTime,
   initialEndTime,
   weekDays,
-  date
+  date,
+  position
 }: InlineEventCreatorProps) {
   const { addEvent } = useEvents();
   const [title, setTitle] = useState(initialTitle);
@@ -129,8 +131,8 @@ export function InlineEventCreator({
         ref={formRef}
         className="fixed bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 w-80 z-[70]"
         style={{
-          left: formPosition.left,
-          top: formPosition.top,
+          left: position?.left ?? formPosition.left,
+          top: position?.top ?? formPosition.top,
         }}
         onClick={(e) => e.stopPropagation()}
       >

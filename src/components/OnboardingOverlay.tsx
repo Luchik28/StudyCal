@@ -62,7 +62,7 @@ const steps = [
       <>
         <div>Type your tasks in the bottom bar of this section. StudyCal will estimate the time, category, and subcategory, but you can change them if needed.</div>
         <div className="mt-2">When you have finished adding all your tasks, click the schedule button at the very bottom, and StudyCal will turn all your tasks into events and place them inside the selected time frame.</div>
-        <div className="mt-2">You can use this to find time for all your tasks during your day. If something is scheduled on your calendar, you're much more likely to do it.</div>
+        <div className="mt-2">You can use this to find time for all your tasks during your day. If something is scheduled on your calendar, you&apos;re much more likely to do it.</div>
       </>
     ),
   },
@@ -73,7 +73,7 @@ const steps = [
     title: "Analytics",
     description: (
       <>
-        <div>See how you spend your time, track your progress, and view trends in the analytics section. You can click "See more" to open a more detailed report of the selected time frame.</div>
+        <div>See how you spend your time, track your progress, and view trends in the analytics section. You can click &quot;See more&quot; to open a more detailed report of the selected time frame.</div>
         <div>This information can be useful for building a more balanced schedule, and to track your progress.</div>
       </>
     ),
