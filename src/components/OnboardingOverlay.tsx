@@ -106,6 +106,18 @@ const steps = [
       </>
     ),
   },
+  // 7) Settings
+  {
+    key: "settings",
+    selector: "#open-settings, [aria-label='Settings']",
+    title: "Settings",
+    description: (
+      <>
+        <div>Click the settings icon to customize StudyCal to your preferences. Here you can change between 12 Hour and 24 Hour formats and connect to other calendars like Google Calendar.</div>
+        <div className="mt-2">Settings are always available in the top bar. Connecting to external calendars can help you get started even quicker by importing all of your events into StudyCal, you should definitely check it out!</div>
+      </>
+    ),
+  },
   // Done
   {
     key: "done",
