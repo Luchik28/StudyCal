@@ -118,6 +118,19 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <button
+            className="px-3 py-1 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-sm"
+            onClick={() => {
+              setModalInitialDate(currentDate);
+              setModalInitialHour(12);
+              setIsModalOpen(true);
+            }}
+            aria-label="Add Event"
+          >
+            + Add Event
+          </button>
+        </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => navigateDay('prev')}

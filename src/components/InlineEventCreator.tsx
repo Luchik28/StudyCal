@@ -35,9 +35,7 @@ export function InlineEventCreator({
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
   const [duration, setDuration] = useState(60); // default 60 min
-  const [model, setModel] = useState<tf.GraphModel|null>(null);
-  const [vocabMap, setVocabMap] = useState<Map<string, number>|null>(null);
-  const [predicting, setPredicting] = useState(false);
+  // Removed AI model and vocab logic
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -45,12 +43,13 @@ export function InlineEventCreator({
   // Focus the title input when component mounts
   useEffect(() => {
     titleInputRef.current?.focus();
-    // Load model and vocab on mount
-    loadTimePredictionModel().then(({ model, vocabMap }) => {
-      setModel(model);
-      setVocabMap(vocabMap);
-    }).catch(() => {});
+    // Removed model and vocab loading
   }, []);
+
+  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndTime = new Date(e.target.value);
+    setEndTime(newEndTime);
+  };
 
   // Calculate position for the popup form
   const [formPosition, setFormPosition] = useState<{ left: number; top: number; side: 'left' | 'right' }>({
@@ -79,47 +78,7 @@ export function InlineEventCreator({
   }, [dayColumnRef, initialHour, initialMinute]);
 
   // Predict duration when title changes, with historical override
-  useEffect(() => {
-    let cancelled = false;
-    const trimmedTitle = title.trim();
-    if (model && vocabMap && trimmedTitle) {
-      // 1. Check for similar past events with identical lengths
-      // Improved: normalize title (trim, lowercase, remove punctuation)
-      console.log("Sce=anning for similar past events...");
-      const normalize = (str: string) => str.trim().toLowerCase().replace(/[^\w\s]/g, '');
-      const normalizedTitle = normalize(trimmedTitle);
-      // Find all events with normalized title match
-      const similarEvents = events.filter(ev =>
-        ev.title && normalize(ev.title) === normalizedTitle
-      );
-      console.log(similarEvents);
-      // Only override if all similar events have the same duration and there are at least 3
-      if (similarEvents.length >= 3) {
-        const durations = similarEvents.map(ev => Math.round((ev.endTime.getTime() - ev.startTime.getTime()) / 60000));
-        const uniqueDurations = Array.from(new Set(durations));
-        if (uniqueDurations.length === 1) {
-          const dur = Math.round(uniqueDurations[0] / 5) * 5;
-          setDuration(dur);
-          const newEnd = new Date(startTime.getTime() + dur * 60000);
-          setEndTime(newEnd);
-          setPredicting(false);
-          return;
-        }
-      }
-      // Otherwise, use AI prediction
-      setPredicting(true);
-      predictTaskDuration(model, vocabMap, trimmedTitle).then((pred) => {
-        if (!cancelled) {
-          setDuration(pred);
-          // Update end time based on prediction
-          const newEnd = new Date(startTime.getTime() + pred * 60000);
-          setEndTime(newEnd);
-        }
-      }).finally(() => setPredicting(false));
-    }
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, model, startTime, events]);
+  // Removed AI prediction logic
 
   // Update parent component when title, times, or duration change
   useEffect(() => {
@@ -137,21 +96,15 @@ export function InlineEventCreator({
   const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStartTime = new Date(e.target.value);
     setStartTime(newStartTime);
-    // Update end time based on duration
-    setEndTime(new Date(newStartTime.getTime() + duration * 60000));
   };
 
   // Duration input handler
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = parseInt(e.target.value, 10);
-    if (isNaN(val) || val < 5) val = 5;
-    val = Math.round(val / 5) * 5;
-    setDuration(val);
-    setEndTime(new Date(startTime.getTime() + val * 60000));
-  };
+  // Removed duration input handler
 
   const formatDateTimeLocal = (date: Date) => {
-    return date.toISOString().slice(0, 16);
+    // Subtract 4 hours to correct for timezone offset
+    const correctedDate = new Date(date.getTime() - 4 * 60 * 60 * 1000);
+    return correctedDate.toISOString().slice(0, 16);
   };
 
   return (
@@ -201,28 +154,13 @@ export function InlineEventCreator({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Duration (min)
-              </label>
-              <input
-                type="number"
-                min={5}
-                step={5}
-                value={duration}
-                onChange={handleDurationChange}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                disabled={predicting}
-              />
-              {predicting && <span className="text-xs text-gray-400">AI predicting…</span>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
                 End
               </label>
               <input
                 type="datetime-local"
                 value={formatDateTimeLocal(endTime)}
-                readOnly
-                className="w-full px-2 py-1 border border-gray-300 rounded-md bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
+                onChange={handleEndTimeChange}
+                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
           </div>

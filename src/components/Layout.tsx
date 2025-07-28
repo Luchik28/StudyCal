@@ -68,7 +68,10 @@ function TaskList({
   const handleAdd = async () => {
     if (input.trim()) {
       let predictedDuration = 60;
-      if (model && vocabMap) {
+      // Default to 60 min unless user changes duration in popup
+      if (!model || !vocabMap) {
+        predictedDuration = 60;
+      } else {
         setPredictingIdx(tasks.length);
         // --- Historical override logic (copied from InlineEventCreator) ---
         const normalize = (str: string) => str.trim().toLowerCase().replace(/[^\w\s]/g, '');
@@ -482,7 +485,7 @@ function LayoutContent() {
                   : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
-              Today
+              Day
             </button>
             <button
               onClick={() => handleViewChange('week')}
@@ -492,7 +495,7 @@ function LayoutContent() {
                   : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
-              This Week
+              Week
             </button>
             <button
               onClick={() => handleViewChange('month')}
@@ -502,7 +505,7 @@ function LayoutContent() {
                   : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
-              Later
+              Month
             </button>
           </div>
         </div>

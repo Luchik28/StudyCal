@@ -136,22 +136,39 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Navigation - moved to be compact */}
-      <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-center space-x-4">
-        <button
-          onClick={() => navigateWeek('prev')}
-          className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <span className="font-medium text-gray-900 text-sm">
-          {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
-        </span>
-        <button
-          onClick={() => navigateWeek('next')}
-          className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
-        >
-          <ChevronRight size={16} />
-        </button>
+      <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            className="px-3 py-1 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-sm"
+            onClick={() => {
+              // Add event at 12:00 on Wednesday of current week
+              const wednesday = weekDays[3];
+              setModalInitialDate(wednesday);
+              setModalInitialHour(12);
+              setIsModalOpen(true);
+            }}
+            aria-label="Add Event"
+          >
+            + Add Event
+          </button>
+        </div>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => navigateWeek('prev')}
+            className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="font-medium text-gray-900 text-sm">
+            {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
+          </span>
+          <button
+            onClick={() => navigateWeek('next')}
+            className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Calendar */}

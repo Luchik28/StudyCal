@@ -135,6 +135,8 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const eventDurationMinutes = (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
+  const showResizeHandles = eventDurationMinutes > 15;
   return (
     <div
       ref={(node) => {
@@ -157,22 +159,23 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
       className="rounded-lg border border-white/20 text-white text-sm shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02] overflow-hidden"
     >
       {/* Top resize handle */}
-      <div
-        className={`absolute top-0 left-0 right-0 h-2 cursor-ns-resize transition-opacity z-10 flex items-center justify-center ${
-          isResizing === 'top' 
-            ? 'opacity-100 bg-blue-500/40' 
-            : 'opacity-0 group-hover:opacity-100 hover:!opacity-100'
-        }`}
-        style={{ 
-          backgroundColor: isResizing === 'top' ? undefined : 'rgba(255,255,255,0.3)' 
-        }}
-        onMouseDown={(e) => handleResizeStart(e, 'top')}
-      >
-        <div className={`w-8 h-0.5 rounded ${
-          isResizing === 'top' ? 'bg-blue-200' : 'bg-white/60'
-        }`} />
-      </div>
-      
+      {showResizeHandles && (
+        <div
+          className={`absolute top-0 left-0 right-0 h-2 cursor-ns-resize transition-opacity z-10 flex items-center justify-center ${
+            isResizing === 'top' 
+              ? 'opacity-100 bg-blue-500/40' 
+              : 'opacity-0 group-hover:opacity-100 hover:!opacity-100'
+          }`}
+          style={{ 
+            backgroundColor: isResizing === 'top' ? undefined : 'rgba(255,255,255,0.3)' 
+          }}
+          onMouseDown={(e) => handleResizeStart(e, 'top')}
+        >
+          <div className={`w-8 h-0.5 rounded ${
+            isResizing === 'top' ? 'bg-blue-200' : 'bg-white/60'
+          }`} />
+        </div>
+      )}
       {/* Event content */}
       <div
         className={`p-2 h-full flex flex-col overflow-hidden select-none event-background ${
@@ -188,7 +191,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
         {(() => {
           const height = event.position.height;
           const timeString = formatTimeRange(event.startTime, event.endTime, timeFormat);
-          
           // Tiny events (< 25px, ~15 mins): Only title in tiny font
           if (height < 25) {
             return (
@@ -201,7 +203,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
               </div>
             );
           }
-          
           // Very small events (25-50px): Only title with time
           if (height < 50) {
             return (
@@ -209,12 +210,11 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
                 <div 
                   className="font-medium text-white text-xs truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
                 >
-                  {event.title} • {timeString}
+                  {event.title} 2 {timeString}
                 </div>
               </div>
             );
           }
-          
           // Small events (50-70px): Title, time, maybe category
           if (height < 70) {
             return (
@@ -236,7 +236,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
               </div>
             );
           }
-          
           // Medium events (70-90px): Title, time, category, maybe subcategory
           if (height < 90) {
             return (
@@ -261,7 +260,6 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
               </div>
             );
           }
-          
           // Large events (90px+): Everything including description
           return (
             <div className="flex-1 overflow-hidden">
@@ -291,23 +289,24 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           );
         })()}
       </div>
-      
       {/* Bottom resize handle */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize transition-opacity z-10 flex items-center justify-center ${
-          isResizing === 'bottom' 
-            ? 'opacity-100 bg-blue-500/40' 
-            : 'opacity-0 group-hover:opacity-100 hover:!opacity-100'
-        }`}
-        style={{ 
-          backgroundColor: isResizing === 'bottom' ? undefined : 'rgba(255,255,255,0.3)' 
-        }}
-        onMouseDown={(e) => handleResizeStart(e, 'bottom')}
-      >
-        <div className={`w-8 h-0.5 rounded ${
-          isResizing === 'bottom' ? 'bg-blue-200' : 'bg-white/60'
-        }`} />
-      </div>
+      {showResizeHandles && (
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize transition-opacity z-10 flex items-center justify-center ${
+            isResizing === 'bottom' 
+              ? 'opacity-100 bg-blue-500/40' 
+              : 'opacity-0 group-hover:opacity-100 hover:!opacity-100'
+          }`}
+          style={{ 
+            backgroundColor: isResizing === 'bottom' ? undefined : 'rgba(255,255,255,0.3)' 
+          }}
+          onMouseDown={(e) => handleResizeStart(e, 'bottom')}
+        >
+          <div className={`w-8 h-0.5 rounded ${
+            isResizing === 'bottom' ? 'bg-blue-200' : 'bg-white/60'
+          }`} />
+        </div>
+      )}
     </div>
   );
 }
