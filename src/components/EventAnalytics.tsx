@@ -163,17 +163,25 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
 
   return (
     <div id="open-analytics" aria-label="Analytics" className="p-6 border-b border-gray-200">
-      {/* Analytics Title and Pie Chart Section */}
+      {/* Always show Analytics Title */}
+      <div className="w-full flex items-left justify-left mb-2">
+            <h2 className="font-bold font-mono text-lg text-gray-900 flex items-center gap-2">
+              Analytics
+              <span className="relative group">
+                <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="How to use">?</span>
+                <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{minWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
+                  See a breakdown of how your time is spent. Use this to reflect and adjust your schedule for better balance.
+                </span>
+              </span>
+            </h2>
+      </div>
+      {/* Analytics Pie Chart Section or Empty State */}
       {totalEvents === 0 ? (
         <div className="text-center text-gray-600 py-4">
           No events for {getTimeFrameLabel().toLowerCase()}
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Analytics Title */}
-          <div className="w-full flex items-left justify-left mb-2">
-            <h2 className="font-bold font-mono text-lg text-gray-900">Analytics</h2>
-          </div>
           {/* Pie Chart */}
           {pieChartData.length > 0 && (
             <div className="bg-gray-50 rounded-lg p-4">
