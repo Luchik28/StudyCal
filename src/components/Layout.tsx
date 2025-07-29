@@ -1,3 +1,18 @@
+// Add tooltip to Plan my Day/Week/Month section header
+// Find the header for the main task section and add a question mark with tooltip
+// ...existing code...
+// Example implementation (insert above TaskList or where the section header is rendered):
+// <div className="flex items-center gap-2 mb-4">
+//   <h2 className="font-bold font-mono text-lg text-gray-900 flex items-center gap-2">
+//     {currentView === 'day' ? 'Plan my Day' : currentView === 'week' ? 'Plan my Week' : 'Plan my Month'}
+//     <span className="relative group">
+//       <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+//       <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-auto transition-opacity duration-200" style={{minWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
+//         This is your main task list for the {currentView}. Add tasks here to plan your schedule.
+//       </span>
+//     </span>
+//   </h2>
+// </div>
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -13,7 +28,7 @@ import { taskScheduler, Task } from '@/utils/taskScheduler';
 import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
 import { classifyEvent } from '@/utils/eventClassification';
 import { startOfWeek } from 'date-fns';
-import { Settings, Clock, Calendar, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
@@ -24,17 +39,13 @@ import { Suggestions } from './Suggestions';
 export type CalendarView = 'day' | 'week' | 'month';
 
 function TaskList({
-  title,
   placeholder,
   addButtonLabel,
-  scheduleButtonLabel,
   view,
   currentDate,
 }: {
-  title: string;
   placeholder: string;
   addButtonLabel: string;
-  scheduleButtonLabel?: string;
   view: CalendarView;
   currentDate: Date;
 }) {
@@ -68,7 +79,10 @@ function TaskList({
   const handleAdd = async () => {
     if (input.trim()) {
       let predictedDuration = 60;
-      if (model && vocabMap) {
+      // Default to 60 min unless user changes duration in popup
+      if (!model || !vocabMap) {
+        predictedDuration = 60;
+      } else {
         setPredictingIdx(tasks.length);
         // --- Historical override logic (copied from InlineEventCreator) ---
         const normalize = (str: string) => str.trim().toLowerCase().replace(/[^\w\s]/g, '');
@@ -247,10 +261,35 @@ function TaskList({
     }
   };
 
+  // Determine section and button labels based on view
+  let sectionLabel = '';
+  let scheduleLabel = '';
+  if (view === 'day') {
+    sectionLabel = 'Plan my Day';
+    scheduleLabel = 'Schedule my Day';
+  } else if (view === 'week') {
+    sectionLabel = 'Plan my Week';
+    scheduleLabel = 'Schedule my Week';
+  } else {
+    sectionLabel = 'Plan my Month';
+    scheduleLabel = 'Schedule in coming days';
+  }
+
   return (
-    <div id="tasks-section" aria-label="Tasks" className="flex flex-col h-full">
-      <h3 className="text-lg font-bold mb-2 text-gray-900 font-mono">{title}</h3>
-      <div className="flex-1 overflow-y-auto mb-2 space-y-2">
+    <div id="tasks-section" aria-label={sectionLabel} className="flex flex-col h-full min-h-0">
+      {/* Plan header with tooltip */}
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="font-bold font-mono text-lg text-gray-900 flex items-center gap-2">
+          {view === 'day' ? 'Plan my Day' : view === 'week' ? 'Plan my Week' : 'Plan my Month'}
+          <span className="relative group">
+            <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+            <span className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-[12000] w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{maxWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
+              Use this section to schedule time to complete all your tasks. Add tasks here, then click &quot;Schedule my {view},&quot; and StudyCal will place your events throughout the {view}.
+            </span>
+          </span>
+        </h2>
+      </div>
+      <div className="flex-1 overflow-y-auto space-y-2">
         {tasks.map((task, idx) => (
           <div key={task.id} className="border rounded-lg p-3 bg-white shadow-sm">
             <div className="space-y-2">
@@ -281,7 +320,6 @@ function TaskList({
                   </button>
                 </div>
               </div>
-              
               <div className="flex items-center gap-2 text-xs flex-wrap">
                 <div className="flex items-center gap-1">
                   <Clock size={12} className="text-gray-600" />
@@ -297,8 +335,6 @@ function TaskList({
                   <span className="text-xs text-gray-500">min</span>
                   {predictingIdx === idx && <span className="text-xs text-gray-400 ml-1">AI…</span>}
                 </div>
-                
-                {/* Category dropdown */}
                 <select
                   value={task.category || ''}
                   onChange={(e) => handleUpdateCategory(idx, e.target.value)}
@@ -309,8 +345,6 @@ function TaskList({
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
-
-                {/* Subcategory dropdown */}
                 <select
                   value={task.subcategory || ''}
                   onChange={(e) => handleUpdateSubcategory(idx, e.target.value)}
@@ -326,7 +360,6 @@ function TaskList({
           </div>
         ))}
       </div>
-      
       <div className="space-y-2">
         <div className="space-y-2">
           <div className="flex items-center">
@@ -348,26 +381,24 @@ function TaskList({
             </button>
           </div>
         </div>
-        
-        {scheduleButtonLabel && tasks.length > 0 && (
-          <button 
-            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleScheduleTasks}
-            disabled={isScheduling}
-          >
-            {isScheduling ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Scheduling...
-              </>
-            ) : (
-              <>
-                <Calendar size={16} />
-                {scheduleButtonLabel}
-              </>
-            )}
-          </button>
-        )}
+        {/* Always show schedule button, gray and disabled if no tasks */}
+        <button
+          className={`w-full py-2 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors ${tasks.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
+          onClick={tasks.length > 0 ? handleScheduleTasks : undefined}
+          disabled={tasks.length === 0 || isScheduling}
+        >
+          {isScheduling ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Scheduling...
+            </>
+          ) : (
+            <>
+              <Calendar size={16} />
+              {scheduleLabel}
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -482,7 +513,7 @@ function LayoutContent() {
                   : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
-              Today
+              Day
             </button>
             <button
               onClick={() => handleViewChange('week')}
@@ -492,7 +523,7 @@ function LayoutContent() {
                   : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
-              This Week
+              Week
             </button>
             <button
               onClick={() => handleViewChange('month')}
@@ -502,52 +533,26 @@ function LayoutContent() {
                   : 'text-gray-600 scale-95 px-0 hover:scale-100 hover:px-2 hover:font-bold hover:text-gray-800'
               }`}
             >
-              Later
+              Month
             </button>
           </div>
         </div>
-        {currentView === 'month' ? (
-          <div className="flex-1 flex flex-col">
-            {/* Top half - Tasks */}
-            <div className="flex-1 p-6 overflow-y-auto border-b border-gray-200">
-              <TaskList
-                title="Upcoming tasks"
-                placeholder="Add a task..."
-                addButtonLabel="Add"
-                scheduleButtonLabel="Schedule in coming days"
-                view={currentView}
-                currentDate={currentMonth}
-              />
-            </div>
-            {/* Bottom half - Long-term Goals */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 p-6 overflow-y-auto border-b border-gray-200">
+            {/* Plan header with tooltip is now rendered inside TaskList */}
+            <TaskList
+              placeholder="Add a task..."
+              addButtonLabel="Add"
+              view={currentView}
+              currentDate={currentView === 'month' ? currentMonth : currentView === 'week' ? currentWeek : selectedDate || new Date()}
+            />
+          </div>
+          {currentView === 'month' && (
             <div className="flex-1 p-6 overflow-y-auto">
               <LongTermGoals />
             </div>
-          </div>
-        ) : (
-          <div className="flex-1 p-6 overflow-y-auto">
-            {currentView === 'day' && (
-              <TaskList
-                title="Tasks for today"
-                placeholder="Add a task..."
-                addButtonLabel="Add"
-                scheduleButtonLabel="Schedule to my day"
-                view={currentView}
-                currentDate={selectedDate || new Date()}
-              />
-            )}
-            {currentView === 'week' && (
-              <TaskList
-                title="Tasks for the week"
-                placeholder="Add a task..."
-                addButtonLabel="Add"
-                scheduleButtonLabel="Schedule across the week"
-                view={currentView}
-                currentDate={currentWeek}
-              />
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
       
       {/* Mobile drawer tab for left sidebar */}
@@ -564,37 +569,7 @@ function LayoutContent() {
       {/* Main Calendar Area - Independently scrollable */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Calendar Header with Settings and mobile controls */}
-        <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center justify-between flex-shrink-0">
-          {/* Mobile menu button for left sidebar */}
-          <button
-            onClick={() => setLeftSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-md transition-colors"
-            title="Open tasks"
-          >
-            <Menu size={20} className="text-gray-600" />
-          </button>
-          
-          <div className="flex items-center gap-2">
-            {/* Mobile menu button for right sidebar */}
-            <button
-              onClick={() => setRightSidebarOpen(true)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-md transition-colors"
-              title="Open insights"
-            >
-              <Clock size={20} className="text-gray-600" />
-            </button>
-            
-            <button
-              id="settings-button"
-              aria-label="Settings"
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              title="Settings"
-            >
-              <Settings size={20} className="text-gray-600" />
-            </button>
-          </div>
-        </div>
+        
         {/* Calendar Content - This area scrolls independently */}
         <div className="flex-1 overflow-hidden">
           {renderCalendar()}

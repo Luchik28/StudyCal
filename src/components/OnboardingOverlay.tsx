@@ -37,8 +37,8 @@ const steps = [
     title: "Add Events",
     description: (
       <>
-        <div>Click anywhere on the calendar to add an event.</div>
-        <div className="mt-2">When you finish editing the title, StudyCal will estimate the time your event will take, but you can change it by editing the times in the add event popup.</div>
+        <div>Click anywhere on the calendar to add an event, or use the dedicated Add Event button</div>
+        <div className="mt-2">Use these events to schedule your day!</div>
       </>
     ),
   },
@@ -49,8 +49,7 @@ const steps = [
     title: "Modify Events",
     description: (
       <>
-        <div>You can change how long an event lasts by clicking on the top or bottom of its box, and then dragging it until the event reaches the desired length.</div>
-        <div className="mt-2">To move an event, simply left click and drag it wherever you want. To change its time using a text box, or to change its category or subcategory, right click on the event.</div>
+        <div>Left click on an event to move it around on your calendar. Right click it to bring up its menu, which will allow you to change its category and start/end times.</div>
       </>
     ),
   },
@@ -63,6 +62,7 @@ const steps = [
       <>
         <div>Type your tasks in the bottom bar of this section. StudyCal will estimate the time, category, and subcategory, but you can change them if needed.</div>
         <div className="mt-2">When you have finished adding all your tasks, click the schedule button at the very bottom, and StudyCal will turn all your tasks into events and place them inside the selected time frame.</div>
+        <div className="mt-2">You can use this to find time for all your tasks during your day. If something is scheduled on your calendar, you&apos;re much more likely to do it.</div>
       </>
     ),
   },
@@ -73,14 +73,15 @@ const steps = [
     title: "Analytics",
     description: (
       <>
-        <div>See how you spend your time, track your progress, and view trends in the analytics section.</div>
+        <div>See how you spend your time, track your progress, and view trends in the analytics section. You can click &quot;See more&quot; to open a more detailed report of the selected time frame.</div>
+        <div>This information can be useful for building a more balanced schedule, and to track your progress.</div>
       </>
     ),
   },
   // 5.5) Long Term Goals
   {
     key: "long-term-goals",
-    selector: ".flex-1.p-6.overflow-y-auto > .flex.flex-col.h-full > .flex.items-center.gap-2.mb-4, .flex-1.p-6.overflow-y-auto > .flex.flex-col.h-full > .flex.items-center.gap-2.mb-4 .text-lg, .flex-1.p-6.overflow-y-auto > .flex.flex-col.h-full > .flex.items-center.gap-2.mb-4 h3",
+    selector: "",
     title: "Long Term Goals",
     description: (
       <>
@@ -90,8 +91,6 @@ const steps = [
     ),
     auto: () => {
       // Switch to the Later view (month)
-      const laterBtn = document.querySelector(".flex.items-center.justify-between button:last-child");
-      if (laterBtn) (laterBtn as HTMLElement).click();
     }
   },
   // 6) AI Suggestions
@@ -101,8 +100,21 @@ const steps = [
     title: "AI Suggestions",
     description: (
       <>
-        <div>StudyCal will analyze your schedule and offer events to add in order to create a more balanced schedule.</div>
-        <div className="mt-2">It will also suggest you block out time to work on your goals here.</div>
+        <div>StudyCal will analyze your schedule and offer events to add in order to create a more balanced schedule here.</div>
+        <div className="mt-2">It will suggest things like blocking out time to work on your goals, adding or modifying study sessions, or doing an activity to balance out your schedule.</div>
+        <div className="mt-2">This is the core feature that sets StudyCal apart: following its suggestions will help make your schedule more balanced and improve your acedemic success!</div>
+      </>
+    ),
+  },
+  // 7) Settings
+  {
+    key: "settings",
+    selector: "#open-settings, [aria-label='Settings']",
+    title: "Settings",
+    description: (
+      <>
+        <div>Click the settings icon to customize StudyCal to your preferences. Here you can change between 12 Hour and 24 Hour formats and connect to other calendars like Google Calendar.</div>
+        <div className="mt-2">Settings are always available in the top bar. Connecting to external calendars can help you get started even quicker by importing all of your events into StudyCal, you should definitely check it out!</div>
       </>
     ),
   },

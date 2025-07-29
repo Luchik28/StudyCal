@@ -32,7 +32,7 @@ export function InlineEventEditor({
   const [startTime, setStartTime] = useState(event.startTime);
   const [endTime, setEndTime] = useState(event.endTime);
   const [category, setCategory] = useState(event.category || '');
-  const [subcategory, setSubcategory] = useState(event.subcategory || '');
+  const [subcategory, setSubcategory] = useState(event.subcategory !== undefined ? event.subcategory : '');
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -53,22 +53,23 @@ export function InlineEventEditor({
     
     if (eventElement && formRef.current) {
       const eventRect = eventElement.getBoundingClientRect();
-      console.log('Event element rect:', eventRect);
       const viewportWidth = window.innerWidth;
-      console.log('Viewport width:', viewportWidth);
-      
-      // Determine which side to show the form on
-      const showOnLeft = eventRect.right + 320 > viewportWidth; // 320px is form width
-      console.log('Show on left:', showOnLeft);
-      
-      const newPosition = {
-        left: showOnLeft ? eventRect.left - 320 - 10 : eventRect.right + 10,
-        top: eventRect.top,
-        side: showOnLeft ? 'left' as const : 'right' as const
-      };
-      
-      console.log('Setting form position:', newPosition);
-      setFormPosition(newPosition);
+      // If the event is in the daily view (width > 300px), center the popup over the event
+      if (eventRect.width > 300) {
+        setFormPosition({
+          left: eventRect.left + eventRect.width / 2 - 160, // 320px / 2
+          top: eventRect.top + eventRect.height / 2 - 120, // 240px / 2
+          side: 'right'
+        });
+      } else {
+        // Determine which side to show the form on (week/month view)
+        const showOnLeft = eventRect.right + 320 > viewportWidth;
+        setFormPosition({
+          left: showOnLeft ? eventRect.left - 320 - 10 : eventRect.right + 10,
+          top: eventRect.top,
+          side: showOnLeft ? 'left' as const : 'right' as const
+        });
+      }
     }
   }, [eventElement, event.title]);
 
@@ -222,7 +223,7 @@ export function InlineEventEditor({
             </select>
 
             <select
-              value={subcategory}
+              value={subcategory || ''}
               onChange={(e) => handleSubcategoryChange(e.target.value)}
               className="border rounded px-2 py-1 text-xs text-gray-900 bg-purple-50 cursor-pointer"
             >

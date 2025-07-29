@@ -1,11 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
-import { X } from 'lucide-react';
-import { useEvents } from '@/contexts/EventsContext';
-import { HOUR_HEIGHT } from '@/utils/calendar';
+import React, { useState, useRef, useEffect } from "react";
+import { X } from "lucide-react";
+import { useEvents } from "@/contexts/EventsContext";
+import { HOUR_HEIGHT } from "@/utils/calendar";
 
 interface InlineEventCreatorProps {
   date: Date;
@@ -17,6 +15,8 @@ interface InlineEventCreatorProps {
   initialTitle: string;
   initialStartTime: Date;
   initialEndTime: Date;
+  weekDays?: Date[];
+  position?: { top: number; left: number };
 }
 
 export function InlineEventCreator({ 
@@ -27,17 +27,18 @@ export function InlineEventCreator({
   onUpdate,
   initialTitle,
   initialStartTime,
-  initialEndTime
+  initialEndTime,
+  weekDays,
+  date,
+  position
 }: InlineEventCreatorProps) {
-  const { addEvent, events } = useEvents();
+  const { addEvent } = useEvents();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
-  const [duration, setDuration] = useState(60); // default 60 min
-  const [model, setModel] = useState<tf.GraphModel|null>(null);
-  const [vocabMap, setVocabMap] = useState<Map<string, number>|null>(null);
-  const [predicting, setPredicting] = useState(false);
+  // ...existing code...
+  // Removed AI model and vocab logic
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -45,12 +46,13 @@ export function InlineEventCreator({
   // Focus the title input when component mounts
   useEffect(() => {
     titleInputRef.current?.focus();
-    // Load model and vocab on mount
-    loadTimePredictionModel().then(({ model, vocabMap }) => {
-      setModel(model);
-      setVocabMap(vocabMap);
-    }).catch(() => {});
+    // Removed model and vocab loading
   }, []);
+
+  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndTime = new Date(e.target.value);
+    setEndTime(newEndTime);
+  };
 
   // Calculate position for the popup form
   const [formPosition, setFormPosition] = useState<{ left: number; top: number; side: 'left' | 'right' }>({
@@ -63,63 +65,32 @@ export function InlineEventCreator({
     if (dayColumnRef && formRef.current) {
       const dayRect = dayColumnRef.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-      
       // Calculate vertical position based on the click time
       const topOffset = (initialHour + initialMinute / 60) * HOUR_HEIGHT;
-      
-      // Determine which side to show the form on
-      const showOnLeft = dayRect.right + 320 > viewportWidth; // 320px is form width
-      
-      setFormPosition({
-        left: showOnLeft ? dayRect.left - 320 - 10 : dayRect.right + 10,
-        top: dayRect.top + topOffset + 64, // 64px for header height
-        side: showOnLeft ? 'left' : 'right'
-      });
-    }
-  }, [dayColumnRef, initialHour, initialMinute]);
-
-  // Predict duration when title changes, with historical override
-  useEffect(() => {
-    let cancelled = false;
-    const trimmedTitle = title.trim();
-    if (model && vocabMap && trimmedTitle) {
-      // 1. Check for similar past events with identical lengths
-      // Improved: normalize title (trim, lowercase, remove punctuation)
-      console.log("Sce=anning for similar past events...");
-      const normalize = (str: string) => str.trim().toLowerCase().replace(/[^\w\s]/g, '');
-      const normalizedTitle = normalize(trimmedTitle);
-      // Find all events with normalized title match
-      const similarEvents = events.filter(ev =>
-        ev.title && normalize(ev.title) === normalizedTitle
-      );
-      console.log(similarEvents);
-      // Only override if all similar events have the same duration and there are at least 3
-      if (similarEvents.length >= 3) {
-        const durations = similarEvents.map(ev => Math.round((ev.endTime.getTime() - ev.startTime.getTime()) / 60000));
-        const uniqueDurations = Array.from(new Set(durations));
-        if (uniqueDurations.length === 1) {
-          const dur = Math.round(uniqueDurations[0] / 5) * 5;
-          setDuration(dur);
-          const newEnd = new Date(startTime.getTime() + dur * 60000);
-          setEndTime(newEnd);
-          setPredicting(false);
-          return;
+      let left = dayRect.right + 10;
+      let side: 'left' | 'right' = 'right';
+      // Use side logic from InlineEventEditor
+      if (dayRect.right + 320 > viewportWidth) {
+        left = dayRect.left - 320 - 10;
+        side = 'left';
+      }
+      if (weekDays && date) {
+        const dayIndex = weekDays.findIndex(day => day.toDateString() === date.toDateString());
+        if (dayIndex === 6) {
+          left = dayRect.left - 320 - 10;
+          side = 'left';
         }
       }
-      // Otherwise, use AI prediction
-      setPredicting(true);
-      predictTaskDuration(model, vocabMap, trimmedTitle).then((pred) => {
-        if (!cancelled) {
-          setDuration(pred);
-          // Update end time based on prediction
-          const newEnd = new Date(startTime.getTime() + pred * 60000);
-          setEndTime(newEnd);
-        }
-      }).finally(() => setPredicting(false));
+      setFormPosition({
+        left,
+        top: dayRect.top + topOffset + 64, // original vertical logic
+        side
+      });
     }
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, model, startTime, events]);
+  }, [dayColumnRef, initialHour, initialMinute, weekDays, date]);
+
+  // Predict duration when title changes, with historical override
+  // Removed AI prediction logic
 
   // Update parent component when title, times, or duration change
   useEffect(() => {
@@ -137,45 +108,47 @@ export function InlineEventCreator({
   const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStartTime = new Date(e.target.value);
     setStartTime(newStartTime);
-    // Update end time based on duration
-    setEndTime(new Date(newStartTime.getTime() + duration * 60000));
   };
 
   // Duration input handler
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = parseInt(e.target.value, 10);
-    if (isNaN(val) || val < 5) val = 5;
-    val = Math.round(val / 5) * 5;
-    setDuration(val);
-    setEndTime(new Date(startTime.getTime() + val * 60000));
-  };
+  // Removed duration input handler
 
   const formatDateTimeLocal = (date: Date) => {
-    return date.toISOString().slice(0, 16);
+    // Subtract 4 hours to correct for timezone offset
+    const correctedDate = new Date(date.getTime() - 4 * 60 * 60 * 1000);
+    return correctedDate.toISOString().slice(0, 16);
   };
 
   return (
     <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 z-[60]"
+        onClick={onCancel}
+      />
       {/* Popup form */}
       <div
         ref={formRef}
-        className="fixed bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80 z-50"
+        className="fixed bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 w-80 z-[70]"
         style={{
-          left: formPosition.left,
-          top: formPosition.top,
+          left: position?.left ?? formPosition.left,
+          top: position?.top ?? formPosition.top,
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">New Event</h3>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg font-semibold text-gray-900">New Event</span>
+            <button
+              onClick={onCancel}
+              className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+              type="button"
+              aria-label="Cancel"
+            >
+              <X size={20} />
+            </button>
+          </div>
           <div>
             <input
               ref={titleInputRef}
@@ -201,28 +174,13 @@ export function InlineEventCreator({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Duration (min)
-              </label>
-              <input
-                type="number"
-                min={5}
-                step={5}
-                value={duration}
-                onChange={handleDurationChange}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                disabled={predicting}
-              />
-              {predicting && <span className="text-xs text-gray-400">AI predicting…</span>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
                 End
               </label>
               <input
                 type="datetime-local"
                 value={formatDateTimeLocal(endTime)}
-                readOnly
-                className="w-full px-2 py-1 border border-gray-300 rounded-md bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
+                onChange={handleEndTimeChange}
+                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
           </div>

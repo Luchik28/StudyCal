@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { launchConfetti } from './Confetti';
 import { Lightbulb, Clock, Target, Plus, X } from 'lucide-react';
 import { useEvents } from '../contexts/EventsContext';
 import { LongTermGoal } from './LongTermGoals';
@@ -1371,7 +1372,15 @@ export function Suggestions({
       <div className={`p-6 flex flex-col h-full ${className}`}>
         <div className="flex items-center gap-2 mb-4 flex-shrink-0">
           <Lightbulb size={20} className="text-yellow-600" />
-          <h3 className="text-lg font-bold text-gray-900 font-mono">Suggestions</h3>
+          <h3 className="text-lg font-bold text-gray-900 font-mono flex items-center gap-2">
+            Suggestions
+            <span className="relative group">
+              <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+              <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{minWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
+                Get helpful suggestions to improve your productivity and balance your schedule.
+              </span>
+            </span>
+          </h3>
         </div>
         <div className="flex-1 flex items-center justify-center min-h-0">
           <div className="text-center text-gray-500 max-w-xs">
@@ -1420,54 +1429,126 @@ export function Suggestions({
     <div id="suggestions-panel" aria-label="Suggestions" className={`p-6 flex flex-col h-full ${className}`}>
       <div className="flex items-center gap-2 mb-5 flex-shrink-0">
         <Lightbulb size={20} className="text-yellow-600" />
-        <h3 className="text-lg font-bold text-gray-900 font-mono">Suggestions</h3>
+        <h3 className="text-lg font-bold text-gray-900 font-mono flex items-center gap-2">
+          Suggestions
+          <span className="relative group">
+            <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+            <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{minWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
+              Get helpful suggestions to improve your productivity and balance your schedule.
+            </span>
+          </span>
+        </h3>
       </div>
       
       <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
         {allSuggestions.slice(0, 5).map((suggestion) => (
-          <div 
-            key={suggestion.id}
-            className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-          >
-            {/* Card Header with Icon and Title */}
-            <div className="p-5 pb-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-1">
-                  {getSuggestionIcon(suggestion.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 text-base mb-3 leading-tight">
-                    {suggestion.title}
-                  </h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {suggestion.description}
-                  </p>
+          suggestion.type === 'goal' && suggestion.actionLabel === 'Go to Goals' ? (
+            <div 
+              key={suggestion.id}
+              className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="p-5 pb-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-1">
+                    {getSuggestionIcon(suggestion.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 text-base mb-3 leading-tight">
+                      {suggestion.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {suggestion.description}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Card Footer with Action Buttons */}
-            <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
-              <div className="flex flex-col gap-3">
-                {suggestion.actionLabel && (
+              <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="flex flex-col gap-3">
                   <button
-                    onClick={suggestion.onAction}
+                    onClick={() => {
+                      suggestion.onAction();
+                      dismissSuggestion(suggestion.id);
+                    }}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+                    aria-label="Go to Goals"
                   >
-                    <Plus size={16} />
-                    <span className="truncate">{suggestion.actionLabel}</span>
+                    <Target size={16} />
+                    <span className="truncate">Go to Goals</span>
                   </button>
-                )}
-                <button
-                  onClick={() => dismissSuggestion(suggestion.id)}
-                  className="w-full px-4 py-2 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  <X size={14} />
-                  <span>No thanks</span>
-                </button>
+                  <button
+                    onClick={() => dismissSuggestion(suggestion.id)}
+                    className="w-full px-4 py-2 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <X size={14} />
+                    <span>No thanks</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div 
+              key={suggestion.id}
+              className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
+              {/* Card Header with Icon and Title */}
+              <div className="p-5 pb-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-1">
+                    {getSuggestionIcon(suggestion.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 text-base mb-3 leading-tight">
+                      {suggestion.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {suggestion.type === 'goal' && suggestion.actionLabel ? (
+                        <>
+                          {suggestion.description}
+                          <br />
+                          <span className="block mt-2 text-blue-700 font-semibold">Event: {suggestion.actionLabel}</span>
+                          <span className="block text-xs text-gray-400 mt-1">Click the blue button below to add this event to your schedule.</span>
+                        </>
+                      ) : (
+                        <>
+                          {suggestion.description}
+                          {suggestion.actionLabel && (
+                            <span className="block text-xs text-gray-400 mt-2">Click the blue button below to add this event to your schedule.</span>
+                          )}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* Card Footer with Action Buttons */}
+              <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="flex flex-col gap-3">
+                  {suggestion.actionLabel && (
+                    <button
+                      onClick={() => {
+                        suggestion.onAction();
+                        launchConfetti();
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+                      aria-label={suggestion.type === 'goal' ? `Add '${suggestion.actionLabel}' to schedule` : `Add suggestion to schedule`}
+                    >
+                      <Plus size={16} />
+                      <span className="truncate">
+                        {suggestion.type === 'goal' ? 'Add to Schedule' : suggestion.actionLabel}
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => dismissSuggestion(suggestion.id)}
+                    className="w-full px-4 py-2 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <X size={14} />
+                    <span>No thanks</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
         ))}
       </div>
     </div>

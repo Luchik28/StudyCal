@@ -205,14 +205,13 @@ export default function LandingPage() {
           <Calendar className="w-6 h-6 text-blue-600" />
           <span className="text-xl font-semibold text-gray-900">StudyCal</span>
         </Link>
-        
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
           <Link 
-            href="/how-to-use"
-            className="text-gray-600 hover:text-gray-900 transition-colors"
+            href="/calendar"
+            className="px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-base"
           >
-            How to use
+            Get Started
           </Link>
           <Link 
             href="/blog"
@@ -244,11 +243,11 @@ export default function LandingPage() {
           <div className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden">
             <div className="px-6 py-4 space-y-4">
               <Link 
-                href="/how-to-use"
-                className="block text-gray-600 hover:text-gray-900 transition-colors"
+                href="/calendar"
+                className="block px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-base"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                How to use
+                Get Started
               </Link>
               <Link 
                 href="/blog"
@@ -294,14 +293,39 @@ export default function LandingPage() {
             href="/calendar"
             className="inline-flex items-center gap-3 bg-blue-600 text-white px-10 py-5 rounded-full text-xl font-medium hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-xl"
           >
-            Let AI Optimize Your Life →
+            Get Started →
           </Link>
 
           <p className="text-sm text-gray-500 mt-4">
             Completely Free • No Download • No Signup
           </p>
         </div>
-      </section>      {/* Feature Sections */}
+      </section>      
+
+      <section className="bg-white py-16 px-6 mt-64 md:mt-[10vh]">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold font-mono text-blue-700 mb-4">Built for High-Achieving Students</h2>
+          <p className="text-lg md:text-xl text-gray-700 mb-6 max-w-3xl mx-auto">
+            StudyCal is designed for students who want to do more, achieve more, and make the most of their time. Whether you’re aiming for top grades, balancing extracurriculars, or preparing for competitive exams, StudyCal helps you study as efficiently as possible—maximizing your results while minimizing wasted time.
+          </p>
+          <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
+            <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 max-w-md">
+              <h3 className="text-xl font-semibold text-blue-600 mb-2">AI-Optimized Study Sessions</h3>
+              <p className="text-gray-700">Automatically schedules and optimizes your study sessions for upcoming tests and assignments, so you never fall behind.</p>
+            </div>
+            <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 max-w-md">
+              <h3 className="text-xl font-semibold text-blue-600 mb-2">Spaced Repetition</h3>
+              <p className="text-gray-700">Uses proven techniques like spaced repetition when scheduling your study sessions, helping you retain information longer.</p>
+            </div>
+            <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 max-w-md">
+              <h3 className="text-xl font-semibold text-blue-600 mb-2">Maximize Results, Minimize Time</h3>
+              <p className="text-gray-700">StudyCal helps you focus on what matters most, so you can achieve your goals and still have time for life outside of school.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Feature Sections */}
       <section ref={cardSectionRef} className={`px-6 py-20 max-w-7xl mx-auto ${isMobile ? 'min-h-auto' : 'min-h-[400vh]'}`}>
         <div className={`grid md:grid-cols-2 lg:grid-cols-4 gap-12 ${isMobile ? 'space-y-12' : 'sticky top-1/2 transform -translate-y-1/2'}`}>
           {/* Auto-Schedule */}
