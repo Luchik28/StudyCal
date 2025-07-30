@@ -213,12 +213,6 @@ export default function LandingPage() {
           >
             Get Started
           </Link>
-          <Link 
-            href="/blog"
-            className="text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            Blog
-          </Link>
           <a 
             href="https://forms.gle/AtnRLBGZjGq8h9eM7"
             target="_blank"
@@ -248,13 +242,6 @@ export default function LandingPage() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Get Started
-              </Link>
-              <Link 
-                href="/blog"
-                className="block text-gray-600 hover:text-gray-900 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Blog
               </Link>
               <a 
                 href="https://forms.gle/AtnRLBGZjGq8h9eM7"
@@ -301,29 +288,6 @@ export default function LandingPage() {
           </p>
         </div>
       </section>      
-
-      <section className="bg-white py-16 px-6 mt-64 md:mt-[10vh]">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold font-mono text-blue-700 mb-4">Built for High-Achieving Students</h2>
-          <p className="text-lg md:text-xl text-gray-700 mb-6 max-w-3xl mx-auto">
-            StudyCal is designed for students who want to do more, achieve more, and make the most of their time. Whether you’re aiming for top grades, balancing extracurriculars, or preparing for competitive exams, StudyCal helps you study as efficiently as possible—maximizing your results while minimizing wasted time.
-          </p>
-          <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
-            <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 max-w-md">
-              <h3 className="text-xl font-semibold text-blue-600 mb-2">AI-Optimized Study Sessions</h3>
-              <p className="text-gray-700">Automatically schedules and optimizes your study sessions for upcoming tests and assignments, so you never fall behind.</p>
-            </div>
-            <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 max-w-md">
-              <h3 className="text-xl font-semibold text-blue-600 mb-2">Spaced Repetition</h3>
-              <p className="text-gray-700">Uses proven techniques like spaced repetition when scheduling your study sessions, helping you retain information longer.</p>
-            </div>
-            <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 border-2 border-blue-100 max-w-md">
-              <h3 className="text-xl font-semibold text-blue-600 mb-2">Maximize Results, Minimize Time</h3>
-              <p className="text-gray-700">StudyCal helps you focus on what matters most, so you can achieve your goals and still have time for life outside of school.</p>
-            </div>
-          </div>
-        </div>
-      </section>
       
       {/* Feature Sections */}
       <section ref={cardSectionRef} className={`px-6 py-20 max-w-7xl mx-auto ${isMobile ? 'min-h-auto' : 'min-h-[400vh]'}`}>
@@ -401,38 +365,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>      {/* Make Your Calendar Work Section */}
-      <section className="px-6 py-20 bg-gray-50">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4 font-mono">Make your Calendar Work as Hard as You Do</h2>
-          <p className="text-xl text-gray-600 mb-16">StudyCal squeezes every drop of performance from your calendar, turning it into a precision-engineered productivity machine with intelligent time blocks and schedule management.</p>
-          
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="text-center">
-              <div className="text-4xl mb-6">⚡</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 font-mono">Maximum Efficiency</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                Every minute is optimized. StudyCal analyzes your energy patterns, deadlines, and commitments to create the most efficient schedule possible with dedicated focus time. No wasted time, no missed opportunities.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-4xl mb-6">🎯</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 font-mono">Precision Scheduling</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                StudyCal makes intelligent, split-second decisions about your time blocks. It knows when you&apos;re most productive, when you need breaks, and how to perfectly balance work and life through smart time management.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-4xl mb-6">🚀</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 font-mono">Performance Amplification</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                Your calendar becomes a high-performance engine. StudyCal doesn&apos;t just organize your time—it amplifies your capabilities, turning ordinary schedules into extraordinary productivity systems.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>      {/* CTA Section */}
+      
+     {/* CTA Section */}
       <section className="px-6 py-24 text-center bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 font-mono">
@@ -468,10 +402,6 @@ export default function LandingPage() {
           
           <p className="text-gray-400 text-sm mb-6">
             © StudyCal 2025
-            <br />
-            Independently made
-            <br />
-            100% free forever
           </p>
           
           <div className="flex items-center justify-center gap-6 text-sm">
@@ -493,12 +423,6 @@ export default function LandingPage() {
             >
               Privacy
             </a>
-            <Link 
-              href="/how-to-use"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              How to use
-            </Link>
             <a 
               href="https://forms.gle/AtnRLBGZjGq8h9eM7"
               target="_blank"
