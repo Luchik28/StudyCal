@@ -6,11 +6,9 @@ import { useState, useEffect, useRef } from 'react';
 
 const rotatingTexts = [
   'Schedule',
-  'Life',
   'Calendar', 
   'Studying',
-  'Work Life',
-  'Student Life',
+  'Academics',
   'Time Management'
 ];
 
