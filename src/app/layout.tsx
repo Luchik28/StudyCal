@@ -5,6 +5,7 @@ import "./globals.css";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { Analytics } from '@vercel/analytics/next';
+import FeedbackWidget from "@/components/FeedbackWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -68,6 +69,7 @@ export default function RootLayout({
             {children}
           </EventsProvider>
         </SettingsProvider>
+        <FeedbackWidget />
         <Analytics />
       </body>
     </html>

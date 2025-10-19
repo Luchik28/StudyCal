@@ -16,7 +16,7 @@ export default function TopBar() {
       {/* Desktop Navigation */}
       <div className="hidden md:flex items-center gap-6">
         <Link href="/calendar" className="px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-base">Get Started</Link>
-        <a href="https://forms.gle/AtnRLBGZjGq8h9eM7" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors">Give Feedback</a>
+  <a href="https://docs.google.com/forms/d/e/1FAIpQLSe18gglGF_rzWOhiquN9vRSyIZN78MZqxSeCeFURStYUwydlA/viewform?usp=header" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors">Give Feedback</a>
       </div>
       {/* Mobile Menu Button */}
       <button
@@ -31,7 +31,7 @@ export default function TopBar() {
         <div className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden">
           <div className="px-6 py-4 space-y-4">
             <Link href="/calendar" className="block px-6 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition-all duration-200 text-base" onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>
-            <a href="https://forms.gle/AtnRLBGZjGq8h9eM7" target="_blank" rel="noopener noreferrer" className="block text-gray-600 hover:text-gray-900 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Give Feedback</a>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSe18gglGF_rzWOhiquN9vRSyIZN78MZqxSeCeFURStYUwydlA/viewform?usp=header" target="_blank" rel="noopener noreferrer" className="block text-gray-600 hover:text-gray-900 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Give Feedback</a>
           </div>
         </div>
       )}

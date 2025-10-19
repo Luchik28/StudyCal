@@ -212,7 +212,7 @@ export default function LandingPage() {
             Get Started
           </Link>
           <a 
-            href="https://forms.gle/AtnRLBGZjGq8h9eM7"
+            href="https://docs.google.com/forms/d/e/1FAIpQLSe18gglGF_rzWOhiquN9vRSyIZN78MZqxSeCeFURStYUwydlA/viewform?usp=header"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -242,7 +242,7 @@ export default function LandingPage() {
                 Get Started
               </Link>
               <a 
-                href="https://forms.gle/AtnRLBGZjGq8h9eM7"
+                href="https://docs.google.com/forms/d/e/1FAIpQLSe18gglGF_rzWOhiquN9vRSyIZN78MZqxSeCeFURStYUwydlA/viewform?usp=header"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-gray-600 hover:text-gray-900 transition-colors"
@@ -422,7 +422,7 @@ export default function LandingPage() {
               Privacy
             </a>
             <a 
-              href="https://forms.gle/AtnRLBGZjGq8h9eM7"
+              href="https://docs.google.com/forms/d/e/1FAIpQLSe18gglGF_rzWOhiquN9vRSyIZN78MZqxSeCeFURStYUwydlA/viewform?usp=header"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-white transition-colors"
