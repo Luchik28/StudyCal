@@ -30,7 +30,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@tensorflow/tfjs-node": "^4.22.0",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.0.14",
     "@types/react": "^19.1.8",
