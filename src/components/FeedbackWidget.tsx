@@ -24,9 +24,9 @@ export default function FeedbackWidget() {
 
   const openForm = () => {
     try {
-      // @ts-ignore
+      // @ts-expect-error - gtag is added by Google Analytics script
       if (typeof window !== 'undefined' && window.gtag) {
-        // @ts-ignore
+        // @ts-expect-error - gtag function signature
         window.gtag('event', 'feedback_open', { event_category: 'engagement' });
       }
     } catch {}
@@ -42,9 +42,9 @@ export default function FeedbackWidget() {
   const dismiss = () => {
     try {
       localStorage.setItem(STORAGE_KEY, '1');
-      // @ts-ignore
+      // @ts-expect-error - gtag is added by Google Analytics script
       if (typeof window !== 'undefined' && window.gtag) {
-        // @ts-ignore
+        // @ts-expect-error - gtag function signature
         window.gtag('event', 'feedback_dismiss', { event_category: 'engagement' });
       }
     } catch {}
