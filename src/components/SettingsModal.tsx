@@ -481,15 +481,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           {/* Footer */}
           <div className="flex flex-col gap-2 p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex justify-between items-center mb-2">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('onboardingComplete');
-                  window.location.reload();
-                }}
-                className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded hover:bg-blue-200 transition-colors"
-              >
-                Relaunch Onboarding
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('onboardingComplete');
+                    window.location.reload();
+                  }}
+                  className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded hover:bg-blue-200 transition-colors"
+                >
+                  Relaunch Onboarding
+                </button>
+                <a
+                  href="https://forms.gle/dzDbLufj5SS5aka7A"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 border border-red-200 rounded hover:bg-red-200 transition-colors"
+                >
+                  Report a Bug
+                </a>
+              </div>
             </div>
             <div className="flex justify-end gap-3">
               <button
