@@ -258,7 +258,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="text-center px-6 py-32 max-w-7xl mx-auto min-h-screen flex flex-col justify-center">
         <div className="flex-1 flex items-center justify-center">
-          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-gray-900 mb-8 leading-tight font-mono">
+          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-gray-900 mb-8 leading-tight font-[family-name:var(--font-amarurgt)]">
             Optimize Your{' '}
             <span className="block mt-4 relative overflow-hidden h-[1.2em]">
               <span className="text-blue-600">
@@ -367,10 +367,10 @@ export default function LandingPage() {
      {/* CTA Section */}
       <section className="px-6 py-24 text-center bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 font-mono">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 font-[family-name:var(--font-amarurgt)]">
             Stop planning manually.
             <br />
-            <span className="text-blue-600 font-mono">Start using AI Calendar optimization.</span>
+            <span className="text-blue-600">Start using AI Calendar optimization.</span>
           </h2>
           
           <p className="text-xl text-gray-700 mb-12 max-w-2xl mx-auto">

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { CalendarsProvider } from "@/contexts/CalendarsContext";
 import { Analytics } from '@vercel/analytics/next';
 import FeedbackWidget from "@/components/FeedbackWidget";
 
@@ -15,6 +17,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const amarurgt = localFont({
+  src: "./amarurgt.ttf",
+  variable: "--font-amarurgt",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -47,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${amarurgt.variable} antialiased`}
       >
         {/* Google tag (gtag.js) */}
         <Script
@@ -65,9 +73,11 @@ export default function RootLayout({
           `}
         </Script>
         <SettingsProvider>
-          <EventsProvider>
-            {children}
-          </EventsProvider>
+          <CalendarsProvider>
+            <EventsProvider>
+              {children}
+            </EventsProvider>
+          </CalendarsProvider>
         </SettingsProvider>
         <FeedbackWidget />
         <Analytics />

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Calendar } from "lucide-react";
 import { useEvents } from "@/contexts/EventsContext";
+import { useCalendars } from "@/contexts/CalendarsContext";
 import { HOUR_HEIGHT } from "@/utils/calendar";
 
 interface InlineEventCreatorProps {
@@ -33,15 +34,24 @@ export function InlineEventCreator({
   position
 }: InlineEventCreatorProps) {
   const { addEvent } = useEvents();
+  const { calendars, defaultCalendarId } = useCalendars();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string>(defaultCalendarId || calendars[0]?.id || '');
   // ...existing code...
   // Removed AI model and vocab logic
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Update selected calendar when default changes
+  useEffect(() => {
+    if (defaultCalendarId && !selectedCalendarId) {
+      setSelectedCalendarId(defaultCalendarId);
+    }
+  }, [defaultCalendarId, selectedCalendarId]);
 
   // Focus the title input when component mounts
   useEffect(() => {
@@ -100,7 +110,7 @@ export function InlineEventCreator({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      addEvent(title.trim(), startTime, endTime, description.trim() || undefined);
+      addEvent(title.trim(), startTime, endTime, description.trim() || undefined, undefined, undefined, selectedCalendarId);
       onCancel();
     }
   };
@@ -194,6 +204,27 @@ export function InlineEventCreator({
               rows={2}
             />
           </div>
+
+          {/* Calendar picker */}
+          {calendars.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                <Calendar size={14} />
+                Calendar
+              </label>
+              <select
+                value={selectedCalendarId}
+                onChange={(e) => setSelectedCalendarId(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                {calendars.map(cal => (
+                  <option key={cal.id} value={cal.id}>
+                    {cal.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button

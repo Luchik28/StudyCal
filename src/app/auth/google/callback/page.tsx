@@ -41,7 +41,24 @@ function CallbackContent() {
         // Exchange code for tokens
         const config = await googleCalendarSyncService.handleOAuthCallback(code);
         
-        // Save configuration - Pass config directly to avoid state timing issues
+        // Notify opener if this is a popup
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'GOOGLE_CALENDAR_CONNECTED',
+            accessToken: config.accessToken,
+            refreshToken: config.refreshToken,
+            expiryDate: config.expiryDate,
+            calendarName: config.calendarName || 'Google Calendar'
+          }, window.location.origin);
+          
+          setStatus('success');
+          setTimeout(() => {
+            window.close();
+          }, 1500);
+          return;
+        }
+
+        // Legacy/Single-account support: Save configuration 
         setGoogleCalendarConfig(config);
         setGoogleCalendarEnabled(true);
         

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { addDays, subDays, format } from 'date-fns';
@@ -8,6 +8,7 @@ import { createTimeSlot, calculateEventPosition } from '@/utils/calendar';
 import { formatTimeRange } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useEvents } from '@/contexts/EventsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { Event } from '@/types/events';
 import { TimeSlots } from './TimeSlots';
 import { DayColumn } from './DayColumn';
@@ -19,7 +20,17 @@ import { SettingsModal } from './SettingsModal';
 
 export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
   const { events, moveEvent } = useEvents();
+  const { visibleCalendarIds } = useCalendars();
   const { timeFormat } = useSettings();
+  
+  // Filter events based on visible calendars
+  const visibleEvents = useMemo(() => {
+    return events.filter(event => {
+      if (!event.calendarId) return true;
+      return visibleCalendarIds.includes(event.calendarId);
+    });
+  }, [events, visibleCalendarIds]);
+  
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -176,7 +187,7 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
             <DayColumn
               ref={dayColumnRef}
               date={currentDate}
-              events={events}
+              events={visibleEvents}
               onTimeSlotClick={handleTimeSlotClick}
               onEventEdit={handleEventClick}
               inlineEvent={inlineEvent?.date.toDateString() === currentDate.toDateString() ? {

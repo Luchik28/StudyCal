@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Calendar } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { Event } from '@/types/events';
 import { format } from 'date-fns';
 
@@ -18,6 +19,7 @@ export function InlineEventEditor({
   onCancel
 }: InlineEventEditorProps) {
   const { updateEvent, deleteEvent } = useEvents();
+  const { calendars, getCalendarById } = useCalendars();
   
   // Category and subcategory options (matching the AI classification maps)
   const categories = ['Work', 'Personal', 'Social', 'Health', 'Education', 'Travel'];
@@ -33,6 +35,7 @@ export function InlineEventEditor({
   const [endTime, setEndTime] = useState(event.endTime);
   const [category, setCategory] = useState(event.category || '');
   const [subcategory, setSubcategory] = useState(event.subcategory !== undefined ? event.subcategory : '');
+  const [selectedCalendarId, setSelectedCalendarId] = useState(event.calendarId || 'local-default');
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +142,11 @@ export function InlineEventEditor({
     updateEvent(event.id, { subcategory: newSubcategory });
   };
 
+  const handleCalendarChange = (newCalendarId: string) => {
+    setSelectedCalendarId(newCalendarId);
+    updateEvent(event.id, { calendarId: newCalendarId });
+  };
+
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this event?')) {
       deleteEvent(event.id);
@@ -233,6 +241,30 @@ export function InlineEventEditor({
               ))}
             </select>
           </div>
+
+          {/* Calendar picker */}
+          {calendars.length > 1 && (
+            <div className="flex items-center gap-2 text-xs">
+              <Calendar size={12} className="text-gray-500" />
+              <select
+                value={selectedCalendarId}
+                onChange={(e) => handleCalendarChange(e.target.value)}
+                className="border rounded px-2 py-1 text-xs text-gray-900 bg-gray-50 cursor-pointer flex-1"
+              >
+                {calendars.map(cal => (
+                  <option key={cal.id} value={cal.id}>{cal.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Show current calendar if only one */}
+          {calendars.length === 1 && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Calendar size={12} />
+              <span>{calendars[0]?.name || 'My Calendar'}</span>
+            </div>
+          )}
 
           {/* Delete button */}
           <div className="pt-2 border-t border-gray-200">

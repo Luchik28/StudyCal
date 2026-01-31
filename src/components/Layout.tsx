@@ -22,13 +22,14 @@ import { EventAnalytics } from './EventAnalytics';
 import { SettingsModal } from './SettingsModal';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
+import { CalendarsProvider, useCalendars } from '@/contexts/CalendarsContext';
 import { useModelLoader } from '@/hooks/useModelLoader';
 import { useEvents } from '@/contexts/EventsContext';
 import { taskScheduler, Task } from '@/utils/taskScheduler';
 import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
 import { classifyEvent } from '@/utils/eventClassification';
 import { startOfWeek } from 'date-fns';
-import { Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Calendar, ChevronLeft, ChevronRight, Eye, EyeOff, Check } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
@@ -405,10 +406,70 @@ function TaskList({
 }
 
 export function Layout() {
+  return <LayoutContent />;
+}
+
+// Calendar selector component for the left sidebar
+function CalendarSelector() {
+  const { calendars, toggleCalendarVisibility, setDefaultCalendar, defaultCalendarId } = useCalendars();
+  
   return (
-    <SettingsProvider>
-      <LayoutContent />
-    </SettingsProvider>
+    <div className="p-4 border-t border-gray-200">
+      <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <Calendar size={16} />
+        Calendars
+      </h3>
+      <div className="space-y-2">
+        {calendars.map(calendar => (
+          <div 
+            key={calendar.id} 
+            className="flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {/* Color indicator */}
+              <div 
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: calendar.color }}
+              />
+              
+              {/* Calendar name */}
+              <span className="text-sm text-gray-700 truncate">
+                {calendar.name}
+              </span>
+              
+              {/* Default indicator */}
+              {calendar.id === defaultCalendarId && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                  Default
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Set as default button */}
+              {calendar.id !== defaultCalendarId && (
+                <button
+                  onClick={() => setDefaultCalendar(calendar.id)}
+                  className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                  title="Set as default"
+                >
+                  <Check size={14} />
+                </button>
+              )}
+              
+              {/* Toggle visibility button */}
+              <button
+                onClick={() => toggleCalendarVisibility(calendar.id)}
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                title={calendar.isVisible ? 'Hide calendar' : 'Show calendar'}
+              >
+                {calendar.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -537,7 +598,7 @@ function LayoutContent() {
             </button>
           </div>
         </div>
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 p-6 overflow-y-auto border-b border-gray-200">
             {/* Plan header with tooltip is now rendered inside TaskList */}
             <TaskList
@@ -548,10 +609,12 @@ function LayoutContent() {
             />
           </div>
           {currentView === 'month' && (
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto border-b border-gray-200">
               <LongTermGoals />
             </div>
           )}
+          {/* Calendar selector at the bottom */}
+          <CalendarSelector />
         </div>
       </div>
       
