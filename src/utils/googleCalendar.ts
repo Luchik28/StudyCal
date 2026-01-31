@@ -25,6 +25,7 @@ interface GoogleCalendarConfig {
   expiryDate: number;
   clientId: string;
   clientSecret: string;
+  calendarName?: string;
 }
 
 interface GoogleCalendarListResponse {
@@ -203,6 +204,75 @@ class GoogleCalendarManager {
     return events;
   }
 
+  // Fetch events using provided credentials (for multi-calendar support)
+  async fetchEventsWithCredentials(
+    timeMin?: Date, 
+    timeMax?: Date,
+    calendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<Event[]> {
+    // Check if we need to refresh the token
+    let token = accessToken;
+    if (!token || (tokenExpiry && Date.now() >= tokenExpiry)) {
+      if (refreshToken) {
+        // Refresh the token using our API endpoint
+        const response = await fetch('/api/auth/google/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to refresh access token');
+        }
+
+        const data = await response.json();
+        token = data.accessToken;
+      } else {
+        throw new Error('No valid access token or refresh token available');
+      }
+    }
+
+    const params = new URLSearchParams({
+      singleEvents: 'true',
+      orderBy: 'startTime',
+    });
+
+    if (timeMin) {
+      params.append('timeMin', timeMin.toISOString());
+    }
+
+    if (timeMax) {
+      params.append('timeMax', timeMax.toISOString());
+    }
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Google Calendar API error:', errorText);
+      throw new Error('Failed to fetch Google Calendar events');
+    }
+
+    const data: GoogleCalendarListResponse = await response.json();
+    
+    // Convert events with TensorFlow classification
+    const events = await this.convertAndClassifyGoogleEvents(data.items || []);
+    return events;
+  }
+
   // Create event in Google Calendar
   async createEvent(event: Event): Promise<string> {
     await this.ensureValidToken();
@@ -222,6 +292,54 @@ class GoogleCalendarManager {
     );
 
     if (!response.ok) {
+      throw new Error('Failed to create Google Calendar event');
+    }
+
+    const data = await response.json();
+    return data.id;
+  }
+
+  // Create event in Google Calendar with specific credentials (for multi-calendar)
+  async createEventWithCredentials(
+    event: Event,
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<string> {
+    let token = accessToken;
+    
+    // Check if token needs refresh
+    if (tokenExpiry && tokenExpiry < Date.now() && refreshToken) {
+      const response = await fetch('/api/auth/google/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) throw new Error('Failed to refresh access token');
+      const data = await response.json();
+      token = data.accessToken;
+    }
+
+    if (!token) throw new Error('No valid access token available');
+
+    const googleEvent = this.convertToGoogleEvent(event);
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(googleEvent),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to create Google Calendar event:', errorText);
       throw new Error('Failed to create Google Calendar event');
     }
 
@@ -252,6 +370,51 @@ class GoogleCalendarManager {
     }
   }
 
+  // Update event in Google Calendar with specific credentials (for multi-calendar)
+  async updateEventWithCredentials(
+    eventId: string,
+    event: Event,
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<void> {
+    let token = accessToken;
+    
+    if (tokenExpiry && tokenExpiry < Date.now() && refreshToken) {
+      const response = await fetch('/api/auth/google/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) throw new Error('Failed to refresh access token');
+      const data = await response.json();
+      token = data.accessToken;
+    }
+
+    if (!token) throw new Error('No valid access token available');
+
+    const googleEvent = this.convertToGoogleEvent(event);
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events/${eventId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(googleEvent),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to update Google Calendar event:', errorText);
+      throw new Error('Failed to update Google Calendar event');
+    }
+  }
+
   // Delete event from Google Calendar
   async deleteEvent(eventId: string): Promise<void> {
     await this.ensureValidToken();
@@ -267,6 +430,46 @@ class GoogleCalendarManager {
     );
 
     if (!response.ok && response.status !== 404) {
+      throw new Error('Failed to delete Google Calendar event');
+    }
+  }
+
+  // Delete event from Google Calendar with specific credentials (for multi-calendar)
+  async deleteEventWithCredentials(
+    eventId: string,
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<void> {
+    let token = accessToken;
+    
+    if (tokenExpiry && tokenExpiry < Date.now() && refreshToken) {
+      const response = await fetch('/api/auth/google/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) throw new Error('Failed to refresh access token');
+      const data = await response.json();
+      token = data.accessToken;
+    }
+
+    if (!token) throw new Error('No valid access token available');
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events/${eventId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok && response.status !== 404) {
+      const errorText = await response.text();
+      console.error('Failed to delete Google Calendar event:', errorText);
       throw new Error('Failed to delete Google Calendar event');
     }
   }

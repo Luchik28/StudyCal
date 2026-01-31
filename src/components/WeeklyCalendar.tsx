@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { addWeeks, subWeeks, format } from 'date-fns';
@@ -8,6 +8,7 @@ import { getWeekDays, createTimeSlot, calculateEventPosition } from '@/utils/cal
 import { formatTimeRange } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useEvents } from '@/contexts/EventsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { Event } from '@/types/events';
 import { TimeSlots } from './TimeSlots';
 import { DayColumn } from './DayColumn';
@@ -19,7 +20,19 @@ import { SettingsModal } from './SettingsModal';
 
 export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Date) => void }) {
   const { events, moveEvent } = useEvents();
+  const { visibleCalendarIds, getCalendarById } = useCalendars();
   const { timeFormat } = useSettings();
+  
+  // Filter events based on visible calendars
+  const visibleEvents = useMemo(() => {
+    return events.filter(event => {
+      // If event has no calendarId, show it (backwards compatibility)
+      if (!event.calendarId) return true;
+      // Show if calendar is visible
+      return visibleCalendarIds.includes(event.calendarId);
+    });
+  }, [events, visibleCalendarIds]);
+  
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -201,7 +214,7 @@ export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Dat
                   dayColumnRefs.current[index] = el;
                 }}
                 date={day}
-                events={events}
+                events={visibleEvents}
                 onTimeSlotClick={handleTimeSlotClick}
                 onEventEdit={handleEventClick}
                 inlineEvent={inlineEvent?.date.toDateString() === day.toDateString() ? {

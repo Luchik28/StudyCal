@@ -1,32 +1,186 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, Calendar, AlertCircle } from 'lucide-react';
+import { X, Calendar, AlertCircle, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { useEvents } from '@/contexts/EventsContext';
 import { googleCalendarSyncService } from '@/utils/googleCalendarSync';
+import { Calendar as CalendarType } from '@/types/events';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// Calendar colors for selection
+const CALENDAR_COLORS = [
+  '#3b82f6', // Blue
+  '#ef4444', // Red
+  '#10b981', // Green
+  '#f59e0b', // Amber
+  '#8b5cf6', // Purple
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+  '#84cc16', // Lime
+];
+
+function CalendarItem({ 
+  calendar, 
+  onUpdate, 
+  onDelete, 
+  onSync, 
+  isSyncing 
+}: { 
+  calendar: CalendarType;
+  onUpdate: (updates: Partial<CalendarType>) => void;
+  onDelete: () => void;
+  onSync: () => void;
+  isSyncing: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(calendar.name);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  const handleNameSave = () => {
+    if (editName.trim() && editName !== calendar.name) {
+      onUpdate({ name: editName.trim() });
+    }
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+      {/* Calendar header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-1">
+          {/* Color picker */}
+          <div className="relative">
+            <button
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              className="w-4 h-4 rounded-full border border-gray-300"
+              style={{ backgroundColor: calendar.color }}
+            />
+            {showColorPicker && (
+              <div className="absolute top-6 left-0 z-10 bg-white rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1">
+                {CALENDAR_COLORS.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => {
+                      onUpdate({ color });
+                      setShowColorPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Name */}
+          {isEditing ? (
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onBlur={handleNameSave}
+              onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
+              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+              autoFocus
+            />
+          ) : (
+            <span
+              className="text-sm font-medium text-gray-900 cursor-pointer hover:text-blue-600"
+              onClick={() => setIsEditing(true)}
+            >
+              {calendar.name}
+            </span>
+          )}
+          
+          {/* Type badge */}
+          <span className={`text-xs px-2 py-0.5 rounded ${
+            calendar.type === 'google' 
+              ? 'bg-blue-100 text-blue-700' 
+              : 'bg-gray-200 text-gray-600'
+          }`}>
+            {calendar.type === 'google' ? 'Google' : 'Local'}
+          </span>
+        </div>
+
+        {/* Delete button (only for non-default calendars) */}
+        {!calendar.isDefault && (
+          <button
+            onClick={onDelete}
+            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+            title="Delete calendar"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+
+      {/* Google Calendar specific options */}
+      {calendar.type === 'google' && (
+        <div className="space-y-2 pt-2 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                calendar.googleAccessToken || calendar.googleRefreshToken ? 'bg-green-500' : 'bg-gray-400'
+              }`} />
+              <span className="text-xs text-gray-600">
+                {calendar.googleAccessToken || calendar.googleRefreshToken ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+            <button
+              onClick={onSync}
+              disabled={isSyncing}
+              className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+              {isSyncing ? 'Syncing...' : 'Sync Now'}
+            </button>
+          </div>
+          
+          {/* Auto-sync toggle */}
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={calendar.autoSync ?? false}
+              onChange={(e) => onUpdate({ autoSync: e.target.checked })}
+              className="h-4 w-4 text-blue-600 rounded border-gray-300"
+            />
+            <span className="text-xs text-gray-600">Enable auto-sync</span>
+          </label>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { 
     timeFormat, 
     setTimeFormat, 
-    googleCalendarEnabled,
-    setGoogleCalendarEnabled,
-    setGoogleCalendarConfig,
-    isGoogleCalendarAuthenticated,
     saveSettings 
   } = useSettings();
-  const { syncWithGoogleCalendar, isSyncing } = useEvents();
+  const { 
+    calendars, 
+    addCalendar, 
+    updateCalendar, 
+    deleteCalendar, 
+  } = useCalendars();
+  const {
+    syncCalendar,
+    syncingCalendars 
+  } = useEvents();
   
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isGoogleCalendarConfigured, setIsGoogleCalendarConfigured] = useState<boolean | null>(null);
+  const [newCalendarName, setNewCalendarName] = useState('');
+  const [showAddCalendar, setShowAddCalendar] = useState(false);
   
   // Check if Google Calendar integration is configured
   useEffect(() => {
@@ -61,7 +215,26 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
-  const handleGoogleCalendarConnect = async () => {
+  const handleAddLocalCalendar = async () => {
+    if (!newCalendarName.trim()) return;
+    
+    try {
+      await addCalendar({
+        name: newCalendarName.trim(),
+        color: CALENDAR_COLORS[Math.floor(Math.random() * CALENDAR_COLORS.length)],
+        isVisible: true,
+        isDefault: false,
+        type: 'local',
+      });
+      setNewCalendarName('');
+      setShowAddCalendar(false);
+    } catch (error) {
+      console.error('Failed to add calendar:', error);
+      setSaveError('Failed to add calendar. Please try again.');
+    }
+  };
+
+  const handleConnectGoogleCalendar = async () => {
     setIsConnecting(true);
     setSaveError(null);
     
@@ -77,15 +250,41 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       
       if (!popup) {
         setSaveError('Please allow popups for this site to connect to Google Calendar.');
+        setIsConnecting(false);
         return;
       }
       
-      // Listen for the popup to close (indicating auth completion)
+      // Listen for message from callback page
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data.type === 'GOOGLE_CALENDAR_CONNECTED') {
+          window.removeEventListener('message', handleMessage);
+          
+          // Add the new Google calendar
+          await addCalendar({
+            name: event.data.calendarName || 'Google Calendar',
+            color: '#4285f4',
+            isVisible: true,
+            isDefault: false,
+            type: 'google',
+            googleCalendarId: 'primary',
+            googleAccessToken: event.data.accessToken,
+            googleRefreshToken: event.data.refreshToken,
+            googleTokenExpiry: event.data.expiryDate,
+            autoSync: true,
+          });
+          
+          setIsConnecting(false);
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Cleanup listener when popup closes
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
           setIsConnecting(false);
-          // The auth flow will be handled by the callback page
         }
       }, 1000);
       
@@ -96,29 +295,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setSaveError('Failed to connect to Google Calendar. Please try again.');
       }
       console.error('Error connecting to Google Calendar:', error);
-    } finally {
       setIsConnecting(false);
     }
   };
 
-  const handleGoogleCalendarDisconnect = () => {
-    setGoogleCalendarEnabled(false);
-    setGoogleCalendarConfig(undefined);
-    googleCalendarSyncService.disconnect();
-  };
-
-  const handleManualSync = async () => {
-    if (!isGoogleCalendarAuthenticated()) {
-      setSaveError('Please connect to Google Calendar first.');
+  const handleDeleteCalendar = async (calendarId: string) => {
+    if (calendars.length <= 1) {
+      setSaveError('Cannot delete the last calendar.');
       return;
     }
-
-    try {
-      await syncWithGoogleCalendar();
-      setSaveError(null);
-    } catch (error) {
-      setSaveError('Failed to sync with Google Calendar. Please try again.');
-      console.error('Error syncing with Google Calendar:', error);
+    
+    if (confirm('Are you sure you want to delete this calendar? All events in this calendar will be preserved but unassigned.')) {
+      try {
+        await deleteCalendar(calendarId);
+      } catch (error) {
+        console.error('Failed to delete calendar:', error);
+        setSaveError('Failed to delete calendar. Please try again.');
+      }
     }
   };
 
@@ -148,7 +341,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
           
           {/* Content */}
-          <div className="p-6">
+          <div className="p-6 max-h-[70vh] overflow-y-auto">
             <div className="space-y-6">
               {/* Time Format Setting */}
               <div>
@@ -181,103 +374,99 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
               </div>
 
-              {/* Google Calendar Integration */}
+              {/* Calendars Section */}
               <div className="border-t border-gray-200 pt-6">
-                <div className="flex items-center mb-3">
-                  <Calendar className="h-5 w-5 text-blue-600 mr-2" />
-                  <label className="block text-sm font-medium text-gray-700">
-                    Google Calendar Integration
-                  </label>
-                </div>
-                
-                {isGoogleCalendarConfigured === null ? (
-                  <div className="flex items-center justify-center p-4">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                    <span className="ml-2 text-sm text-gray-600">Checking configuration...</span>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 text-blue-600 mr-2" />
+                    <label className="block text-sm font-medium text-gray-700">
+                      My Calendars
+                    </label>
                   </div>
-                ) : !isGoogleCalendarConfigured ? (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-start">
-                      <AlertCircle className="h-5 w-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="text-sm font-medium text-amber-800 mb-1">
-                          Google Calendar Not Available
-                        </h4>
-                        <p className="text-sm text-amber-700">
-                          The Google Calendar integration has not been configured by the app developer. 
-                          Contact the app maintainer to enable this feature.
-                        </p>
+                  <button
+                    onClick={() => setShowAddCalendar(!showAddCalendar)}
+                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title="Add calendar"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
+
+                {/* Add calendar form */}
+                {showAddCalendar && (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Create Local Calendar
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newCalendarName}
+                          onChange={(e) => setNewCalendarName(e.target.value)}
+                          placeholder="New calendar name"
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddLocalCalendar()}
+                        />
+                        <button
+                          onClick={handleAddLocalCalendar}
+                          disabled={!newCalendarName.trim()}
+                          className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Add
+                        </button>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Connection Status */}
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full mr-3 ${
-                          isGoogleCalendarAuthenticated() ? 'bg-green-500' : 'bg-gray-400'
-                        }`} />
-                        <span className="text-sm text-gray-700">
-                          {isGoogleCalendarAuthenticated() ? 'Connected' : 'Not connected'}
-                        </span>
+                    
+                    <div className="relative py-2">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-blue-200"></div>
                       </div>
-                      
-                      {isGoogleCalendarAuthenticated() ? (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={handleManualSync}
-                            disabled={isSyncing}
-                            className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50"
-                          >
-                            {isSyncing ? 'Syncing...' : 'Sync Now'}
-                          </button>
-                          <button
-                            onClick={handleGoogleCalendarDisconnect}
-                            className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
-                          >
-                            Disconnect
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={handleGoogleCalendarConnect}
-                          disabled={isConnecting}
-                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                        >
-                          {isConnecting ? (
-                            'Connecting...'
-                          ) : (
-                            <>
-                              Connect
-                              <ExternalLink className="ml-1 h-3 w-3" />
-                            </>
-                          )}
-                        </button>
-                      )}
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-2 bg-blue-50 text-blue-400 font-medium uppercase tracking-wider">or</span>
+                      </div>
                     </div>
 
-                    {/* Sync Options */}
-                    <div className="space-y-2">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={googleCalendarEnabled}
-                          onChange={(e) => setGoogleCalendarEnabled(e.target.checked)}
-                          disabled={!isGoogleCalendarAuthenticated()}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">
-                          Enable automatic sync with Google Calendar
-                        </span>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Import from Google
                       </label>
+                      <button
+                        onClick={handleConnectGoogleCalendar}
+                        disabled={isConnecting}
+                        className="w-full px-3 py-2 text-sm font-medium text-white bg-[#4285f4] rounded-md hover:bg-[#3367d6] disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        {isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
+                      </button>
                       
-                      <p className="text-xs text-gray-500 ml-6">
-                        When enabled, events will be automatically synced between your local calendar and Google Calendar. The use of raw or derived user data received from Workspace APIs will adhere to the <a href="https://developers.google.com/workspace/workspace-api-user-data-developer-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Google User Data Policy</a>, including the <a href="https://developers.google.com/workspace/workspace-api-user-data-developer-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Limited Use requirements</a>.
-                      </p>
+                      {!isGoogleCalendarConfigured && isGoogleCalendarConfigured !== null && (
+                        <p className="text-[10px] text-amber-600 mt-1 leading-tight">
+                          Note: Integration needs configuration in .env.local
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
+
+                {/* Calendar list */}
+                <div className="space-y-2">
+                  {calendars.map(calendar => (
+                    <CalendarItem
+                      key={calendar.id}
+                      calendar={calendar}
+                      onUpdate={(updates) => updateCalendar(calendar.id, updates)}
+                      onDelete={() => handleDeleteCalendar(calendar.id)}
+                      onSync={() => syncCalendar(calendar.id)}
+                      isSyncing={syncingCalendars.includes(calendar.id)}
+                    />
+                  ))}
+                </div>
               </div>
 
               {/* Error message */}
@@ -292,15 +481,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           {/* Footer */}
           <div className="flex flex-col gap-2 p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex justify-between items-center mb-2">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('onboardingComplete');
-                  window.location.reload();
-                }}
-                className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded hover:bg-blue-200 transition-colors"
-              >
-                Relaunch Onboarding
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('onboardingComplete');
+                    window.location.reload();
+                  }}
+                  className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded hover:bg-blue-200 transition-colors"
+                >
+                  Relaunch Onboarding
+                </button>
+                <a
+                  href="https://forms.gle/dzDbLufj5SS5aka7A"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 border border-red-200 rounded hover:bg-red-200 transition-colors"
+                >
+                  Report a Bug
+                </a>
+              </div>
             </div>
             <div className="flex justify-end gap-3">
               <button

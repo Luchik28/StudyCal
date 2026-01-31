@@ -8,16 +8,20 @@ import { classifyEvent } from '@/utils/eventClassification';
 import { dbManager, initDB } from '@/utils/indexedDB';
 import { googleCalendarSyncService } from '@/utils/googleCalendarSync';
 import { useSettings } from './SettingsContext';
+import { useCalendars } from './CalendarsContext';
 
 interface EventsContextType {
   events: Event[];
-  addEvent: (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string) => void;
+  addEvent: (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string, calendarId?: string) => void;
   updateEvent: (id: string, updates: Partial<Event>) => void;
   deleteEvent: (id: string) => void;
   moveEvent: (id: string, newStartTime: Date) => void;
   resizeEvent: (id: string, newStartTime?: Date, newEndTime?: Date) => void;
   syncWithGoogleCalendar: () => Promise<void>;
+  syncCalendar: (calendarId: string) => Promise<void>;
   isSyncing: boolean;
+  syncingCalendars: string[];
+  visibleEvents: Event[];
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
@@ -39,7 +43,9 @@ export function EventsProvider({ children }: EventsProviderProps) {
   const [events, setEvents] = useState<Event[]>([]);
   
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncingCalendars, setSyncingCalendars] = useState<string[]>([]);
   const { isLoading: settingsLoading, googleCalendarAuthenticated } = useSettings();
+  const { calendars } = useCalendars();
 
   // Initialize IndexedDB and load events on component mount
   useEffect(() => {
@@ -65,12 +71,29 @@ export function EventsProvider({ children }: EventsProviderProps) {
     };
 
     initializeData();
-    
-    // Auto-sync with Google Calendar if authenticated
-    if (googleCalendarAuthenticated) {
-      syncWithGoogleCalendar();
+  }, [settingsLoading]);
+
+  // Auto-sync Google calendars on load
+  useEffect(() => {
+    if (!settingsLoading && calendars.length > 0) {
+      // 1. Sync primary account (legacy)
+      if (googleCalendarAuthenticated) {
+        syncWithGoogleCalendar();
+      }
+      
+      // 2. Sync all individual Google calendars with auto-sync enabled
+      const autoSyncCalendars = calendars.filter(c => c.type === 'google' && c.autoSync);
+      autoSyncCalendars.forEach(cal => {
+        if (cal.googleRefreshToken || cal.googleAccessToken) {
+          syncCalendar(cal.id).catch(error => {
+            console.error(`Failed to auto-sync calendar ${cal.name}:`, error);
+          });
+        }
+      });
     }
-  }, [settingsLoading, googleCalendarAuthenticated]);
+    // Only run on initial load when calendars are available
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoading, calendars.length > 0]);
 
   // Google Calendar sync function
   const syncWithGoogleCalendar = async (): Promise<void> => {
@@ -78,20 +101,56 @@ export function EventsProvider({ children }: EventsProviderProps) {
     
     try {
       const currentDate = new Date();
-      const googleEvents = await googleCalendarSyncService.syncFromGoogle(currentDate);
+      let currentEvents = [...events];
+      let hasAnyChanges = false;
+
+      // 1. Sync the primary account if authenticated (legacy support)
+      if (googleCalendarAuthenticated) {
+        try {
+          const googleEvents = await googleCalendarSyncService.syncFromGoogle(currentDate);
+          if (googleEvents.length > 0) {
+            currentEvents = googleCalendarSyncService.mergeEvents(currentEvents, googleEvents);
+            hasAnyChanges = true;
+          }
+        } catch (error) {
+          console.error('Failed to sync primary Google account:', error);
+        }
+      }
+
+      // 2. Sync all individual Google calendars
+      const googleCalendars = calendars.filter(cal => cal.type === 'google');
+      for (const calendar of googleCalendars) {
+        try {
+          setSyncingCalendars(prev => [...prev, calendar.id]);
+          const googleEvents = await googleCalendarSyncService.syncFromGoogleForCalendar(
+            currentDate,
+            calendar.id,
+            calendar.googleCalendarId || 'primary',
+            calendar.googleAccessToken,
+            calendar.googleRefreshToken,
+            calendar.googleTokenExpiry
+          );
+
+          if (googleEvents.length >= 0) { // Even empty list might mean deletions
+            currentEvents = googleCalendarSyncService.mergeEvents(currentEvents, googleEvents, calendar.id);
+            hasAnyChanges = true;
+          }
+        } catch (error) {
+          console.error(`Failed to sync calendar ${calendar.name}:`, error);
+        } finally {
+          setSyncingCalendars(prev => prev.filter(id => id !== calendar.id));
+        }
+      }
       
-      if (googleEvents.length > 0) {
-        setEvents(prevEvents => {
-          const mergedEvents = googleCalendarSyncService.mergeEvents(prevEvents, googleEvents);
-          
-          // Save merged events to IndexedDB
-          mergedEvents.forEach(event => {
-            dbManager.saveEvent(event).catch(error => {
-              console.error('Failed to save merged event:', error);
-            });
+      if (hasAnyChanges) {
+        setEvents(currentEvents);
+        
+        // Save changed events to IndexedDB
+        // Note: For large calendars, we should only save what changed
+        currentEvents.forEach(event => {
+          dbManager.saveEvent(event).catch(error => {
+            console.error('Failed to save merged event:', error);
           });
-          
-          return mergedEvents;
         });
       }
     } catch (error) {
@@ -101,7 +160,48 @@ export function EventsProvider({ children }: EventsProviderProps) {
     }
   };
 
-  const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string) => {
+  const syncCalendar = async (calendarId: string): Promise<void> => {
+    const calendar = calendars.find(c => c.id === calendarId);
+    if (!calendar || calendar.type !== 'google') {
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncingCalendars(prev => [...prev, calendarId]);
+    
+    try {
+      const googleEvents = await googleCalendarSyncService.syncFromGoogleForCalendar(
+        new Date(),
+        calendarId,
+        calendar.googleCalendarId || 'primary',
+        calendar.googleAccessToken,
+        calendar.googleRefreshToken,
+        calendar.googleTokenExpiry
+      );
+
+      setEvents(prevEvents => {
+        const mergedEvents = googleCalendarSyncService.mergeEvents(prevEvents, googleEvents, calendarId);
+        
+        // Save merged events to IndexedDB
+        mergedEvents.forEach(event => {
+          if (event.calendarId === calendarId) {
+            dbManager.saveEvent(event).catch(error => {
+              console.error('Failed to save merged event:', error);
+            });
+          }
+        });
+        
+        return mergedEvents;
+      });
+    } catch (error) {
+      console.error(`Failed to sync calendar ${calendar.name}:`, error);
+    } finally {
+      setIsSyncing(false);
+      setSyncingCalendars(prev => prev.filter(id => id !== calendarId));
+    }
+  };
+
+  const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string, calendarId?: string) => {
     const newEvent: Event = {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title,
@@ -112,6 +212,7 @@ export function EventsProvider({ children }: EventsProviderProps) {
       dayOfWeek: startTime.getDay(),
       category,
       subcategory,
+      calendarId: calendarId || 'local-default', // Default to local calendar if not specified
     };    // Only classify if category/subcategory not provided
     if (!category || !subcategory) {
       // Simple rule-based classification as fallback
@@ -156,12 +257,30 @@ export function EventsProvider({ children }: EventsProviderProps) {
       console.error('Failed to save event to database:', error);
     }
 
-    // Sync to Google Calendar if enabled
+    // Sync to Google Calendar if the event belongs to a Google calendar
     try {
-      const googleEventId = await googleCalendarSyncService.syncToGoogle(newEvent, 'create');
-      if (googleEventId) {
-        newEvent.googleEventId = googleEventId;
-        await dbManager.saveEvent(newEvent); // Save again with Google event ID
+      const calendar = calendars.find(c => c.id === newEvent.calendarId);
+      if (calendar && calendar.type === 'google') {
+        // Use calendar-specific credentials
+        const googleEventId = await googleCalendarSyncService.syncToGoogleForCalendar(
+          newEvent,
+          'create',
+          calendar.googleCalendarId || 'primary',
+          calendar.googleAccessToken,
+          calendar.googleRefreshToken,
+          calendar.googleTokenExpiry
+        );
+        if (googleEventId) {
+          newEvent.googleEventId = googleEventId;
+          await dbManager.saveEvent(newEvent); // Save again with Google event ID
+        }
+      } else {
+        // Legacy: use global Google Calendar if authenticated
+        const googleEventId = await googleCalendarSyncService.syncToGoogle(newEvent, 'create');
+        if (googleEventId) {
+          newEvent.googleEventId = googleEventId;
+          await dbManager.saveEvent(newEvent);
+        }
       }
     } catch (error) {
       console.error('Failed to sync event to Google Calendar:', error);
@@ -185,10 +304,24 @@ export function EventsProvider({ children }: EventsProviderProps) {
           console.error('Failed to update event in database:', error);
         });
 
-        // Sync to Google Calendar if enabled
-        googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
-          console.error('Failed to sync updated event to Google Calendar:', error);
-        });
+        // Sync to Google Calendar
+        const calendar = calendars.find(c => c.id === updatedEvent.calendarId);
+        if (calendar && calendar.type === 'google') {
+          googleCalendarSyncService.syncToGoogleForCalendar(
+            updatedEvent,
+            'update',
+            calendar.googleCalendarId || 'primary',
+            calendar.googleAccessToken,
+            calendar.googleRefreshToken,
+            calendar.googleTokenExpiry
+          ).catch(error => {
+            console.error('Failed to sync updated event to Google Calendar:', error);
+          });
+        } else {
+          googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
+            console.error('Failed to sync updated event to Google Calendar:', error);
+          });
+        }
       }
       
       return updatedEvents;
@@ -214,10 +347,22 @@ export function EventsProvider({ children }: EventsProviderProps) {
       throw error;
     }
 
-    // Sync deletion to Google Calendar if enabled
+    // Sync deletion to Google Calendar
     if (eventToDelete) {
       try {
-        await googleCalendarSyncService.syncToGoogle(eventToDelete, 'delete');
+        const calendar = calendars.find(c => c.id === eventToDelete.calendarId);
+        if (calendar && calendar.type === 'google') {
+          await googleCalendarSyncService.syncToGoogleForCalendar(
+            eventToDelete,
+            'delete',
+            calendar.googleCalendarId || 'primary',
+            calendar.googleAccessToken,
+            calendar.googleRefreshToken,
+            calendar.googleTokenExpiry
+          );
+        } else {
+          await googleCalendarSyncService.syncToGoogle(eventToDelete, 'delete');
+        }
       } catch (error) {
         console.error('Failed to sync event deletion to Google Calendar:', error);
         // Don't revert the local deletion for Google Calendar sync errors
@@ -243,10 +388,24 @@ export function EventsProvider({ children }: EventsProviderProps) {
             console.error('Failed to save moved event to database:', error);
           });
 
-          // Sync to Google Calendar if enabled
-          googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
-            console.error('Failed to sync moved event to Google Calendar:', error);
-          });
+          // Sync to Google Calendar
+          const calendar = calendars.find(c => c.id === updatedEvent.calendarId);
+          if (calendar && calendar.type === 'google') {
+            googleCalendarSyncService.syncToGoogleForCalendar(
+              updatedEvent,
+              'update',
+              calendar.googleCalendarId || 'primary',
+              calendar.googleAccessToken,
+              calendar.googleRefreshToken,
+              calendar.googleTokenExpiry
+            ).catch(error => {
+              console.error('Failed to sync moved event to Google Calendar:', error);
+            });
+          } else {
+            googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
+              console.error('Failed to sync moved event to Google Calendar:', error);
+            });
+          }
           
           return updatedEvent;
         }
@@ -290,10 +449,24 @@ export function EventsProvider({ children }: EventsProviderProps) {
             console.error('Failed to save resized event to database:', error);
           });
 
-          // Sync to Google Calendar if enabled
-          googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
-            console.error('Failed to sync resized event to Google Calendar:', error);
-          });
+          // Sync to Google Calendar
+          const calendar = calendars.find(c => c.id === updatedEvent.calendarId);
+          if (calendar && calendar.type === 'google') {
+            googleCalendarSyncService.syncToGoogleForCalendar(
+              updatedEvent,
+              'update',
+              calendar.googleCalendarId || 'primary',
+              calendar.googleAccessToken,
+              calendar.googleRefreshToken,
+              calendar.googleTokenExpiry
+            ).catch(error => {
+              console.error('Failed to sync resized event to Google Calendar:', error);
+            });
+          } else {
+            googleCalendarSyncService.syncToGoogle(updatedEvent, 'update').catch(error => {
+              console.error('Failed to sync resized event to Google Calendar:', error);
+            });
+          }
           
           return updatedEvent;
         }
@@ -312,7 +485,10 @@ export function EventsProvider({ children }: EventsProviderProps) {
     moveEvent,
     resizeEvent,
     syncWithGoogleCalendar,
+    syncCalendar,
     isSyncing,
+    syncingCalendars,
+    visibleEvents: events, // By default all events are visible, filtering happens in components
   };
 
   return (

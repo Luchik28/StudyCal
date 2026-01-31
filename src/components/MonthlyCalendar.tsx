@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { addMonths, subMonths, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import { useEvents } from '@/contexts/EventsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatTime, formatTimeRange } from '@/utils/timeFormat';
 import { Event } from '@/types/events';
@@ -129,6 +130,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   onMonthChange?: (monthDate: Date) => void;
 }) {
   const { events } = useEvents();
+  const { visibleCalendarIds } = useCalendars();
   const { timeFormat } = useSettings();
   const [headerMonth, setHeaderMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -136,6 +138,11 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Filter events by visible calendars
+  const visibleEvents = useMemo(() => {
+    return events.filter(event => !event.calendarId || visibleCalendarIds.includes(event.calendarId));
+  }, [events, visibleCalendarIds]);
 
   // Inline event editing state  
   const [inlineEditEvent, setInlineEditEvent] = useState<{
@@ -498,7 +505,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
           <StaticMonthCard
             key={format(monthDate, 'yyyy-MM')}
             monthDate={monthDate}
-            events={events}
+            events={visibleEvents}
             onDayClick={handleDayClick}
             onEventEdit={handleEventClick}
             timeFormat={timeFormat}
