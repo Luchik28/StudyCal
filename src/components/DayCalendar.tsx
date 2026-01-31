@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, PanelLeftClose, PanelRightClose, PanelLeft, PanelRight } from 'lucide-react';
 import { addDays, subDays, format } from 'date-fns';
 import { createTimeSlot, calculateEventPosition } from '@/utils/calendar';
 import { formatTimeRange } from '@/utils/timeFormat';
@@ -18,7 +18,19 @@ import { InlineEventCreator } from './InlineEventCreator';
 import { InlineEventEditor } from './InlineEventEditor';
 import { SettingsModal } from './SettingsModal';
 
-export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
+export function DayCalendar({ 
+  selectedDate,
+  leftSidebarCollapsed,
+  rightSidebarCollapsed,
+  onToggleLeftSidebar,
+  onToggleRightSidebar,
+}: { 
+  selectedDate?: Date | null;
+  leftSidebarCollapsed?: boolean;
+  rightSidebarCollapsed?: boolean;
+  onToggleLeftSidebar?: () => void;
+  onToggleRightSidebar?: () => void;
+}) {
   const { visibleEvents: allVisibleEvents, moveEvent } = useEvents();
   const { visibleCalendarIds } = useCalendars();
   const { timeFormat } = useSettings();
@@ -132,6 +144,17 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
     <div className="h-full flex flex-col bg-gray-50">
       {/* Unified Top Bar: Add Event, Date Range, Navigation, Settings */}
       <div className="bg-white border-b border-gray-200 h-16 px-6 py-4 flex items-center">
+        {/* Left sidebar toggle */}
+        {onToggleLeftSidebar && (
+          <button
+            onClick={onToggleLeftSidebar}
+            className="hidden lg:flex p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900 mr-2"
+            title={leftSidebarCollapsed ? 'Show left sidebar' : 'Hide left sidebar'}
+          >
+            {leftSidebarCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+          </button>
+        )}
+        
         {/* Left: Add Event Button */}
         <div className="flex items-center gap-2">
           <button
@@ -165,8 +188,8 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
             <ChevronRight size={20} />
           </button>
         </div>
-        {/* Right: Settings Button */}
-        <div className="flex items-center ml-4">
+        {/* Right: Settings Button and sidebar toggle */}
+        <div className="flex items-center ml-4 gap-1">
           <button
             className="p-2 rounded-full hover:bg-gray-100 transition-colors"
             onClick={() => setIsSettingsOpen(true)}
@@ -174,6 +197,16 @@ export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings text-gray-600" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </button>
+          {/* Right sidebar toggle */}
+          {onToggleRightSidebar && (
+            <button
+              onClick={onToggleRightSidebar}
+              className="hidden lg:flex p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+              title={rightSidebarCollapsed ? 'Show right sidebar' : 'Hide right sidebar'}
+            >
+              {rightSidebarCollapsed ? <PanelRight size={20} /> : <PanelRightClose size={20} />}
+            </button>
+          )}
           {typeof isSettingsOpen !== 'undefined' && (
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
           )}

@@ -29,7 +29,7 @@ import { taskScheduler, Task } from '@/utils/taskScheduler';
 import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
 import { classifyEvent } from '@/utils/eventClassification';
 import { startOfWeek } from 'date-fns';
-import { Clock, Calendar, ChevronLeft, ChevronRight, Eye, EyeOff, Check } from 'lucide-react';
+import { Clock, Calendar, ChevronLeft, ChevronRight, Eye, EyeOff, Check, PanelLeftClose, PanelRightClose, PanelLeft, PanelRight } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
@@ -484,6 +484,10 @@ function LayoutContent() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   
+  // Desktop sidebar collapse states
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
+  
   const { googleCalendarAuthenticated, isLoading } = useSettings();
   
   // Load TensorFlow model on app startup
@@ -517,15 +521,22 @@ function LayoutContent() {
   }, []);
 
   const renderCalendar = () => {
+    const sidebarProps = {
+      leftSidebarCollapsed,
+      rightSidebarCollapsed,
+      onToggleLeftSidebar: () => setLeftSidebarCollapsed(!leftSidebarCollapsed),
+      onToggleRightSidebar: () => setRightSidebarCollapsed(!rightSidebarCollapsed),
+    };
+    
     switch (currentView) {
       case 'day':
-        return <DayCalendar selectedDate={selectedDate} />;
+        return <DayCalendar selectedDate={selectedDate} {...sidebarProps} />;
       case 'week':
-        return <WeeklyCalendar onWeekChange={handleWeekChange} />;
+        return <WeeklyCalendar onWeekChange={handleWeekChange} {...sidebarProps} />;
       case 'month':
-        return <MonthlyCalendar onDaySelected={handleDaySelected} onMonthChange={handleMonthChange} />;
+        return <MonthlyCalendar onDaySelected={handleDaySelected} onMonthChange={handleMonthChange} {...sidebarProps} />;
       default:
-        return <WeeklyCalendar onWeekChange={handleWeekChange} />;
+        return <WeeklyCalendar onWeekChange={handleWeekChange} {...sidebarProps} />;
     }
   };
 
@@ -558,12 +569,13 @@ function LayoutContent() {
 
       {/* Left Sidebar - Fixed on desktop, drawer on mobile */}
       <div className={`
-        w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-50
+        bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-50
         lg:relative lg:flex
-        fixed left-0 top-0 h-full transition-transform duration-300 ease-in-out
+        fixed left-0 top-0 h-full transition-all duration-300 ease-in-out
         ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${leftSidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'w-80'}
       `}>
-        <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0">
+        <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0 min-w-80">
           {/* Dynamic View Switching Buttons */}
           <div id="timeframe-group" className="flex items-center justify-between">
             <button
@@ -598,7 +610,7 @@ function LayoutContent() {
             </button>
           </div>
         </div>
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 min-w-80">
           <div className="flex-1 p-6 overflow-y-auto border-b border-gray-200">
             {/* Plan header with tooltip is now rendered inside TaskList */}
             <TaskList
@@ -631,8 +643,6 @@ function LayoutContent() {
 
       {/* Main Calendar Area - Independently scrollable */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Calendar Header with Settings and mobile controls */}
-        
         {/* Calendar Content - This area scrolls independently */}
         <div className="flex-1 overflow-hidden">
           {renderCalendar()}
@@ -641,13 +651,14 @@ function LayoutContent() {
       
       {/* Right Sidebar - Fixed on desktop, drawer on mobile */}
       <div className={`
-        w-80 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 z-50
+        bg-white border-l border-gray-200 flex flex-col flex-shrink-0 z-50
         lg:relative lg:flex
-        fixed right-0 top-0 h-full transition-transform duration-300 ease-in-out
+        fixed right-0 top-0 h-full transition-all duration-300 ease-in-out
         ${rightSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        ${rightSidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-l-0' : 'w-80'}
       `}>
         {/* Fixed Analytics at top */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 min-w-80">
           <EventAnalytics 
             currentView={currentView}
             selectedDate={selectedDate}
@@ -657,7 +668,7 @@ function LayoutContent() {
         </div>
         
         {/* Scrollable Suggestions section */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 min-w-80">
           <Suggestions 
             currentView={currentView}
             selectedDate={selectedDate || undefined}
