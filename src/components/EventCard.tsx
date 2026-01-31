@@ -7,7 +7,7 @@ import { formatTimeRange } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Clock } from 'lucide-react';
+import { Clock, Repeat } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
 
 interface EventCardProps {
@@ -225,12 +225,14 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           }
           // Small events (50-70px): Title, time, maybe category
           if (height < 70) {
+            const isRecurring = event.recurrenceRule || event.recurringEventId;
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
-                  {event.title}
+                  {isRecurring && <Repeat size={10} className="flex-shrink-0 text-white/80" />}
+                  <span className="truncate">{event.title}</span>
                 </div>
                 <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
                   <Clock size={10} />
@@ -246,12 +248,14 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           }
           // Medium events (70-90px): Title, time, category, maybe subcategory
           if (height < 90) {
+            const isRecurring = event.recurrenceRule || event.recurringEventId;
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
-                  {event.title}
+                  {isRecurring && <Repeat size={10} className="flex-shrink-0 text-white/80" />}
+                  <span className="truncate">{event.title}</span>
                 </div>
                 <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
                   <Clock size={10} />
@@ -269,12 +273,14 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
             );
           }
           // Large events (90px+): Everything including description
+          const isRecurring = event.recurrenceRule || event.recurringEventId;
           return (
             <div className="flex-1 overflow-hidden">
               <div 
-                className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
               >
-                {event.title}
+                {isRecurring && <Repeat size={10} className="flex-shrink-0 text-white/80" />}
+                <span className="truncate">{event.title}</span>
               </div>
               <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
                 <Clock size={10} />

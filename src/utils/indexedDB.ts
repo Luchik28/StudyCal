@@ -1,6 +1,15 @@
 // IndexedDB utility for storing app data
-import { Event, Calendar } from '@/types/events';
+import { Event, Calendar, RecurrenceRule } from '@/types/events';
 import type { GoogleCalendarConfig } from './googleCalendar';
+
+interface StoredRecurrenceRule {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  endDate?: string;
+  occurrences?: number;
+}
 
 interface StoredEvent {
   id: string;
@@ -14,6 +23,11 @@ interface StoredEvent {
   subcategory?: string;
   googleEventId?: string;
   calendarId?: string;
+  // Recurrence fields
+  recurrenceRule?: StoredRecurrenceRule;
+  recurringEventId?: string;
+  originalStartTime?: string | Date;
+  isRecurringInstance?: boolean;
 }
 
 interface StoredCalendar {
@@ -31,7 +45,7 @@ interface StoredCalendar {
 }
 
 const DB_NAME = 'WeekPlannerDB';
-const DB_VERSION = 3; // Increment version for migration to assign calendarId to existing events
+const DB_VERSION = 4; // Increment version for recurrence support
 const EVENTS_STORE = 'events';
 const SETTINGS_STORE = 'settings';
 const CALENDARS_STORE = 'calendars';
@@ -112,10 +126,15 @@ class IndexedDBManager {
       const store = transaction.objectStore(EVENTS_STORE);
       
       // Convert dates to ISO strings for storage
-      const eventToStore = {
+      const eventToStore: StoredEvent = {
         ...event,
         startTime: event.startTime.toISOString(),
         endTime: event.endTime.toISOString(),
+        originalStartTime: event.originalStartTime?.toISOString(),
+        recurrenceRule: event.recurrenceRule ? {
+          ...event.recurrenceRule,
+          endDate: event.recurrenceRule.endDate?.toISOString(),
+        } : undefined,
       };
 
       const request = store.put(eventToStore);
@@ -152,6 +171,11 @@ class IndexedDBManager {
           ...event,
           startTime: new Date(event.startTime),
           endTime: new Date(event.endTime),
+          originalStartTime: event.originalStartTime ? new Date(event.originalStartTime) : undefined,
+          recurrenceRule: event.recurrenceRule ? {
+            ...event.recurrenceRule,
+            endDate: event.recurrenceRule.endDate ? new Date(event.recurrenceRule.endDate) : undefined,
+          } : undefined,
         }));
         resolve(events);
       };
@@ -298,6 +322,11 @@ class IndexedDBManager {
             ...event,
             startTime: new Date(event.startTime),
             endTime: new Date(event.endTime),
+            originalStartTime: event.originalStartTime ? new Date(event.originalStartTime) : undefined,
+            recurrenceRule: event.recurrenceRule ? {
+              ...event.recurrenceRule,
+              endDate: event.recurrenceRule.endDate ? new Date(event.recurrenceRule.endDate) : undefined,
+            } : undefined,
           }));
         resolve(events);
       };

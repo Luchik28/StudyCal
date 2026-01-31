@@ -19,19 +19,21 @@ import { InlineEventEditor } from './InlineEventEditor';
 import { SettingsModal } from './SettingsModal';
 
 export function WeeklyCalendar({ onWeekChange }: { onWeekChange?: (weekDate: Date) => void }) {
-  const { events, moveEvent } = useEvents();
+  const { visibleEvents: allVisibleEvents, moveEvent } = useEvents();
   const { visibleCalendarIds, getCalendarById } = useCalendars();
   const { timeFormat } = useSettings();
   
-  // Filter events based on visible calendars
+  // Filter events based on visible calendars and exclude deleted markers
   const visibleEvents = useMemo(() => {
-    return events.filter(event => {
+    return allVisibleEvents.filter(event => {
+      // Exclude deleted marker events
+      if (event.id.startsWith('deleted_')) return false;
       // If event has no calendarId, show it (backwards compatibility)
       if (!event.calendarId) return true;
       // Show if calendar is visible
       return visibleCalendarIds.includes(event.calendarId);
     });
-  }, [events, visibleCalendarIds]);
+  }, [allVisibleEvents, visibleCalendarIds]);
   
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);

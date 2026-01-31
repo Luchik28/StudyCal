@@ -19,17 +19,18 @@ import { InlineEventEditor } from './InlineEventEditor';
 import { SettingsModal } from './SettingsModal';
 
 export function DayCalendar({ selectedDate }: { selectedDate?: Date | null }) {
-  const { events, moveEvent } = useEvents();
+  const { visibleEvents: allVisibleEvents, moveEvent } = useEvents();
   const { visibleCalendarIds } = useCalendars();
   const { timeFormat } = useSettings();
   
-  // Filter events based on visible calendars
+  // Filter events based on visible calendars and exclude deleted markers
   const visibleEvents = useMemo(() => {
-    return events.filter(event => {
+    return allVisibleEvents.filter(event => {
+      if (event.id.startsWith('deleted_')) return false;
       if (!event.calendarId) return true;
       return visibleCalendarIds.includes(event.calendarId);
     });
-  }, [events, visibleCalendarIds]);
+  }, [allVisibleEvents, visibleCalendarIds]);
   
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);

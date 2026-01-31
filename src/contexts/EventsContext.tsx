@@ -1,18 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Event } from '@/types/events';
-import { addHours } from 'date-fns';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo } from 'react';
+import { Event, RecurrenceRule } from '@/types/events';
+import { addHours, addDays, addWeeks, addMonths, addYears, startOfDay, isBefore, isAfter, isSameDay } from 'date-fns';
 import { getRandomColor } from '@/utils/calendar';
 import { classifyEvent } from '@/utils/eventClassification';
 import { dbManager, initDB } from '@/utils/indexedDB';
 import { googleCalendarSyncService } from '@/utils/googleCalendarSync';
 import { useSettings } from './SettingsContext';
 import { useCalendars } from './CalendarsContext';
+import { RecurrenceEditOption } from '@/components/RecurrenceEditModal';
 
 interface EventsContextType {
   events: Event[];
-  addEvent: (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string, calendarId?: string) => void;
+  addEvent: (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string, calendarId?: string, recurrenceRule?: RecurrenceRule) => void;
   updateEvent: (id: string, updates: Partial<Event>) => void;
   deleteEvent: (id: string) => void;
   moveEvent: (id: string, newStartTime: Date) => void;
@@ -22,6 +23,8 @@ interface EventsContextType {
   isSyncing: boolean;
   syncingCalendars: string[];
   visibleEvents: Event[];
+  updateRecurringEvent: (id: string, updates: Partial<Event>, option: RecurrenceEditOption) => void;
+  deleteRecurringEvent: (id: string, option: RecurrenceEditOption) => void;
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
@@ -32,6 +35,112 @@ export function useEvents() {
     throw new Error('useEvents must be used within an EventsProvider');
   }
   return context;
+}
+
+// Helper function to generate recurring event instances
+function generateRecurringInstances(event: Event, rangeStart: Date, rangeEnd: Date): Event[] {
+  if (!event.recurrenceRule) return [];
+
+  const instances: Event[] = [];
+  const { frequency, interval, daysOfWeek, endDate, occurrences } = event.recurrenceRule;
+  const duration = event.endTime.getTime() - event.startTime.getTime();
+  
+  let currentDate = new Date(event.startTime);
+  let count = 0;
+  const maxInstances = occurrences || 365; // Default max to prevent infinite loops
+
+  // Extend range to account for generation
+  const extendedRangeEnd = new Date(rangeEnd);
+  extendedRangeEnd.setMonth(extendedRangeEnd.getMonth() + 6);
+
+  while (count < maxInstances) {
+    // Check end conditions
+    if (endDate && isAfter(currentDate, endDate)) break;
+    if (isAfter(currentDate, extendedRangeEnd)) break;
+
+    // For weekly frequency with specific days
+    if (frequency === 'weekly' && daysOfWeek && daysOfWeek.length > 0) {
+      // Generate instances for each selected day in the current week
+      for (const dayOfWeek of daysOfWeek) {
+        const daysDiff = dayOfWeek - currentDate.getDay();
+        const instanceDate = new Date(currentDate);
+        instanceDate.setDate(currentDate.getDate() + daysDiff);
+        
+        // Only add if within range and after original start
+        if (
+          (isAfter(instanceDate, rangeStart) || isSameDay(instanceDate, rangeStart)) &&
+          (isBefore(instanceDate, rangeEnd) || isSameDay(instanceDate, rangeEnd)) &&
+          (isAfter(instanceDate, event.startTime) || isSameDay(instanceDate, event.startTime))
+        ) {
+          // Skip the original event date
+          if (!isSameDay(instanceDate, event.startTime)) {
+            const instanceStart = new Date(instanceDate);
+            instanceStart.setHours(event.startTime.getHours(), event.startTime.getMinutes(), 0, 0);
+            
+            instances.push({
+              ...event,
+              id: `${event.id}_${instanceStart.toISOString()}`,
+              startTime: instanceStart,
+              endTime: new Date(instanceStart.getTime() + duration),
+              dayOfWeek: instanceStart.getDay(),
+              recurringEventId: event.id,
+              originalStartTime: instanceStart,
+              isRecurringInstance: true,
+              recurrenceRule: undefined, // Instances don't have their own rule
+            });
+          }
+        }
+        
+        if (endDate && isAfter(instanceDate, endDate)) break;
+        count++;
+        if (count >= maxInstances) break;
+      }
+      
+      // Move to next interval
+      currentDate = addWeeks(startOfDay(currentDate), interval);
+    } else {
+      // For other frequencies, generate single instance per interval
+      if (
+        (isAfter(currentDate, rangeStart) || isSameDay(currentDate, rangeStart)) &&
+        (isBefore(currentDate, rangeEnd) || isSameDay(currentDate, rangeEnd)) &&
+        !isSameDay(currentDate, event.startTime)
+      ) {
+        const instanceStart = new Date(currentDate);
+        instanceStart.setHours(event.startTime.getHours(), event.startTime.getMinutes(), 0, 0);
+        
+        instances.push({
+          ...event,
+          id: `${event.id}_${instanceStart.toISOString()}`,
+          startTime: instanceStart,
+          endTime: new Date(instanceStart.getTime() + duration),
+          dayOfWeek: instanceStart.getDay(),
+          recurringEventId: event.id,
+          originalStartTime: instanceStart,
+          isRecurringInstance: true,
+          recurrenceRule: undefined,
+        });
+      }
+      
+      // Move to next occurrence based on frequency
+      switch (frequency) {
+        case 'daily':
+          currentDate = addDays(currentDate, interval);
+          break;
+        case 'weekly':
+          currentDate = addWeeks(currentDate, interval);
+          break;
+        case 'monthly':
+          currentDate = addMonths(currentDate, interval);
+          break;
+        case 'yearly':
+          currentDate = addYears(currentDate, interval);
+          break;
+      }
+      count++;
+    }
+  }
+
+  return instances;
 }
 
 interface EventsProviderProps {
@@ -46,6 +155,72 @@ export function EventsProvider({ children }: EventsProviderProps) {
   const [syncingCalendars, setSyncingCalendars] = useState<string[]>([]);
   const { isLoading: settingsLoading, googleCalendarAuthenticated } = useSettings();
   const { calendars } = useCalendars();
+
+  // Generate visible events including recurring instances
+  const visibleEvents = useMemo(() => {
+    // Calculate date range for recurring event generation (3 months before and after current date)
+    const rangeStart = new Date();
+    rangeStart.setMonth(rangeStart.getMonth() - 3);
+    const rangeEnd = new Date();
+    rangeEnd.setMonth(rangeEnd.getMonth() + 6);
+
+    // Collect deleted instance markers
+    const deletedInstanceIds = new Set<string>();
+    events.forEach(event => {
+      if (event.id.startsWith('deleted_')) {
+        // Extract the original instance ID from the deleted marker
+        const originalId = event.id.replace('deleted_', '');
+        deletedInstanceIds.add(originalId);
+      }
+    });
+
+    // Collect exception events (standalone events that were converted from instances)
+    const exceptionDates = new Map<string, Set<string>>(); // parentId -> set of date strings
+    events.forEach(event => {
+      if (event.originalStartTime && !event.recurringEventId && !event.recurrenceRule) {
+        // This is a standalone event that was converted from a recurring instance
+        // We need to exclude the original instance
+        // Find which recurring event this might be an exception for
+        events.forEach(parentEvent => {
+          if (parentEvent.recurrenceRule && parentEvent.id !== event.id) {
+            // Check if this event's originalStartTime matches the parent
+            const dateStr = event.originalStartTime!.toDateString();
+            if (!exceptionDates.has(parentEvent.id)) {
+              exceptionDates.set(parentEvent.id, new Set());
+            }
+            exceptionDates.get(parentEvent.id)!.add(dateStr);
+          }
+        });
+      }
+    });
+
+    const allEvents: Event[] = [...events.filter(e => !e.id.startsWith('deleted_'))];
+    
+    // Generate recurring instances for each recurring event
+    events.forEach(event => {
+      if (event.recurrenceRule && !event.isRecurringInstance) {
+        const instances = generateRecurringInstances(event, rangeStart, rangeEnd);
+        
+        // Filter out instances that have been deleted or converted to exceptions
+        const filteredInstances = instances.filter(instance => {
+          // Check if this instance was explicitly deleted
+          if (deletedInstanceIds.has(instance.id)) {
+            return false;
+          }
+          // Check if this instance date has an exception
+          const exceptionDateSet = exceptionDates.get(event.id);
+          if (exceptionDateSet && exceptionDateSet.has(instance.startTime.toDateString())) {
+            return false;
+          }
+          return true;
+        });
+        
+        allEvents.push(...filteredInstances);
+      }
+    });
+
+    return allEvents;
+  }, [events]);
 
   // Initialize IndexedDB and load events on component mount
   useEffect(() => {
@@ -201,7 +376,7 @@ export function EventsProvider({ children }: EventsProviderProps) {
     }
   };
 
-  const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string, calendarId?: string) => {
+  const addEvent = async (title: string, startTime: Date, endTime?: Date, description?: string, category?: string, subcategory?: string, calendarId?: string, recurrenceRule?: RecurrenceRule) => {
     const newEvent: Event = {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title,
@@ -213,6 +388,7 @@ export function EventsProvider({ children }: EventsProviderProps) {
       category,
       subcategory,
       calendarId: calendarId || 'local-default', // Default to local calendar if not specified
+      recurrenceRule,
     };    // Only classify if category/subcategory not provided
     if (!category || !subcategory) {
       // Simple rule-based classification as fallback
@@ -477,6 +653,182 @@ export function EventsProvider({ children }: EventsProviderProps) {
     });
   };
 
+  // Update a recurring event based on the selected option
+  const updateRecurringEvent = async (id: string, updates: Partial<Event>, option: RecurrenceEditOption) => {
+    // Check if this is an instance or the parent event
+    const isInstance = id.includes('_');
+    const parentId = isInstance ? id.split('_')[0] : id;
+    const parentEvent = events.find(e => e.id === parentId);
+    
+    if (!parentEvent) {
+      console.error('Parent event not found for recurring event');
+      return;
+    }
+
+    switch (option) {
+      case 'this': {
+        // Create an exception for this single instance
+        // Convert the instance to a standalone event
+        const instanceEvent = visibleEvents.find(e => e.id === id);
+        if (!instanceEvent) return;
+
+        const newEvent: Event = {
+          ...instanceEvent,
+          ...updates,
+          id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          recurringEventId: undefined,
+          isRecurringInstance: false,
+          originalStartTime: instanceEvent.startTime, // Store original time for reference
+          recurrenceRule: undefined,
+        };
+
+        // Save the new standalone event
+        await dbManager.saveEvent(newEvent);
+        setEvents(prev => [...prev, newEvent]);
+        
+        // Store exception in parent event (we could track excluded dates)
+        // For simplicity, we'll just add the new event and the instance will be hidden
+        // by checking against standalone events with matching originalStartTime
+        break;
+      }
+
+      case 'thisAndFuture': {
+        // Split the series: end the current series and create a new one
+        const instanceEvent = visibleEvents.find(e => e.id === id);
+        if (!instanceEvent) return;
+
+        // Update parent event to end before this instance
+        const updatedParentRule: RecurrenceRule = {
+          ...parentEvent.recurrenceRule!,
+          endDate: new Date(instanceEvent.startTime.getTime() - 24 * 60 * 60 * 1000), // Day before
+        };
+
+        const updatedParent: Event = {
+          ...parentEvent,
+          recurrenceRule: updatedParentRule,
+        };
+        await dbManager.saveEvent(updatedParent);
+
+        // Create a new recurring event starting from this instance with the updates
+        const newStartTime = updates.startTime || instanceEvent.startTime;
+        const newEndTime = updates.endTime || instanceEvent.endTime;
+        
+        const newRecurringEvent: Event = {
+          ...parentEvent,
+          ...updates,
+          id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          dayOfWeek: newStartTime.getDay(),
+          recurringEventId: undefined,
+          isRecurringInstance: false,
+          recurrenceRule: updates.recurrenceRule || parentEvent.recurrenceRule,
+        };
+        await dbManager.saveEvent(newRecurringEvent);
+
+        setEvents(prev => prev.map(e => 
+          e.id === parentId ? updatedParent : e
+        ).concat(newRecurringEvent));
+        break;
+      }
+
+      case 'all': {
+        // Update the parent event (all instances will reflect the change)
+        const updatedParent: Event = {
+          ...parentEvent,
+          ...updates,
+          id: parentEvent.id, // Keep same ID
+          dayOfWeek: updates.startTime?.getDay() ?? parentEvent.dayOfWeek,
+        };
+        
+        await dbManager.saveEvent(updatedParent);
+        setEvents(prev => prev.map(e => 
+          e.id === parentId ? updatedParent : e
+        ));
+        break;
+      }
+    }
+  };
+
+  // Delete a recurring event based on the selected option
+  const deleteRecurringEvent = async (id: string, option: RecurrenceEditOption) => {
+    // Check if this is an instance or the parent event
+    const isInstance = id.includes('_');
+    const parentId = isInstance ? id.split('_')[0] : id;
+    const parentEvent = events.find(e => e.id === parentId);
+    
+    if (!parentEvent) {
+      console.error('Parent event not found for recurring event');
+      return;
+    }
+
+    switch (option) {
+      case 'this': {
+        // For single instance deletion, we need to track exceptions
+        // Create an exception event that marks this instance as deleted
+        const instanceEvent = visibleEvents.find(e => e.id === id);
+        if (!instanceEvent) return;
+
+        // Create a "deleted" marker event that we'll filter out during generation
+        // For now, convert it to a standalone hidden event
+        const deletedMarker: Event = {
+          ...instanceEvent,
+          id: `deleted_${id}`,
+          title: `[DELETED] ${instanceEvent.title}`,
+          recurringEventId: parentId,
+          isRecurringInstance: true,
+        };
+        
+        await dbManager.saveEvent(deletedMarker);
+        setEvents(prev => [...prev, deletedMarker]);
+        break;
+      }
+
+      case 'thisAndFuture': {
+        // End the recurrence before this instance
+        const instanceEvent = visibleEvents.find(e => e.id === id);
+        if (!instanceEvent) return;
+
+        // Update parent event to end before this instance
+        const updatedParentRule: RecurrenceRule = {
+          ...parentEvent.recurrenceRule!,
+          endDate: new Date(instanceEvent.startTime.getTime() - 24 * 60 * 60 * 1000),
+        };
+
+        const updatedParent: Event = {
+          ...parentEvent,
+          recurrenceRule: updatedParentRule,
+        };
+        
+        await dbManager.saveEvent(updatedParent);
+        setEvents(prev => prev.map(e => 
+          e.id === parentId ? updatedParent : e
+        ));
+        break;
+      }
+
+      case 'all': {
+        // Delete the parent event (all instances will be removed)
+        await dbManager.deleteEvent(parentId);
+        
+        // Also delete any exception events related to this series
+        const relatedEvents = events.filter(e => 
+          e.recurringEventId === parentId || e.id === parentId
+        );
+        for (const event of relatedEvents) {
+          if (event.id !== parentId) {
+            await dbManager.deleteEvent(event.id);
+          }
+        }
+        
+        setEvents(prev => prev.filter(e => 
+          e.id !== parentId && e.recurringEventId !== parentId
+        ));
+        break;
+      }
+    }
+  };
+
   const contextValue = {
     events,
     addEvent,
@@ -488,7 +840,9 @@ export function EventsProvider({ children }: EventsProviderProps) {
     syncCalendar,
     isSyncing,
     syncingCalendars,
-    visibleEvents: events, // By default all events are visible, filtering happens in components
+    visibleEvents,
+    updateRecurringEvent,
+    deleteRecurringEvent,
   };
 
   return (

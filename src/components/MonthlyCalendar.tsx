@@ -129,7 +129,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   onDaySelected?: (date: Date) => void; 
   onMonthChange?: (monthDate: Date) => void;
 }) {
-  const { events } = useEvents();
+  const { visibleEvents: allVisibleEvents } = useEvents();
   const { visibleCalendarIds } = useCalendars();
   const { timeFormat } = useSettings();
   const [headerMonth, setHeaderMonth] = useState(new Date());
@@ -139,10 +139,13 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Filter events by visible calendars
+  // Filter events by visible calendars and exclude deleted markers
   const visibleEvents = useMemo(() => {
-    return events.filter(event => !event.calendarId || visibleCalendarIds.includes(event.calendarId));
-  }, [events, visibleCalendarIds]);
+    return allVisibleEvents.filter(event => 
+      !event.id.startsWith('deleted_') && 
+      (!event.calendarId || visibleCalendarIds.includes(event.calendarId))
+    );
+  }, [allVisibleEvents, visibleCalendarIds]);
 
   // Inline event editing state  
   const [inlineEditEvent, setInlineEditEvent] = useState<{
