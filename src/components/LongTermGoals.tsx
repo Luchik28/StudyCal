@@ -122,7 +122,7 @@ export function LongTermGoals({ className }: LongTermGoalsProps) {
         <h3 className="text-lg font-bold text-gray-900 font-mono flex items-center gap-2">
           Long-Term Goals
           <span className="relative group">
-            <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+            <span className="text-gray-600 text-base font-bold ml-1 cursor-help group-hover:text-gray-800 transition-colors" style={{opacity:0.8}} title="What is this?">?</span>
             <span className="absolute right-0 top-full mt-2 -ml-12 z-[200] w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{minWidth:'160px', maxWidth: '210px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
               Add your goals here. StudyCal will schedule time for you to work on them in your schedule, ensuring you make consistent progress on them.
             </span>

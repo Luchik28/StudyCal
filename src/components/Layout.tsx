@@ -29,7 +29,7 @@ import { taskScheduler, Task } from '@/utils/taskScheduler';
 import { loadTimePredictionModel, predictTaskDuration } from '@/utils/taskTimePrediction';
 import { classifyEvent } from '@/utils/eventClassification';
 import { startOfWeek } from 'date-fns';
-import { Clock, Calendar, ChevronLeft, ChevronRight, Eye, EyeOff, Check } from 'lucide-react';
+import { Clock, Calendar, ChevronLeft, ChevronRight, Eye, EyeOff, Check, PanelLeftClose, PanelRightClose, PanelLeft, PanelRight } from 'lucide-react';
 
 // Import with explicit file extensions to help TypeScript
 import { DayCalendar } from './DayCalendar';
@@ -283,7 +283,7 @@ function TaskList({
         <h2 className="font-bold font-mono text-lg text-gray-900 flex items-center gap-2">
           {view === 'day' ? 'Plan my Day' : view === 'week' ? 'Plan my Week' : 'Plan my Month'}
           <span className="relative group">
-            <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+            <span className="text-gray-600 text-base font-bold ml-1 cursor-help group-hover:text-gray-800 transition-colors" style={{opacity:0.8}} title="What is this?">?</span>
             <span className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-[12000] w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{maxWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
               Use this section to schedule time to complete all your tasks. Add tasks here, then click &quot;Schedule my {view},&quot; and StudyCal will place your events throughout the {view}.
             </span>
@@ -333,8 +333,8 @@ function TaskList({
                     className="border rounded px-1 py-0.5 text-xs text-gray-900 w-16"
                     disabled={predictingIdx === idx}
                   />
-                  <span className="text-xs text-gray-500">min</span>
-                  {predictingIdx === idx && <span className="text-xs text-gray-400 ml-1">AI…</span>}
+                  <span className="text-xs text-gray-700">min</span>
+                  {predictingIdx === idx && <span className="text-xs text-gray-600 ml-1">AI…</span>}
                 </div>
                 <select
                   value={task.category || ''}
@@ -384,7 +384,7 @@ function TaskList({
         </div>
         {/* Always show schedule button, gray and disabled if no tasks */}
         <button
-          className={`w-full py-2 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors ${tasks.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
+          className={`w-full py-2 rounded text-sm font-medium flex items-center justify-center gap-2 transition-colors ${tasks.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-60'}`}
           onClick={tasks.length > 0 ? handleScheduleTasks : undefined}
           disabled={tasks.length === 0 || isScheduling}
         >
@@ -450,7 +450,7 @@ function CalendarSelector() {
               {calendar.id !== defaultCalendarId && (
                 <button
                   onClick={() => setDefaultCalendar(calendar.id)}
-                  className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                  className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
                   title="Set as default"
                 >
                   <Check size={14} />
@@ -460,7 +460,7 @@ function CalendarSelector() {
               {/* Toggle visibility button */}
               <button
                 onClick={() => toggleCalendarVisibility(calendar.id)}
-                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
                 title={calendar.isVisible ? 'Hide calendar' : 'Show calendar'}
               >
                 {calendar.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -483,6 +483,10 @@ function LayoutContent() {
   // Mobile sidebar states
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+  
+  // Desktop sidebar collapse states
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
   
   const { googleCalendarAuthenticated, isLoading } = useSettings();
   
@@ -517,15 +521,22 @@ function LayoutContent() {
   }, []);
 
   const renderCalendar = () => {
+    const sidebarProps = {
+      leftSidebarCollapsed,
+      rightSidebarCollapsed,
+      onToggleLeftSidebar: () => setLeftSidebarCollapsed(!leftSidebarCollapsed),
+      onToggleRightSidebar: () => setRightSidebarCollapsed(!rightSidebarCollapsed),
+    };
+    
     switch (currentView) {
       case 'day':
-        return <DayCalendar selectedDate={selectedDate} />;
+        return <DayCalendar selectedDate={selectedDate} {...sidebarProps} />;
       case 'week':
-        return <WeeklyCalendar onWeekChange={handleWeekChange} />;
+        return <WeeklyCalendar onWeekChange={handleWeekChange} {...sidebarProps} />;
       case 'month':
-        return <MonthlyCalendar onDaySelected={handleDaySelected} onMonthChange={handleMonthChange} />;
+        return <MonthlyCalendar onDaySelected={handleDaySelected} onMonthChange={handleMonthChange} {...sidebarProps} />;
       default:
-        return <WeeklyCalendar onWeekChange={handleWeekChange} />;
+        return <WeeklyCalendar onWeekChange={handleWeekChange} {...sidebarProps} />;
     }
   };
 
@@ -558,12 +569,13 @@ function LayoutContent() {
 
       {/* Left Sidebar - Fixed on desktop, drawer on mobile */}
       <div className={`
-        w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-50
+        bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-50
         lg:relative lg:flex
-        fixed left-0 top-0 h-full transition-transform duration-300 ease-in-out
+        fixed left-0 top-0 h-full transition-all duration-300 ease-in-out
         ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${leftSidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'w-80'}
       `}>
-        <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0">
+        <div className="p-4 border-b border-gray-200 h-16 flex flex-col justify-center flex-shrink-0 min-w-80">
           {/* Dynamic View Switching Buttons */}
           <div id="timeframe-group" className="flex items-center justify-between">
             <button
@@ -598,7 +610,7 @@ function LayoutContent() {
             </button>
           </div>
         </div>
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 min-w-80">
           <div className="flex-1 p-6 overflow-y-auto border-b border-gray-200">
             {/* Plan header with tooltip is now rendered inside TaskList */}
             <TaskList
@@ -631,8 +643,6 @@ function LayoutContent() {
 
       {/* Main Calendar Area - Independently scrollable */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Calendar Header with Settings and mobile controls */}
-        
         {/* Calendar Content - This area scrolls independently */}
         <div className="flex-1 overflow-hidden">
           {renderCalendar()}
@@ -641,13 +651,14 @@ function LayoutContent() {
       
       {/* Right Sidebar - Fixed on desktop, drawer on mobile */}
       <div className={`
-        w-80 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 z-50
+        bg-white border-l border-gray-200 flex flex-col flex-shrink-0 z-50
         lg:relative lg:flex
-        fixed right-0 top-0 h-full transition-transform duration-300 ease-in-out
+        fixed right-0 top-0 h-full transition-all duration-300 ease-in-out
         ${rightSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        ${rightSidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-l-0' : 'w-80'}
       `}>
         {/* Fixed Analytics at top */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 min-w-80">
           <EventAnalytics 
             currentView={currentView}
             selectedDate={selectedDate}
@@ -657,7 +668,7 @@ function LayoutContent() {
         </div>
         
         {/* Scrollable Suggestions section */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 min-w-80">
           <Suggestions 
             currentView={currentView}
             selectedDate={selectedDate || undefined}

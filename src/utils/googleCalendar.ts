@@ -1,5 +1,5 @@
 // Google Calendar API integration
-import { Event } from '@/types/events';
+import { Event, RecurrenceRule, RecurrenceFrequency } from '@/types/events';
 import { classifyEvent } from './eventClassification';
 
 interface GoogleCalendarEvent {
@@ -17,6 +17,7 @@ interface GoogleCalendarEvent {
     timeZone?: string;
   };
   colorId?: string;
+  recurrence?: string[]; // RRULE strings
 }
 
 interface GoogleCalendarConfig {
@@ -476,7 +477,7 @@ class GoogleCalendarManager {
 
   // Convert our Event to Google Calendar format
   private convertToGoogleEvent(event: Event): GoogleCalendarEvent {
-    return {
+    const googleEvent: GoogleCalendarEvent = {
       summary: event.title,
       description: event.description || '',
       start: {
@@ -488,6 +489,111 @@ class GoogleCalendarManager {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
     };
+
+    // Add recurrence rule if present
+    if (event.recurrenceRule) {
+      const rrule = this.convertToRRule(event.recurrenceRule);
+      if (rrule) {
+        googleEvent.recurrence = [rrule];
+      }
+    }
+
+    return googleEvent;
+  }
+
+  // Convert our RecurrenceRule to Google's RRULE format
+  private convertToRRule(rule: RecurrenceRule): string {
+    const parts: string[] = ['RRULE:'];
+    
+    // Frequency
+    const freqMap: Record<RecurrenceFrequency, string> = {
+      daily: 'DAILY',
+      weekly: 'WEEKLY',
+      monthly: 'MONTHLY',
+      yearly: 'YEARLY',
+    };
+    parts.push(`FREQ=${freqMap[rule.frequency]}`);
+
+    // Interval
+    if (rule.interval && rule.interval > 1) {
+      parts.push(`;INTERVAL=${rule.interval}`);
+    }
+
+    // Days of week (for weekly frequency)
+    if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+      const dayMap = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+      const days = rule.daysOfWeek.map(d => dayMap[d]).join(',');
+      parts.push(`;BYDAY=${days}`);
+    }
+
+    // End date
+    if (rule.endDate) {
+      const endDateStr = rule.endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      parts.push(`;UNTIL=${endDateStr}`);
+    }
+
+    // Count (occurrences)
+    if (rule.occurrences) {
+      parts.push(`;COUNT=${rule.occurrences}`);
+    }
+
+    return parts.join('');
+  }
+
+  // Parse Google's RRULE format to our RecurrenceRule
+  private parseRRule(rruleStr: string): RecurrenceRule | undefined {
+    if (!rruleStr.startsWith('RRULE:')) return undefined;
+    
+    const rulePart = rruleStr.replace('RRULE:', '');
+    const parts = rulePart.split(';');
+    const ruleMap: Record<string, string> = {};
+    
+    parts.forEach(part => {
+      const [key, value] = part.split('=');
+      if (key && value) {
+        ruleMap[key] = value;
+      }
+    });
+
+    // Parse frequency
+    const freqReverseMap: Record<string, RecurrenceFrequency> = {
+      'DAILY': 'daily',
+      'WEEKLY': 'weekly',
+      'MONTHLY': 'monthly',
+      'YEARLY': 'yearly',
+    };
+    const frequency = freqReverseMap[ruleMap['FREQ']];
+    if (!frequency) return undefined;
+
+    const rule: RecurrenceRule = {
+      frequency,
+      interval: ruleMap['INTERVAL'] ? parseInt(ruleMap['INTERVAL']) : 1,
+    };
+
+    // Parse days of week
+    if (ruleMap['BYDAY']) {
+      const dayReverseMap: Record<string, number> = {
+        'SU': 0, 'MO': 1, 'TU': 2, 'WE': 3, 'TH': 4, 'FR': 5, 'SA': 6,
+      };
+      rule.daysOfWeek = ruleMap['BYDAY'].split(',').map(d => dayReverseMap[d]).filter(d => d !== undefined);
+    }
+
+    // Parse end date
+    if (ruleMap['UNTIL']) {
+      const untilStr = ruleMap['UNTIL'];
+      // Parse YYYYMMDDTHHMMSSZ format
+      const year = parseInt(untilStr.substring(0, 4));
+      const month = parseInt(untilStr.substring(4, 6)) - 1;
+      const day = parseInt(untilStr.substring(6, 8));
+      rule.endDate = new Date(year, month, day);
+    }
+
+    // Parse count
+    if (ruleMap['COUNT']) {
+      rule.occurrences = parseInt(ruleMap['COUNT']);
+    }
+
+    return rule;
   }
 
   // Convert Google Calendar events and classify them using TensorFlow
@@ -533,6 +639,15 @@ class GoogleCalendarManager {
     if (!startDateTime || !endDateTime) {
       throw new Error('Invalid Google Calendar event: missing start or end time');
     }
+
+    // Parse recurrence rule if present
+    let recurrenceRule: RecurrenceRule | undefined;
+    if (googleEvent.recurrence && googleEvent.recurrence.length > 0) {
+      const rruleStr = googleEvent.recurrence.find(r => r.startsWith('RRULE:'));
+      if (rruleStr) {
+        recurrenceRule = this.parseRRule(rruleStr);
+      }
+    }
     
     return {
       id: `google_${googleEvent.id}`,
@@ -545,6 +660,7 @@ class GoogleCalendarManager {
       category: 'Personal', // Temporary, will be updated after classification
       subcategory: 'Activity', // Temporary, will be updated after classification
       googleEventId: googleEvent.id,
+      recurrenceRule,
     };
   }
 

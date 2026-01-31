@@ -5,6 +5,8 @@ import { X, Calendar } from "lucide-react";
 import { useEvents } from "@/contexts/EventsContext";
 import { useCalendars } from "@/contexts/CalendarsContext";
 import { HOUR_HEIGHT } from "@/utils/calendar";
+import { RecurrencePicker } from "./RecurrencePicker";
+import { RecurrenceRule } from "@/types/events";
 
 interface InlineEventCreatorProps {
   date: Date;
@@ -40,8 +42,7 @@ export function InlineEventCreator({
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
   const [selectedCalendarId, setSelectedCalendarId] = useState<string>(defaultCalendarId || calendars[0]?.id || '');
-  // ...existing code...
-  // Removed AI model and vocab logic
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | undefined>(undefined);
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -110,7 +111,7 @@ export function InlineEventCreator({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      addEvent(title.trim(), startTime, endTime, description.trim() || undefined, undefined, undefined, selectedCalendarId);
+      addEvent(title.trim(), startTime, endTime, description.trim() || undefined, undefined, undefined, selectedCalendarId, recurrenceRule);
       onCancel();
     }
   };
@@ -152,7 +153,7 @@ export function InlineEventCreator({
             <span className="text-lg font-semibold text-gray-900">New Event</span>
             <button
               onClick={onCancel}
-              className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
               type="button"
               aria-label="Cancel"
             >
@@ -165,32 +166,32 @@ export function InlineEventCreator({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-gray-900 placeholder-gray-500"
               placeholder="Add title"
             />
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Start
               </label>
               <input
                 type="datetime-local"
                 value={formatDateTimeLocal(startTime)}
                 onChange={handleStartTimeChange}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 End
               </label>
               <input
                 type="datetime-local"
                 value={formatDateTimeLocal(endTime)}
                 onChange={handleEndTimeChange}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
               />
             </div>
           </div>
@@ -199,23 +200,30 @@ export function InlineEventCreator({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 placeholder-gray-500"
               placeholder="Add description"
               rows={2}
             />
           </div>
 
+          {/* Recurrence picker */}
+          <RecurrencePicker
+            value={recurrenceRule}
+            onChange={setRecurrenceRule}
+            startDate={startTime}
+          />
+
           {/* Calendar picker */}
           {calendars.length > 1 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1 flex items-center gap-1">
                 <Calendar size={14} />
                 Calendar
               </label>
               <select
                 value={selectedCalendarId}
                 onChange={(e) => setSelectedCalendarId(e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
               >
                 {calendars.map(cal => (
                   <option key={cal.id} value={cal.id}>

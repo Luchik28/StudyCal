@@ -6,7 +6,7 @@ const STORAGE_KEY = "multiCalendarAnnouncementSeen";
 
 export default function WhatsNewModal() {
   const [show, setShow] = useState(false);
-  const { events } = useEvents();
+  const { visibleEvents: events } = useEvents();
 
   useEffect(() => {
     // Only show if:
