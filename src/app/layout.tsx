@@ -8,6 +8,7 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { CalendarsProvider } from "@/contexts/CalendarsContext";
 import { Analytics } from '@vercel/analytics/next';
 import FeedbackWidget from "@/components/FeedbackWidget";
+import WhatsNewModal from "@/components/WhatsNewModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,6 +77,7 @@ export default function RootLayout({
           <CalendarsProvider>
             <EventsProvider>
               {children}
+              <WhatsNewModal />
             </EventsProvider>
           </CalendarsProvider>
         </SettingsProvider>
