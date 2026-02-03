@@ -49,7 +49,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
       baseColor = eventTypeColors[category] || '#FFB3B3';
     } else {
       // Color by calendar
-      const calendar = getCalendarById(event.calendarId);
+      const calendar = event.calendarId ? getCalendarById(event.calendarId) : null;
       if (!calendar) {
         baseColor = event.color;
       } else {
@@ -70,8 +70,8 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
     const vibrantColor = pastelToVibrant(getEventColor(false));
     const brightness = getColorBrightness(vibrantColor);
     // If very dark color (brightness < 0.3), lighten it a lot; if very light (> 0.7), darken it a lot; else use vibrantColor
-    if (brightness < 0.3) return lightenColor(vibrantColor, 0.6);
-    if (brightness > 0.7) return darkenColor(vibrantColor, 0.6);
+    if (brightness < 0.3) return lightenColor(vibrantColor, 0.95);
+    if (brightness > 0.7) return darkenColor(vibrantColor, 0.95);
     return vibrantColor;
   })();
 
@@ -184,22 +184,6 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
         if (containerRef.current !== node) {
           containerRef.current = node;
         }
-      }}
-      style={{
-        ...style,
-        top: event.position.top,
-        height: event.position.height,
-        left: `${event.position.left}%`,
-        width: `${event.position.width}%`,
-        backgroundColor: eventColor,
-        position: 'absolute',
-        minHeight: '15px',
-        zIndex: event.position.zIndex,
-        ...( ((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? {
-          padding: 0,
-          margin: 0,
-          borderRadius: 0,
-        } : {} ),
       }}
       className={`text-sm overflow-hidden ${((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? '' : 'rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]'}`}
       style={{
