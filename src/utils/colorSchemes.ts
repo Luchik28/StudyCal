@@ -106,6 +106,26 @@ export function vibrantToPastel(vibrantColor: string): string {
   return colorMap[vibrantColor.toUpperCase()] || vibrantColor;
 }
 
+// Helper function to darken a hex color by a percentage (0-1)
+export function darkenColor(hexColor: string, factor: number = 0.3): string {
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+  
+  // Parse RGB values
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Darken by reducing each component
+  const newR = Math.round(r * (1 - factor));
+  const newG = Math.round(g * (1 - factor));
+  const newB = Math.round(b * (1 - factor));
+  
+  // Convert back to hex
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
+}
+
 export function getColorForCategory(category: string | undefined): string {
   if (!category) return '#B3FFB3'; // Default to pastel green
   return CATEGORY_PASTEL_COLORS[category] || '#FFFFB3';

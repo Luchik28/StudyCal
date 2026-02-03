@@ -6,7 +6,7 @@ import { HOUR_HEIGHT } from '@/utils/calendar';
 import { formatTimeRange } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useCalendars } from '@/contexts/CalendarsContext';
-import { pastelToVibrant } from '@/utils/colorSchemes';
+import { pastelToVibrant, darkenColor } from '@/utils/colorSchemes';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, Repeat } from 'lucide-react';
@@ -15,9 +15,10 @@ import { useEvents } from '@/contexts/EventsContext';
 interface EventCardProps {
   event: PositionedEvent;
   onEventEdit?: (event: Event, eventElement?: HTMLElement) => void;
+  isEditing?: boolean;
 }
 
-export function EventCard({ event, onEventEdit }: EventCardProps) {
+export function EventCard({ event, onEventEdit, isEditing = false }: EventCardProps) {
   const { resizeEvent } = useEvents();
   const { timeFormat, colorSchemeMode, eventTypeColors, calendarColors } = useSettings();
   const { getCalendarById } = useCalendars();
@@ -60,7 +61,10 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     return useVibrant ? pastelToVibrant(baseColor) : baseColor;
   };
 
-  const eventColor = getEventColor(isHovered || isDragging);
+  // Check if event is in a selected state (hovered, dragging, or being edited)
+  const isSelected = isHovered || isDragging || isEditing;
+  const eventColor = getEventColor(isSelected);
+  const textColor = isSelected ? 'white' : darkenColor(pastelToVibrant(getEventColor(false)), 0.4);
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -188,7 +192,24 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           borderRadius: 0,
         } : {} ),
       }}
-      className={`text-white text-sm overflow-hidden ${((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? '' : 'rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]'}`}
+      className={`text-sm overflow-hidden ${((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? '' : 'rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]'}`}
+      style={{
+        ...style,
+        top: event.position.top,
+        height: event.position.height,
+        left: `${event.position.left}%`,
+        width: `${event.position.width}%`,
+        backgroundColor: eventColor,
+        color: textColor,
+        position: 'absolute',
+        minHeight: '15px',
+        zIndex: event.position.zIndex,
+        ...( ((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? {
+          padding: 0,
+          margin: 0,
+          borderRadius: 0,
+        } : {} ),
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -231,10 +252,10 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
             // Short event: left-aligned title, time on right, no dragging
             return (
               <div className="flex items-center justify-between w-full h-full rounded" style={{padding: '0 4px', borderRadius: '30px'}}>
-                <span className="font-medium text-white text-xs truncate leading-tight">
+                <span className="font-medium text-xs truncate leading-tight">
                   {event.title}
                 </span>
-                <span className="text-white/80 text-xs ml-2 whitespace-nowrap">
+                <span className="opacity-80 text-xs ml-2 whitespace-nowrap">
                   {formatTimeRange(event.startTime, event.endTime, timeFormat)}
                 </span>
               </div>
@@ -245,7 +266,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-white text-xs truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                  className="font-medium text-xs truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
                 >
                   {event.title} 2 {timeString}
                 </div>
@@ -258,17 +279,17 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                  className="font-medium text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
-                  {isRecurring && <Repeat size={10} className="flex-shrink-0 text-white/80" />}
+                  {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
                   <span className="truncate">{event.title}</span>
                 </div>
-                <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                <div className="flex items-center gap-1 opacity-80 text-xs mt-1">
                   <Clock size={10} />
                   <span className="truncate">{timeString}</span>
                 </div>
                 {event.category && (
-                  <div className="text-white/90 text-xs mt-1 truncate font-medium">
+                  <div className="opacity-90 text-xs mt-1 truncate font-medium">
                     {event.category}
                   </div>
                 )}
@@ -281,20 +302,20 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                  className="font-medium text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
-                  {isRecurring && <Repeat size={10} className="flex-shrink-0 text-white/80" />}
+                  {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
                   <span className="truncate">{event.title}</span>
                 </div>
-                <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                <div className="flex items-center gap-1 opacity-80 text-xs mt-1">
                   <Clock size={10} />
                   <span className="truncate">{timeString}</span>
                 </div>
                 {event.category && (
-                  <div className="text-white/90 text-xs mt-1">
+                  <div className="opacity-90 text-xs mt-1">
                     <div className="font-medium truncate">{event.category}</div>
                     {event.subcategory && (
-                      <div className="text-white/70 text-xs truncate">{event.subcategory}</div>
+                      <div className="opacity-70 text-xs truncate">{event.subcategory}</div>
                     )}
                   </div>
                 )}
@@ -306,25 +327,25 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
           return (
             <div className="flex-1 overflow-hidden">
               <div 
-                className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                className="font-medium text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
               >
-                {isRecurring && <Repeat size={10} className="flex-shrink-0 text-white/80" />}
+                {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
                 <span className="truncate">{event.title}</span>
               </div>
-              <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+              <div className="flex items-center gap-1 opacity-80 text-xs mt-1">
                 <Clock size={10} />
                 <span className="truncate">{timeString}</span>
               </div>
               {event.category && (
-                <div className="text-white/90 text-xs mt-1">
+                <div className="opacity-90 text-xs mt-1">
                   <div className="font-medium truncate">{event.category}</div>
                   {event.subcategory && (
-                    <div className="text-white/70 text-xs truncate">{event.subcategory}</div>
+                    <div className="opacity-70 text-xs truncate">{event.subcategory}</div>
                   )}
                 </div>
               )}
               {event.description && (
-                <div className="text-white/80 text-xs mt-1 truncate">
+                <div className="opacity-80 text-xs mt-1 truncate">
                   {event.description}
                 </div>
               )}
