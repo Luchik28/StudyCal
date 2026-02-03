@@ -6,7 +6,7 @@ import { HOUR_HEIGHT } from '@/utils/calendar';
 import { formatTimeRangeCompact } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useCalendars } from '@/contexts/CalendarsContext';
-import { pastelToVibrant, darkenColor } from '@/utils/colorSchemes';
+import { pastelToVibrant, darkenColor, lightenColor, getColorBrightness } from '@/utils/colorSchemes';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Repeat } from 'lucide-react';
@@ -64,7 +64,16 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
   // Check if event is in a selected state (hovered, dragging, or being edited)
   const isSelected = isHovered || isDragging || isEditing;
   const eventColor = getEventColor(isSelected);
-  const textColor = isSelected ? 'white' : darkenColor(pastelToVibrant(getEventColor(false)), 0.4);
+  
+  // For unselected text color, check if vibrant color is dark or light
+  const textColor = isSelected ? 'white' : (() => {
+    const vibrantColor = pastelToVibrant(getEventColor(false));
+    const brightness = getColorBrightness(vibrantColor);
+    // If very dark color (brightness < 0.3), lighten it a lot; if very light (> 0.7), darken it a lot; else use vibrantColor
+    if (brightness < 0.3) return lightenColor(vibrantColor, 0.6);
+    if (brightness > 0.7) return darkenColor(vibrantColor, 0.6);
+    return vibrantColor;
+  })();
 
   const style = {
     transform: CSS.Translate.toString(transform),

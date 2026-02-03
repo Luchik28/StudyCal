@@ -126,6 +126,38 @@ export function darkenColor(hexColor: string, factor: number = 0.3): string {
   return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
 }
 
+// Helper function to lighten a hex color by a percentage (0-1)
+export function lightenColor(hexColor: string, factor: number = 0.4): string {
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+  
+  // Parse RGB values
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Lighten by increasing each component towards 255
+  const newR = Math.round(r + (255 - r) * factor);
+  const newG = Math.round(g + (255 - g) * factor);
+  const newB = Math.round(b + (255 - b) * factor);
+  
+  // Convert back to hex
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
+}
+
+// Helper function to calculate perceived brightness of a hex color (0-1)
+export function getColorBrightness(hexColor: string): number {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Calculate perceived brightness using relative luminance formula
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000 / 255;
+  return brightness;
+}
+
 export function getColorForCategory(category: string | undefined): string {
   if (!category) return '#B3FFB3'; // Default to pastel green
   return CATEGORY_PASTEL_COLORS[category] || '#FFFFB3';
