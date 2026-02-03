@@ -54,6 +54,9 @@ export interface Settings {
   timeFormat: '12h' | '24h';
   googleCalendarEnabled: boolean;
   googleCalendarConfig?: GoogleCalendarConfig;
+  colorSchemeMode?: 'event-type' | 'calendar';
+  eventTypeColors?: Record<string, string>;
+  calendarColors?: Record<string, string>;
 }
 
 class IndexedDBManager {

@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Edit3, Trash2, Clock } from 'lucide-react';
 import { Event } from '@/types/events';
 import { formatTimeRange } from '@/utils/timeFormat';
+import { adjustPopupPosition, setupPopupResizeObserver } from '@/utils/popupPositioning';
 
 interface EventPopupMenuProps {
   event: Event;
@@ -24,6 +25,39 @@ export function EventPopupMenu({
   onDelete 
 }: EventPopupMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [adjustedPosition, setAdjustedPosition] = useState<{ x: number; y: number }>(position);
+  const [isPositioned, setIsPositioned] = useState(false);
+
+  // Adjust position when popup renders or size changes
+  const adjustPosition = () => {
+    if (!menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    const adjusted = adjustPopupPosition(position, rect.width, rect.height);
+    setAdjustedPosition(adjusted);
+  };
+
+  // Handle initial render and monitor for size changes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsPositioned(false);
+      return;
+    }
+
+    // Use double RAF to ensure element is rendered and measured before showing
+    const rafId1 = requestAnimationFrame(() => {
+      const rafId2 = requestAnimationFrame(() => {
+        adjustPosition();
+        setIsPositioned(true);
+      });
+    });
+
+    // Use ResizeObserver to track size changes (e.g., when dropdowns expand)
+    const cleanup = setupPopupResizeObserver(menuRef.current, adjustPosition);
+
+    return () => {
+      cleanup();
+    };
+  }, [isOpen, position]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -82,8 +116,10 @@ export function EventPopupMenu({
       ref={menuRef}
       className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px]"
       style={{ 
-        left: position.x, 
-        top: position.y
+        left: adjustedPosition.x, 
+        top: adjustedPosition.y,
+        opacity: isPositioned ? 1 : 0,
+        pointerEvents: isPositioned ? 'auto' : 'none'
       }}
     >
         {/* Event Info Header */}

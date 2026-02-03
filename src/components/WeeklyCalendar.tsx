@@ -251,6 +251,7 @@ export function WeeklyCalendar({
                 events={visibleEvents}
                 onTimeSlotClick={handleTimeSlotClick}
                 onEventEdit={handleEventClick}
+                editingEventId={inlineEditEvent?.event.id}
                 inlineEvent={inlineEvent?.date.toDateString() === day.toDateString() ? {
                   startTime: inlineEvent.startTime,
                   endTime: inlineEvent.endTime,
