@@ -6,6 +6,7 @@ import { HOUR_HEIGHT } from '@/utils/calendar';
 import { formatTimeRange } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useCalendars } from '@/contexts/CalendarsContext';
+import { pastelToVibrant } from '@/utils/colorSchemes';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, Repeat } from 'lucide-react';
@@ -21,22 +22,8 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
   const { timeFormat, colorSchemeMode, eventTypeColors, calendarColors } = useSettings();
   const { getCalendarById } = useCalendars();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Determine event color based on color scheme mode
-  const getEventColor = () => {
-    if (colorSchemeMode === 'event-type') {
-      const category = event.category || 'Other';
-      return eventTypeColors[category] || '#FFB3B3';
-    } else {
-      // Color by calendar
-      const calendar = getCalendarById(event.calendarId);
-      if (!calendar) return event.color;
-      return calendarColors[calendar.id] || calendar.color;
-    }
-  };
-
-  const eventColor = getEventColor();
   
   const {
     attributes,
@@ -51,6 +38,29 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
     },
     disabled: isResizing !== null, // Only disable when resizing
   });
+
+  // Determine event color based on color scheme mode
+  const getEventColor = (useVibrant: boolean = false) => {
+    let baseColor: string;
+    
+    if (colorSchemeMode === 'event-type') {
+      const category = event.category || 'Other';
+      baseColor = eventTypeColors[category] || '#FFB3B3';
+    } else {
+      // Color by calendar
+      const calendar = getCalendarById(event.calendarId);
+      if (!calendar) {
+        baseColor = event.color;
+      } else {
+        baseColor = calendarColors[calendar.id] || calendar.color;
+      }
+    }
+    
+    // Convert to vibrant if hovering/selected
+    return useVibrant ? pastelToVibrant(baseColor) : baseColor;
+  };
+
+  const eventColor = getEventColor(isHovered || isDragging);
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -179,6 +189,8 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
         } : {} ),
       }}
       className={`text-white text-sm overflow-hidden ${((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? '' : 'rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]'}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Top resize handle */}
       {showResizeHandles && (

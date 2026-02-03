@@ -1,24 +1,45 @@
-// Pastel color palettes
+// Vibrant color palette (for selected events)
+export const VIBRANT_COLORS = [
+  '#FF3B30', // Red
+  '#FF9500', // Orange
+  '#FFCC00', // Yellow
+  '#34C759', // Green
+  '#007AFF', // Blue
+  '#AF52DE', // Purple
+  '#8E8E93', // Gray
+];
+
+// Pastel color palettes (for unselected events)
 export const PASTEL_EVENT_COLORS = [
   '#FFB3B3', // Pastel Red
-  '#B3D9FF', // Pastel Blue
+  '#FFDAB3', // Pastel Orange
+  '#FFF4B3', // Pastel Yellow
   '#B3FFB3', // Pastel Green
-  '#FFFFB3', // Pastel Yellow
+  '#B3D9FF', // Pastel Blue
   '#DDB3FF', // Pastel Purple
-  '#FFB3DD', // Pastel Pink
-  '#B3FFFF', // Pastel Cyan
-  '#FFFFD9', // Pastel Cream
+  '#D1D1D6', // Pastel Gray
 ];
 
 // Pastel colors by event category/type
 export const CATEGORY_PASTEL_COLORS: Record<string, string> = {
   'Work': '#B3D9FF',      // Pastel Blue
-  'Personal': '#FFB3DD',  // Pastel Pink
+  'Personal': '#DDB3FF',  // Pastel Purple
   'Social': '#B3FFB3',    // Pastel Green
   'Health': '#FFB3B3',    // Pastel Red
-  'Education': '#DDB3FF', // Pastel Purple
-  'Travel': '#B3FFFF',    // Pastel Cyan
-  'Other': '#FFFFB3',     // Pastel Yellow
+  'Education': '#FFDAB3', // Pastel Orange
+  'Travel': '#FFF4B3',    // Pastel Yellow
+  'Other': '#D1D1D6',     // Pastel Gray
+};
+
+// Vibrant colors by event category/type
+export const CATEGORY_VIBRANT_COLORS: Record<string, string> = {
+  'Work': '#007AFF',      // Blue
+  'Personal': '#AF52DE',  // Purple
+  'Social': '#34C759',    // Green
+  'Health': '#FF3B30',    // Red
+  'Education': '#FF9500', // Orange
+  'Travel': '#FFCC00',    // Yellow
+  'Other': '#8E8E93',     // Gray
 };
 
 // Pastel colors for calendar (if color coding by calendar)
@@ -35,12 +56,12 @@ export type ColorSchemeMode = 'calendar' | 'event-type';
 export function getDefaultEventTypeColors(): Record<string, string> {
   return {
     'Work': '#B3D9FF',
-    'Personal': '#FFB3DD',
+    'Personal': '#DDB3FF',
     'Social': '#B3FFB3',
     'Health': '#FFB3B3',
-    'Education': '#DDB3FF',
-    'Travel': '#B3FFFF',
-    'Other': '#FFFFB3',
+    'Education': '#FFDAB3',
+    'Travel': '#FFF4B3',
+    'Other': '#D1D1D6',
   };
 }
 
@@ -53,6 +74,36 @@ export function getDefaultCalendarColors(calendarNames: string[]): Record<string
   });
   
   return result;
+}
+
+// Helper function to convert pastel to vibrant color
+export function pastelToVibrant(pastelColor: string): string {
+  const colorMap: Record<string, string> = {
+    '#FFB3B3': '#FF3B30', // Pastel Red -> Red
+    '#FFDAB3': '#FF9500', // Pastel Orange -> Orange
+    '#FFF4B3': '#FFCC00', // Pastel Yellow -> Yellow
+    '#B3FFB3': '#34C759', // Pastel Green -> Green
+    '#B3D9FF': '#007AFF', // Pastel Blue -> Blue
+    '#DDB3FF': '#AF52DE', // Pastel Purple -> Purple
+    '#D1D1D6': '#8E8E93', // Pastel Gray -> Gray
+  };
+  
+  return colorMap[pastelColor.toUpperCase()] || pastelColor;
+}
+
+// Helper function to convert vibrant to pastel color
+export function vibrantToPastel(vibrantColor: string): string {
+  const colorMap: Record<string, string> = {
+    '#FF3B30': '#FFB3B3', // Red -> Pastel Red
+    '#FF9500': '#FFDAB3', // Orange -> Pastel Orange
+    '#FFCC00': '#FFF4B3', // Yellow -> Pastel Yellow
+    '#34C759': '#B3FFB3', // Green -> Pastel Green
+    '#007AFF': '#B3D9FF', // Blue -> Pastel Blue
+    '#AF52DE': '#DDB3FF', // Purple -> Pastel Purple
+    '#8E8E93': '#D1D1D6', // Gray -> Pastel Gray
+  };
+  
+  return colorMap[vibrantColor.toUpperCase()] || vibrantColor;
 }
 
 export function getColorForCategory(category: string | undefined): string {

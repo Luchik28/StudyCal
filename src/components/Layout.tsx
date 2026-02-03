@@ -412,6 +412,7 @@ export function Layout() {
 // Calendar selector component for the left sidebar
 function CalendarSelector() {
   const { calendars, toggleCalendarVisibility, setDefaultCalendar, defaultCalendarId } = useCalendars();
+  const { colorSchemeMode, calendarColors } = useSettings();
   
   return (
     <div className="p-4 border-t border-gray-200">
@@ -429,7 +430,7 @@ function CalendarSelector() {
               {/* Color indicator */}
               <div 
                 className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: calendar.color }}
+                style={{ backgroundColor: colorSchemeMode === 'calendar' ? (calendarColors[calendar.id] || calendar.color) : calendar.color }}
               />
               
               {/* Calendar name */}

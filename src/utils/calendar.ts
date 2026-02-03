@@ -7,13 +7,12 @@ export const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursd
 
 export const EVENT_COLORS = [
   '#FFB3B3', // Pastel Red
-  '#B3D9FF', // Pastel Blue
+  '#FFDAB3', // Pastel Orange
+  '#FFF4B3', // Pastel Yellow
   '#B3FFB3', // Pastel Green
-  '#FFFFB3', // Pastel Yellow
+  '#B3D9FF', // Pastel Blue
   '#DDB3FF', // Pastel Purple
-  '#FFB3DD', // Pastel Pink
-  '#B3FFFF', // Pastel Cyan
-  '#FFFFD9', // Pastel Cream
+  '#D1D1D6', // Pastel Gray
 ];
 
 export function getWeekDays(currentDate: Date): Date[] {
