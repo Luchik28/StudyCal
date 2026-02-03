@@ -8,8 +8,8 @@ import { useEvents } from '@/contexts/EventsContext';
 import { googleCalendarSyncService } from '@/utils/googleCalendarSync';
 import { Calendar as CalendarType } from '@/types/events';
 import { PASTEL_EVENT_COLORS } from '@/utils/colorSchemes';
-import ToggleSwitch from '@/components/ToggleSwitch';
-import ColorPicker from '@/components/ColorPicker';
+import { ToggleSwitch } from '@/components/ToggleSwitch';
+import { ColorPicker } from '@/components/ColorPicker';
 
 interface SettingsModalProps {
   isOpen: boolean;
