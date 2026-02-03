@@ -3,13 +3,13 @@
 import React, { useState, useRef } from 'react';
 import { PositionedEvent, Event } from '@/types/events';
 import { HOUR_HEIGHT } from '@/utils/calendar';
-import { formatTimeRange } from '@/utils/timeFormat';
+import { formatTimeRangeCompact } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useCalendars } from '@/contexts/CalendarsContext';
 import { pastelToVibrant, darkenColor } from '@/utils/colorSchemes';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Clock, Repeat } from 'lucide-react';
+import { Repeat } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
 
 interface EventCardProps {
@@ -245,7 +245,6 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
         {/* Smart content layout based on available space */}
         {(() => {
           const height = event.position.height;
-          const timeString = formatTimeRange(event.startTime, event.endTime, timeFormat);
           const durationMinutes = (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
           // For events 15 min or less, render only the event title, no wrappers or extra styles
           if (durationMinutes <= 15) {
@@ -256,7 +255,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
                   {event.title}
                 </span>
                 <span className="opacity-80 text-xs ml-2 whitespace-nowrap">
-                  {formatTimeRange(event.startTime, event.endTime, timeFormat)}
+                  {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
                 </span>
               </div>
             );
@@ -266,9 +265,9 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-xs truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                  className="font-medium text-xs truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
                 >
-                  {event.title} 2 {timeString}
+                  {event.title} {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
                 </div>
               </div>
             );
@@ -279,14 +278,13 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                  className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
                   {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
                   <span className="truncate">{event.title}</span>
                 </div>
-                <div className="flex items-center gap-1 opacity-80 text-xs mt-1">
-                  <Clock size={10} />
-                  <span className="truncate">{timeString}</span>
+                <div className="text-xs mt-1 opacity-80 truncate">
+                  {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
                 </div>
                 {event.category && (
                   <div className="opacity-90 text-xs mt-1 truncate font-medium">
@@ -302,14 +300,13 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                  className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
                   {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
                   <span className="truncate">{event.title}</span>
                 </div>
-                <div className="flex items-center gap-1 opacity-80 text-xs mt-1">
-                  <Clock size={10} />
-                  <span className="truncate">{timeString}</span>
+                <div className="text-xs mt-1 opacity-80 truncate">
+                  {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
                 </div>
                 {event.category && (
                   <div className="opacity-90 text-xs mt-1">
@@ -327,14 +324,13 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
           return (
             <div className="flex-1 overflow-hidden">
               <div 
-                className="font-medium text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
               >
                 {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
                 <span className="truncate">{event.title}</span>
               </div>
-              <div className="flex items-center gap-1 opacity-80 text-xs mt-1">
-                <Clock size={10} />
-                <span className="truncate">{timeString}</span>
+              <div className="text-xs mt-1 opacity-80 truncate">
+                {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
               </div>
               {event.category && (
                 <div className="opacity-90 text-xs mt-1">
