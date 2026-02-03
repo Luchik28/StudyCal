@@ -6,14 +6,14 @@ export const HOUR_HEIGHT = 60; // pixels per hour
 export const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export const EVENT_COLORS = [
-  '#3B82F6', // Blue
-  '#EF4444', // Red
-  '#10B981', // Green
-  '#F59E0B', // Yellow
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#06B6D4', // Cyan
-  '#84CC16', // Lime
+  '#FFB3B3', // Pastel Red
+  '#B3D9FF', // Pastel Blue
+  '#B3FFB3', // Pastel Green
+  '#FFFFB3', // Pastel Yellow
+  '#DDB3FF', // Pastel Purple
+  '#FFB3DD', // Pastel Pink
+  '#B3FFFF', // Pastel Cyan
+  '#FFFFD9', // Pastel Cream
 ];
 
 export function getWeekDays(currentDate: Date): Date[] {

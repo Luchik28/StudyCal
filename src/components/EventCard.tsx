@@ -5,6 +5,7 @@ import { PositionedEvent, Event } from '@/types/events';
 import { HOUR_HEIGHT } from '@/utils/calendar';
 import { formatTimeRange } from '@/utils/timeFormat';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, Repeat } from 'lucide-react';
@@ -17,9 +18,25 @@ interface EventCardProps {
 
 export function EventCard({ event, onEventEdit }: EventCardProps) {
   const { resizeEvent } = useEvents();
-  const { timeFormat } = useSettings();
+  const { timeFormat, colorSchemeMode, eventTypeColors, calendarColors } = useSettings();
+  const { getCalendarById } = useCalendars();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Determine event color based on color scheme mode
+  const getEventColor = () => {
+    if (colorSchemeMode === 'event-type') {
+      const category = event.category || 'Other';
+      return eventTypeColors[category] || '#FFB3B3';
+    } else {
+      // Color by calendar
+      const calendar = getCalendarById(event.calendarId);
+      if (!calendar) return event.color;
+      return calendarColors[calendar.id] || calendar.color;
+    }
+  };
+
+  const eventColor = getEventColor();
   
   const {
     attributes,
@@ -151,7 +168,7 @@ export function EventCard({ event, onEventEdit }: EventCardProps) {
         height: event.position.height,
         left: `${event.position.left}%`,
         width: `${event.position.width}%`,
-        backgroundColor: event.color,
+        backgroundColor: eventColor,
         position: 'absolute',
         minHeight: '15px',
         zIndex: event.position.zIndex,
