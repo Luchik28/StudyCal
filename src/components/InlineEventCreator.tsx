@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { X, Calendar } from "lucide-react";
 import { useEvents } from "@/contexts/EventsContext";
 import { useCalendars } from "@/contexts/CalendarsContext";
 import { HOUR_HEIGHT } from "@/utils/calendar";
 import { RecurrencePicker } from "./RecurrencePicker";
 import { RecurrenceRule } from "@/types/events";
+import { adjustFormPosition, setupPopupResizeObserver } from "@/utils/popupPositioning";
 
 interface InlineEventCreatorProps {
   date: Date;
@@ -71,6 +72,20 @@ export function InlineEventCreator({
     top: 0,
     side: 'right'
   });
+  const [adjustedFormPosition, setAdjustedFormPosition] = useState<{ left: number; top: number }>({
+    left: 0,
+    top: 0
+  });
+  const [isPositioned, setIsPositioned] = useState(false);
+
+  // Adjust position when form renders or size changes
+  const adjustFormPositionOnResize = useCallback(() => {
+    if (formRef.current) {
+      const rect = formRef.current.getBoundingClientRect();
+      const adjusted = adjustFormPosition(formPosition, rect.width, rect.height);
+      setAdjustedFormPosition(adjusted);
+    }
+  }, [formPosition]);
 
   useEffect(() => {
     if (dayColumnRef && formRef.current) {
@@ -99,6 +114,40 @@ export function InlineEventCreator({
       });
     }
   }, [dayColumnRef, initialHour, initialMinute, weekDays, date]);
+
+  // Adjust form position to keep it in viewport and monitor for size changes
+  useEffect(() => {
+    if (formRef.current && !isPositioned) {
+      // Use double RAF to ensure element is rendered and measured before showing
+      const rafId1 = requestAnimationFrame(() => {
+        const rafId2 = requestAnimationFrame(() => {
+          adjustFormPositionOnResize();
+          setIsPositioned(true);
+        });
+      });
+
+      return () => {
+        // Cleanup is handled by RAF naturally if component unmounts
+      };
+    }
+
+    // Once positioned, only adjust position without hiding
+    if (formRef.current && isPositioned) {
+      // Debounce the adjustment to prevent lag
+      let resizeTimeout: NodeJS.Timeout;
+      const debouncedAdjust = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(adjustFormPositionOnResize, 150);
+      };
+
+      const cleanup = setupPopupResizeObserver(formRef.current, debouncedAdjust);
+
+      return () => {
+        clearTimeout(resizeTimeout);
+        cleanup();
+      };
+    }
+  }, [formPosition, isPositioned, adjustFormPositionOnResize]);
 
   // Predict duration when title changes, with historical override
   // Removed AI prediction logic
@@ -142,8 +191,10 @@ export function InlineEventCreator({
         ref={formRef}
         className="fixed bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 w-80 z-[70]"
         style={{
-          left: position?.left ?? formPosition.left,
-          top: position?.top ?? formPosition.top,
+          left: position?.left ?? adjustedFormPosition.left,
+          top: position?.top ?? adjustedFormPosition.top,
+          opacity: isPositioned ? 1 : 0,
+          pointerEvents: isPositioned ? 'auto' : 'none'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -166,12 +217,12 @@ export function InlineEventCreator({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-gray-900 placeholder-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 placeholder-gray-500"
               placeholder="Add title"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-1">
                 Start

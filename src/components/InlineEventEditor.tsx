@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Trash2, Calendar } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
 import { useCalendars } from '@/contexts/CalendarsContext';
 import { Event } from '@/types/events';
 import { format } from 'date-fns';
+import { adjustFormPosition, setupPopupResizeObserver } from '@/utils/popupPositioning';
 
 interface InlineEventEditorProps {
   event: Event;
@@ -46,6 +47,20 @@ export function InlineEventEditor({
     top: 0,
     side: 'right'
   });
+  const [adjustedFormPosition, setAdjustedFormPosition] = useState<{ left: number; top: number }>({
+    left: 0,
+    top: 0
+  });
+  const [isPositioned, setIsPositioned] = useState(false);
+
+  // Adjust position when form renders or size changes
+  const adjustFormPositionOnResize = useCallback(() => {
+    if (formRef.current) {
+      const rect = formRef.current.getBoundingClientRect();
+      const adjusted = adjustFormPosition(formPosition, rect.width, rect.height);
+      setAdjustedFormPosition(adjusted);
+    }
+  }, [formPosition]);
 
   useEffect(() => {
     console.log('InlineEventEditor mounted/updated', { 
@@ -75,6 +90,40 @@ export function InlineEventEditor({
       }
     }
   }, [eventElement, event.title]);
+
+  // Adjust form position to keep it in viewport and monitor for size changes
+  useEffect(() => {
+    if (formRef.current && !isPositioned) {
+      // Use double RAF to ensure element is rendered and measured before showing
+      const rafId1 = requestAnimationFrame(() => {
+        const rafId2 = requestAnimationFrame(() => {
+          adjustFormPositionOnResize();
+          setIsPositioned(true);
+        });
+      });
+
+      return () => {
+        // Cleanup is handled by RAF naturally if component unmounts
+      };
+    }
+
+    // Once positioned, only adjust position without hiding
+    if (formRef.current && isPositioned) {
+      // Debounce the adjustment to prevent lag
+      let resizeTimeout: NodeJS.Timeout;
+      const debouncedAdjust = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(adjustFormPositionOnResize, 150);
+      };
+
+      const cleanup = setupPopupResizeObserver(formRef.current, debouncedAdjust);
+
+      return () => {
+        clearTimeout(resizeTimeout);
+        cleanup();
+      };
+    }
+  }, [formPosition, isPositioned, adjustFormPositionOnResize]);
 
   // Focus title input when entering edit mode
   useEffect(() => {
@@ -167,8 +216,10 @@ export function InlineEventEditor({
         ref={formRef}
         className="fixed bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 w-80 z-[70]"
         style={{
-          left: formPosition.left,
-          top: formPosition.top,
+          left: adjustedFormPosition.left,
+          top: adjustedFormPosition.top,
+          opacity: isPositioned ? 1 : 0,
+          pointerEvents: isPositioned ? 'auto' : 'none'
         }}
         onClick={(e) => e.stopPropagation()}
       >
