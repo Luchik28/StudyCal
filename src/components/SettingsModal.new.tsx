@@ -448,8 +448,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                               <div key={type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                 <span className="text-sm font-medium text-gray-700">{type}</span>
                                 <ColorPicker
+                                  label={type}
                                   color={eventTypeColors[type] || '#FFB3B3'}
-                                  onColorChange={(color) => setEventTypeColors({ ...eventTypeColors, [type]: color })}
+                                  onChange={(color) => setEventTypeColors({ ...eventTypeColors, [type]: color })}
                                   presetColors={PASTEL_EVENT_COLORS}
                                 />
                               </div>
@@ -467,8 +468,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                               <div key={calendar.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                 <span className="text-sm font-medium text-gray-700">{calendar.name}</span>
                                 <ColorPicker
+                                  label={calendar.name}
                                   color={calendarColors[calendar.id] || calendar.color}
-                                  onColorChange={(color) => setCalendarColors({ ...calendarColors, [calendar.id]: color })}
+                                  onChange={(color) => setCalendarColors({ ...calendarColors, [calendar.id]: color })}
                                   presetColors={PASTEL_EVENT_COLORS}
                                 />
                               </div>
