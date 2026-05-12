@@ -242,13 +242,13 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
           const durationMinutes = (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
           const isTitleRTL = isRTLText(event.title);
           const titleDirection = isTitleRTL ? 'rtl' : 'ltr';
-          const titleAlignment = isTitleRTL ? 'text-right' : '';
+          const titleAlignmentClass = isTitleRTL ? 'text-right' : '';
           // For events 15 min or less, render only the event title, no wrappers or extra styles
           if (durationMinutes <= 15) {
             // Short event: left-aligned title, time on right, no dragging
             return (
               <div className="flex items-center justify-between w-full h-full rounded" style={{padding: '0 4px', borderRadius: '30px'}}>
-                <span className={`font-medium text-xs truncate leading-tight ${titleAlignment}`} dir={titleDirection}>
+                <span className={`font-medium text-xs truncate leading-tight ${titleAlignmentClass}`} dir={titleDirection}>
                   {event.title}
                 </span>
                 <span className="opacity-80 text-xs ml-2 whitespace-nowrap">
@@ -262,7 +262,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className={`font-medium text-xs truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors ${titleAlignment}`}
+                  className={`font-medium text-xs truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors ${titleAlignmentClass}`}
                   dir={titleDirection}
                 >
                   {event.title} {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
@@ -279,7 +279,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
                   className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
                   {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
-                  <span className={`truncate ${titleAlignment}`} dir={titleDirection}>{event.title}</span>
+                  <span className={`truncate ${titleAlignmentClass}`} dir={titleDirection}>{event.title}</span>
                 </div>
                 <div className="text-xs mt-1 opacity-80 truncate">
                   {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
@@ -301,7 +301,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
                   className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
                 >
                   {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
-                  <span className={`truncate ${titleAlignment}`} dir={titleDirection}>{event.title}</span>
+                  <span className={`truncate ${titleAlignmentClass}`} dir={titleDirection}>{event.title}</span>
                 </div>
                 <div className="text-xs mt-1 opacity-80 truncate">
                   {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
@@ -325,7 +325,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
                 className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
               >
                 {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
-                <span className={`truncate ${titleAlignment}`} dir={titleDirection}>{event.title}</span>
+                <span className={`truncate ${titleAlignmentClass}`} dir={titleDirection}>{event.title}</span>
               </div>
               <div className="text-xs mt-1 opacity-80 truncate">
                 {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
