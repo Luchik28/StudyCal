@@ -242,7 +242,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
           const durationMinutes = (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
           const isTitleRTL = isRTLText(event.title);
           const titleDirection = isTitleRTL ? 'rtl' : 'ltr';
-          const titleAlignmentClass = isTitleRTL ? 'text-right' : '';
+          const titleAlignmentClass = isTitleRTL ? 'text-right' : 'text-left';
           // For events 15 min or less, render only the event title, no wrappers or extra styles
           if (durationMinutes <= 15) {
             // Short event: left-aligned title, time on right, no dragging
