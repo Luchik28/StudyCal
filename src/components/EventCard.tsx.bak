@@ -3,28 +3,23 @@
 import React, { useState, useRef } from 'react';
 import { PositionedEvent, Event } from '@/types/events';
 import { HOUR_HEIGHT } from '@/utils/calendar';
-import { formatTimeRangeCompact } from '@/utils/timeFormat';
+import { formatTimeRange } from '@/utils/timeFormat';
 import { isRTLText } from '@/utils/rtl';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useCalendars } from '@/contexts/CalendarsContext';
-import { pastelToVibrant, darkenColor, lightenColor, getColorBrightness } from '@/utils/colorSchemes';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Repeat } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
 
 interface EventCardProps {
   event: PositionedEvent;
   onEventEdit?: (event: Event, eventElement?: HTMLElement) => void;
-  isEditing?: boolean;
 }
 
-export function EventCard({ event, onEventEdit, isEditing = false }: EventCardProps) {
+export function EventCard({ event, onEventEdit }: EventCardProps) {
   const { resizeEvent } = useEvents();
-  const { timeFormat, colorSchemeMode, eventTypeColors, calendarColors } = useSettings();
-  const { getCalendarById } = useCalendars();
+  const { timeFormat } = useSettings();
   const [isResizing, setIsResizing] = useState<'top' | 'bottom' | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const {
@@ -40,41 +35,6 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
     },
     disabled: isResizing !== null, // Only disable when resizing
   });
-
-  // Determine event color based on color scheme mode
-  const getEventColor = (useVibrant: boolean = false) => {
-    let baseColor: string;
-    
-    if (colorSchemeMode === 'event-type') {
-      const category = event.category || 'Other';
-      baseColor = eventTypeColors[category] || '#FFB3B3';
-    } else {
-      // Color by calendar
-      const calendar = event.calendarId ? getCalendarById(event.calendarId) : null;
-      if (!calendar) {
-        baseColor = event.color;
-      } else {
-        baseColor = calendarColors[calendar.id] || calendar.color;
-      }
-    }
-    
-    // Convert to vibrant if hovering/selected
-    return useVibrant ? pastelToVibrant(baseColor) : baseColor;
-  };
-
-  // Check if event is in a selected state (hovered, dragging, or being edited)
-  const isSelected = isHovered || isDragging || isEditing;
-  const eventColor = getEventColor(isSelected);
-  
-  // For unselected text color, check if vibrant color is dark or light
-  const textColor = isSelected ? 'white' : (() => {
-    const vibrantColor = pastelToVibrant(getEventColor(false));
-    const brightness = getColorBrightness(vibrantColor);
-    // If very dark color (brightness < 0.3), lighten it a lot; if very light (> 0.7), darken it a lot; else use vibrantColor
-    if (brightness < 0.3) return lightenColor(vibrantColor, 0.95);
-    if (brightness > 0.7) return darkenColor(vibrantColor, 0.95);
-    return vibrantColor;
-  })();
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -186,15 +146,13 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
           containerRef.current = node;
         }
       }}
-      className={`text-sm overflow-hidden ${((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? '' : 'rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]'}`}
       style={{
         ...style,
         top: event.position.top,
         height: event.position.height,
         left: `${event.position.left}%`,
         width: `${event.position.width}%`,
-        backgroundColor: eventColor,
-        color: textColor,
+        backgroundColor: event.color,
         position: 'absolute',
         minHeight: '15px',
         zIndex: event.position.zIndex,
@@ -204,8 +162,7 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
           borderRadius: 0,
         } : {} ),
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className={`text-white text-sm overflow-hidden ${((event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60)) <= 15 ? '' : 'rounded-lg border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 group hover:scale-[1.02]'}`}
     >
       {/* Top resize handle */}
       {showResizeHandles && (
@@ -239,20 +196,22 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
         {/* Smart content layout based on available space */}
         {(() => {
           const height = event.position.height;
+          const timeString = formatTimeRange(event.startTime, event.endTime, timeFormat);
           const durationMinutes = (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
-          const isTitleRTL = isRTLText(event.title);
-          const titleDirection = isTitleRTL ? 'rtl' : 'ltr';
-          const titleAlignmentClass = isTitleRTL ? 'text-right' : 'text-left';
           // For events 15 min or less, render only the event title, no wrappers or extra styles
           if (durationMinutes <= 15) {
+            const isTitleRTL = isRTLText(event.title);
             // Short event: left-aligned title, time on right, no dragging
             return (
               <div className="flex items-center justify-between w-full h-full rounded" style={{padding: '0 4px', borderRadius: '30px'}}>
-                <span className={`font-medium text-xs truncate leading-tight ${titleAlignmentClass}`} dir={titleDirection}>
+                <span
+                  className={`font-medium text-white text-xs truncate leading-tight ${isTitleRTL ? 'text-right' : ''}`}
+                  dir={isTitleRTL ? 'rtl' : 'ltr'}
+                >
                   {event.title}
                 </span>
-                <span className="opacity-80 text-xs ml-2 whitespace-nowrap">
-                  {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
+                <span className="text-white/80 text-xs ml-2 whitespace-nowrap">
+                  {formatTimeRange(event.startTime, event.endTime, timeFormat)}
                 </span>
               </div>
             );
@@ -262,30 +221,28 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className={`font-medium text-xs truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors ${titleAlignmentClass}`}
-                  dir={titleDirection}
+                  className="font-medium text-white text-xs truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
                 >
-                  {event.title} {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
+                  {event.title} 2 {timeString}
                 </div>
               </div>
             );
           }
           // Small events (50-70px): Title, time, maybe category
           if (height < 70) {
-            const isRecurring = event.recurrenceRule || event.recurringEventId;
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
                 >
-                  {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
-                  <span className={`truncate ${titleAlignmentClass}`} dir={titleDirection}>{event.title}</span>
+                  {event.title}
                 </div>
-                <div className="text-xs mt-1 opacity-80 truncate">
-                  {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
+                <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                  <Clock size={10} />
+                  <span className="truncate">{timeString}</span>
                 </div>
                 {event.category && (
-                  <div className="opacity-90 text-xs mt-1 truncate font-medium">
+                  <div className="text-white/90 text-xs mt-1 truncate font-medium">
                     {event.category}
                   </div>
                 )}
@@ -294,23 +251,22 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
           }
           // Medium events (70-90px): Title, time, category, maybe subcategory
           if (height < 90) {
-            const isRecurring = event.recurrenceRule || event.recurringEventId;
             return (
               <div className="flex-1 overflow-hidden">
                 <div 
-                  className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                  className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
                 >
-                  {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
-                  <span className={`truncate ${titleAlignmentClass}`} dir={titleDirection}>{event.title}</span>
+                  {event.title}
                 </div>
-                <div className="text-xs mt-1 opacity-80 truncate">
-                  {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
+                <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                  <Clock size={10} />
+                  <span className="truncate">{timeString}</span>
                 </div>
                 {event.category && (
-                  <div className="opacity-90 text-xs mt-1">
+                  <div className="text-white/90 text-xs mt-1">
                     <div className="font-medium truncate">{event.category}</div>
                     {event.subcategory && (
-                      <div className="opacity-70 text-xs truncate">{event.subcategory}</div>
+                      <div className="text-white/70 text-xs truncate">{event.subcategory}</div>
                     )}
                   </div>
                 )}
@@ -318,28 +274,27 @@ export function EventCard({ event, onEventEdit, isEditing = false }: EventCardPr
             );
           }
           // Large events (90px+): Everything including description
-          const isRecurring = event.recurrenceRule || event.recurringEventId;
           return (
             <div className="flex-1 overflow-hidden">
               <div 
-                className="font-medium text-sm truncate rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors flex items-center gap-1"
+                className="font-medium text-white text-sm truncate hover:bg-white/10 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
               >
-                {isRecurring && <Repeat size={10} className="flex-shrink-0 opacity-80" />}
-                <span className={`truncate ${titleAlignmentClass}`} dir={titleDirection}>{event.title}</span>
+                {event.title}
               </div>
-              <div className="text-xs mt-1 opacity-80 truncate">
-                {formatTimeRangeCompact(event.startTime, event.endTime, timeFormat)}
+              <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
+                <Clock size={10} />
+                <span className="truncate">{timeString}</span>
               </div>
               {event.category && (
-                <div className="opacity-90 text-xs mt-1">
+                <div className="text-white/90 text-xs mt-1">
                   <div className="font-medium truncate">{event.category}</div>
                   {event.subcategory && (
-                    <div className="opacity-70 text-xs truncate">{event.subcategory}</div>
+                    <div className="text-white/70 text-xs truncate">{event.subcategory}</div>
                   )}
                 </div>
               )}
               {event.description && (
-                <div className="opacity-80 text-xs mt-1 truncate">
+                <div className="text-white/80 text-xs mt-1 truncate">
                   {event.description}
                 </div>
               )}

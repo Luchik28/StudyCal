@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(pkill -f \"npm install\")",
+      "Bash(npm run *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(timeout 10 npx next dev)",
+      "Bash(next dev *)"
+    ]
+  }
+}
