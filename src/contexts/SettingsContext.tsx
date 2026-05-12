@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { dbManager, initDB } from '@/utils/indexedDB';
 import { googleCalendarManager, GoogleCalendarConfig } from '@/utils/googleCalendar';
+import { ColorSchemeMode, getDefaultEventTypeColors, getDefaultCalendarColors, PASTEL_EVENT_COLORS } from '@/utils/colorSchemes';
 
 interface SettingsContextType {
   timeFormat: '12h' | '24h';
@@ -15,6 +16,13 @@ interface SettingsContextType {
   googleCalendarAuthenticated: boolean;
   saveSettings: () => Promise<void>;
   isLoading: boolean;
+  colorSchemeMode: ColorSchemeMode;
+  setColorSchemeMode: (mode: ColorSchemeMode) => void;
+  eventTypeColors: Record<string, string>;
+  setEventTypeColors: (colors: Record<string, string>) => void;
+  calendarColors: Record<string, string>;
+  setCalendarColors: (colors: Record<string, string>) => void;
+  switchColorSchemeMode: (mode: ColorSchemeMode) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -25,6 +33,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [googleCalendarConfig, setGoogleCalendarConfig] = useState<GoogleCalendarConfig | undefined>(undefined);
   const [googleCalendarAuthenticated, setGoogleCalendarAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [colorSchemeMode, setColorSchemeMode] = useState<ColorSchemeMode>('event-type');
+  const [eventTypeColors, setEventTypeColors] = useState<Record<string, string>>(getDefaultEventTypeColors());
+  const [calendarColors, setCalendarColors] = useState<Record<string, string>>({});
 
   // Define saveSettings function
   const saveSettings = async (): Promise<void> => {
@@ -32,7 +43,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       await dbManager.saveSettings({ 
         timeFormat, 
         googleCalendarEnabled,
-        googleCalendarConfig 
+        googleCalendarConfig,
+        colorSchemeMode,
+        eventTypeColors,
+        calendarColors
       });
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -74,6 +88,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (savedSettings) {
           setTimeFormat(savedSettings.timeFormat);
           setGoogleCalendarEnabled(savedSettings.googleCalendarEnabled);
+          setColorSchemeMode(savedSettings.colorSchemeMode || 'event-type');
+          setEventTypeColors(savedSettings.eventTypeColors || getDefaultEventTypeColors());
+          setCalendarColors(savedSettings.calendarColors || {});
           if (savedSettings.googleCalendarConfig) {
             setGoogleCalendarConfig(savedSettings.googleCalendarConfig);
             googleCalendarManager.setConfig(savedSettings.googleCalendarConfig);
@@ -94,7 +111,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                   await dbManager.saveSettings({
                     timeFormat: savedSettings.timeFormat,
                     googleCalendarEnabled: savedSettings.googleCalendarEnabled,
-                    googleCalendarConfig: newConfig
+                    googleCalendarConfig: newConfig,
+                    colorSchemeMode: savedSettings.colorSchemeMode,
+                    eventTypeColors: savedSettings.eventTypeColors,
+                    calendarColors: savedSettings.calendarColors
                   });
                 }
               } catch (error) {
@@ -134,10 +154,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setGoogleCalendarAuthenticated(googleCalendarManager.isAuthenticated());
   };
 
-  // Set up the callback when component mounts
-  useEffect(() => {
-    googleCalendarManager.setOnConfigUpdated(handleConfigUpdate);
-  }, [handleConfigUpdate]);
+  // Switch color scheme mode and generate new default colors
+  const switchColorSchemeMode = useCallback((mode: ColorSchemeMode) => {
+    setColorSchemeMode(mode);
+    if (mode === 'event-type') {
+      setEventTypeColors(getDefaultEventTypeColors());
+    } else {
+      // For calendar mode, generate colors based on number of calendars
+      const newCalendarColors: Record<string, string> = {};
+      // Will be populated by the component with calendar IDs
+      setCalendarColors(newCalendarColors);
+    }
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ 
@@ -150,7 +178,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       isGoogleCalendarAuthenticated,
       googleCalendarAuthenticated,
       saveSettings, 
-      isLoading 
+      isLoading,
+      colorSchemeMode,
+      setColorSchemeMode,
+      eventTypeColors,
+      setEventTypeColors,
+      calendarColors,
+      setCalendarColors,
+      switchColorSchemeMode
     }}>
       {children}
     </SettingsContext.Provider>

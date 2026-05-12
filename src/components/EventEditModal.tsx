@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Type, FileText, Trash2 } from 'lucide-react';
-import { Event } from '@/types/events';
+import { X, Calendar, Clock, Type, FileText, Trash2, Repeat } from 'lucide-react';
+import { Event, RecurrenceRule } from '@/types/events';
 import { useEvents } from '@/contexts/EventsContext';
 import { format } from 'date-fns';
+import { RecurrencePicker } from './RecurrencePicker';
+import { RecurrenceEditModal, RecurrenceEditOption } from './RecurrenceEditModal';
 
 interface EventEditModalProps {
   isOpen: boolean;
@@ -13,12 +15,21 @@ interface EventEditModalProps {
 }
 
 export function EventEditModal({ isOpen, onClose, event }: EventEditModalProps) {
-  const { updateEvent, deleteEvent } = useEvents();
+  const { updateEvent, deleteEvent, updateRecurringEvent, deleteRecurringEvent } = useEvents();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [startDate, setStartDate] = useState('');
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | undefined>(undefined);
+  
+  // State for recurrence edit modal
+  const [showRecurrenceModal, setShowRecurrenceModal] = useState(false);
+  const [recurrenceAction, setRecurrenceAction] = useState<'edit' | 'delete'>('edit');
+  const [pendingUpdates, setPendingUpdates] = useState<Partial<Event> | null>(null);
+
+  // Check if this event is part of a recurring series
+  const isRecurringEvent = event?.recurrenceRule || event?.recurringEventId;
 
   useEffect(() => {
     if (event) {
@@ -27,6 +38,7 @@ export function EventEditModal({ isOpen, onClose, event }: EventEditModalProps) 
       setStartDate(format(event.startTime, 'yyyy-MM-dd'));
       setStartTime(format(event.startTime, 'HH:mm'));
       setEndTime(format(event.endTime, 'HH:mm'));
+      setRecurrenceRule(event.recurrenceRule);
     }
   }, [event]);
 
@@ -42,144 +54,206 @@ export function EventEditModal({ isOpen, onClose, event }: EventEditModalProps) 
       return;
     }
 
-    updateEvent(event.id, {
+    const updates: Partial<Event> = {
       title: title.trim(),
       description: description.trim() || undefined,
       startTime: startDateTime,
       endTime: endDateTime,
       dayOfWeek: startDateTime.getDay(),
-    });
+      recurrenceRule,
+    };
 
-    onClose();
+    // If this is a recurring event, show the recurrence modal
+    if (isRecurringEvent) {
+      setPendingUpdates(updates);
+      setRecurrenceAction('edit');
+      setShowRecurrenceModal(true);
+    } else {
+      updateEvent(event.id, updates);
+      onClose();
+    }
   };
 
   const handleDelete = () => {
     if (!event) return;
     
-    if (confirm('Are you sure you want to delete this event?')) {
-      deleteEvent(event.id);
-      onClose();
+    // If this is a recurring event, show the recurrence modal
+    if (isRecurringEvent) {
+      setRecurrenceAction('delete');
+      setShowRecurrenceModal(true);
+    } else {
+      if (confirm('Are you sure you want to delete this event?')) {
+        deleteEvent(event.id);
+        onClose();
+      }
     }
   };
 
+  const handleRecurrenceEditSelect = (option: RecurrenceEditOption) => {
+    if (!event) return;
+
+    if (recurrenceAction === 'edit' && pendingUpdates) {
+      updateRecurringEvent(event.id, pendingUpdates, option);
+    } else if (recurrenceAction === 'delete') {
+      deleteRecurringEvent(event.id, option);
+    }
+
+    setShowRecurrenceModal(false);
+    setPendingUpdates(null);
+    onClose();
+  };
+
   return (
-    <div className={`fixed inset-0 flex items-center justify-center p-4 transition-opacity duration-300 ${isOpen && event ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} style={{ zIndex: 60, backgroundColor: 'rgba(0, 0, 0, 0.1)', backdropFilter: 'blur(1px)' }}>
-      {event && (
-        <div className={`bg-white rounded-lg shadow-lg w-full max-w-md transition-all duration-300 ${isOpen && event ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Edit Event</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <Type size={16} className="inline mr-1" />
-              Event Title *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter event title"
-              required
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FileText size={16} className="inline mr-1" />
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter event description (optional)"
-              rows={3}
-            />
-          </div>
-
-          {/* Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <Calendar size={16} className="inline mr-1" />
-              Date
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Time Range */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <Clock size={16} className="inline mr-1" />
-                Start Time
-              </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+    <>
+      <div className={`fixed inset-0 flex items-center justify-center p-4 transition-opacity duration-300 ${isOpen && event ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} style={{ zIndex: 60, backgroundColor: 'rgba(0, 0, 0, 0.1)', backdropFilter: 'blur(1px)' }}>
+        {event && (
+          <div className={`bg-white rounded-lg shadow-lg w-full max-w-md transition-all duration-300 ${isOpen && event ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900">Edit Event</h2>
+              {isRecurringEvent && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  <Repeat size={12} />
+                  Recurring
+                </span>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Time
-              </label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-gray-200">
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-          >
-            <Trash2 size={16} />
-            Delete
-          </button>
-          
-          <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!title.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Save Changes
+              <X size={20} />
             </button>
           </div>
-        </div>
-        </div>
+
+          {/* Content */}
+          <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Type size={16} className="inline mr-1" />
+                Event Title *
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter event title"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FileText size={16} className="inline mr-1" />
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter event description (optional)"
+                rows={3}
+              />
+            </div>
+
+            {/* Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Calendar size={16} className="inline mr-1" />
+                Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Time Range */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Clock size={16} className="inline mr-1" />
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Recurrence picker - only show for non-instance events or parent events */}
+            {(!event.recurringEventId || event.recurrenceRule) && (
+              <RecurrencePicker
+                value={recurrenceRule}
+                onChange={setRecurrenceRule}
+                startDate={startDate ? new Date(`${startDate}T${startTime || '00:00'}`) : new Date()}
+              />
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between p-4 border-t border-gray-200">
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+            >
+              <Trash2 size={16} />
+              Delete
+            </button>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!title.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+          </div>
+        )}
+      </div>
+
+      {/* Recurrence Edit Modal */}
+      {event && (
+        <RecurrenceEditModal
+          isOpen={showRecurrenceModal}
+          onClose={() => {
+            setShowRecurrenceModal(false);
+            setPendingUpdates(null);
+          }}
+          onSelect={handleRecurrenceEditSelect}
+          action={recurrenceAction}
+          eventTitle={event.title}
+        />
       )}
-    </div>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 // Google Calendar API integration
-import { Event } from '@/types/events';
+import { Event, RecurrenceRule, RecurrenceFrequency } from '@/types/events';
 import { classifyEvent } from './eventClassification';
 
 interface GoogleCalendarEvent {
@@ -17,6 +17,7 @@ interface GoogleCalendarEvent {
     timeZone?: string;
   };
   colorId?: string;
+  recurrence?: string[]; // RRULE strings
 }
 
 interface GoogleCalendarConfig {
@@ -25,6 +26,7 @@ interface GoogleCalendarConfig {
   expiryDate: number;
   clientId: string;
   clientSecret: string;
+  calendarName?: string;
 }
 
 interface GoogleCalendarListResponse {
@@ -203,6 +205,75 @@ class GoogleCalendarManager {
     return events;
   }
 
+  // Fetch events using provided credentials (for multi-calendar support)
+  async fetchEventsWithCredentials(
+    timeMin?: Date, 
+    timeMax?: Date,
+    calendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<Event[]> {
+    // Check if we need to refresh the token
+    let token = accessToken;
+    if (!token || (tokenExpiry && Date.now() >= tokenExpiry)) {
+      if (refreshToken) {
+        // Refresh the token using our API endpoint
+        const response = await fetch('/api/auth/google/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to refresh access token');
+        }
+
+        const data = await response.json();
+        token = data.accessToken;
+      } else {
+        throw new Error('No valid access token or refresh token available');
+      }
+    }
+
+    const params = new URLSearchParams({
+      singleEvents: 'true',
+      orderBy: 'startTime',
+    });
+
+    if (timeMin) {
+      params.append('timeMin', timeMin.toISOString());
+    }
+
+    if (timeMax) {
+      params.append('timeMax', timeMax.toISOString());
+    }
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Google Calendar API error:', errorText);
+      throw new Error('Failed to fetch Google Calendar events');
+    }
+
+    const data: GoogleCalendarListResponse = await response.json();
+    
+    // Convert events with TensorFlow classification
+    const events = await this.convertAndClassifyGoogleEvents(data.items || []);
+    return events;
+  }
+
   // Create event in Google Calendar
   async createEvent(event: Event): Promise<string> {
     await this.ensureValidToken();
@@ -222,6 +293,54 @@ class GoogleCalendarManager {
     );
 
     if (!response.ok) {
+      throw new Error('Failed to create Google Calendar event');
+    }
+
+    const data = await response.json();
+    return data.id;
+  }
+
+  // Create event in Google Calendar with specific credentials (for multi-calendar)
+  async createEventWithCredentials(
+    event: Event,
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<string> {
+    let token = accessToken;
+    
+    // Check if token needs refresh
+    if (tokenExpiry && tokenExpiry < Date.now() && refreshToken) {
+      const response = await fetch('/api/auth/google/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) throw new Error('Failed to refresh access token');
+      const data = await response.json();
+      token = data.accessToken;
+    }
+
+    if (!token) throw new Error('No valid access token available');
+
+    const googleEvent = this.convertToGoogleEvent(event);
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(googleEvent),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to create Google Calendar event:', errorText);
       throw new Error('Failed to create Google Calendar event');
     }
 
@@ -252,6 +371,51 @@ class GoogleCalendarManager {
     }
   }
 
+  // Update event in Google Calendar with specific credentials (for multi-calendar)
+  async updateEventWithCredentials(
+    eventId: string,
+    event: Event,
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<void> {
+    let token = accessToken;
+    
+    if (tokenExpiry && tokenExpiry < Date.now() && refreshToken) {
+      const response = await fetch('/api/auth/google/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) throw new Error('Failed to refresh access token');
+      const data = await response.json();
+      token = data.accessToken;
+    }
+
+    if (!token) throw new Error('No valid access token available');
+
+    const googleEvent = this.convertToGoogleEvent(event);
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events/${eventId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(googleEvent),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to update Google Calendar event:', errorText);
+      throw new Error('Failed to update Google Calendar event');
+    }
+  }
+
   // Delete event from Google Calendar
   async deleteEvent(eventId: string): Promise<void> {
     await this.ensureValidToken();
@@ -271,9 +435,49 @@ class GoogleCalendarManager {
     }
   }
 
+  // Delete event from Google Calendar with specific credentials (for multi-calendar)
+  async deleteEventWithCredentials(
+    eventId: string,
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<void> {
+    let token = accessToken;
+    
+    if (tokenExpiry && tokenExpiry < Date.now() && refreshToken) {
+      const response = await fetch('/api/auth/google/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) throw new Error('Failed to refresh access token');
+      const data = await response.json();
+      token = data.accessToken;
+    }
+
+    if (!token) throw new Error('No valid access token available');
+
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events/${eventId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok && response.status !== 404) {
+      const errorText = await response.text();
+      console.error('Failed to delete Google Calendar event:', errorText);
+      throw new Error('Failed to delete Google Calendar event');
+    }
+  }
+
   // Convert our Event to Google Calendar format
   private convertToGoogleEvent(event: Event): GoogleCalendarEvent {
-    return {
+    const googleEvent: GoogleCalendarEvent = {
       summary: event.title,
       description: event.description || '',
       start: {
@@ -285,6 +489,111 @@ class GoogleCalendarManager {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
     };
+
+    // Add recurrence rule if present
+    if (event.recurrenceRule) {
+      const rrule = this.convertToRRule(event.recurrenceRule);
+      if (rrule) {
+        googleEvent.recurrence = [rrule];
+      }
+    }
+
+    return googleEvent;
+  }
+
+  // Convert our RecurrenceRule to Google's RRULE format
+  private convertToRRule(rule: RecurrenceRule): string {
+    const parts: string[] = ['RRULE:'];
+    
+    // Frequency
+    const freqMap: Record<RecurrenceFrequency, string> = {
+      daily: 'DAILY',
+      weekly: 'WEEKLY',
+      monthly: 'MONTHLY',
+      yearly: 'YEARLY',
+    };
+    parts.push(`FREQ=${freqMap[rule.frequency]}`);
+
+    // Interval
+    if (rule.interval && rule.interval > 1) {
+      parts.push(`;INTERVAL=${rule.interval}`);
+    }
+
+    // Days of week (for weekly frequency)
+    if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+      const dayMap = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+      const days = rule.daysOfWeek.map(d => dayMap[d]).join(',');
+      parts.push(`;BYDAY=${days}`);
+    }
+
+    // End date
+    if (rule.endDate) {
+      const endDateStr = rule.endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      parts.push(`;UNTIL=${endDateStr}`);
+    }
+
+    // Count (occurrences)
+    if (rule.occurrences) {
+      parts.push(`;COUNT=${rule.occurrences}`);
+    }
+
+    return parts.join('');
+  }
+
+  // Parse Google's RRULE format to our RecurrenceRule
+  private parseRRule(rruleStr: string): RecurrenceRule | undefined {
+    if (!rruleStr.startsWith('RRULE:')) return undefined;
+    
+    const rulePart = rruleStr.replace('RRULE:', '');
+    const parts = rulePart.split(';');
+    const ruleMap: Record<string, string> = {};
+    
+    parts.forEach(part => {
+      const [key, value] = part.split('=');
+      if (key && value) {
+        ruleMap[key] = value;
+      }
+    });
+
+    // Parse frequency
+    const freqReverseMap: Record<string, RecurrenceFrequency> = {
+      'DAILY': 'daily',
+      'WEEKLY': 'weekly',
+      'MONTHLY': 'monthly',
+      'YEARLY': 'yearly',
+    };
+    const frequency = freqReverseMap[ruleMap['FREQ']];
+    if (!frequency) return undefined;
+
+    const rule: RecurrenceRule = {
+      frequency,
+      interval: ruleMap['INTERVAL'] ? parseInt(ruleMap['INTERVAL']) : 1,
+    };
+
+    // Parse days of week
+    if (ruleMap['BYDAY']) {
+      const dayReverseMap: Record<string, number> = {
+        'SU': 0, 'MO': 1, 'TU': 2, 'WE': 3, 'TH': 4, 'FR': 5, 'SA': 6,
+      };
+      rule.daysOfWeek = ruleMap['BYDAY'].split(',').map(d => dayReverseMap[d]).filter(d => d !== undefined);
+    }
+
+    // Parse end date
+    if (ruleMap['UNTIL']) {
+      const untilStr = ruleMap['UNTIL'];
+      // Parse YYYYMMDDTHHMMSSZ format
+      const year = parseInt(untilStr.substring(0, 4));
+      const month = parseInt(untilStr.substring(4, 6)) - 1;
+      const day = parseInt(untilStr.substring(6, 8));
+      rule.endDate = new Date(year, month, day);
+    }
+
+    // Parse count
+    if (ruleMap['COUNT']) {
+      rule.occurrences = parseInt(ruleMap['COUNT']);
+    }
+
+    return rule;
   }
 
   // Convert Google Calendar events and classify them using TensorFlow
@@ -330,6 +639,15 @@ class GoogleCalendarManager {
     if (!startDateTime || !endDateTime) {
       throw new Error('Invalid Google Calendar event: missing start or end time');
     }
+
+    // Parse recurrence rule if present
+    let recurrenceRule: RecurrenceRule | undefined;
+    if (googleEvent.recurrence && googleEvent.recurrence.length > 0) {
+      const rruleStr = googleEvent.recurrence.find(r => r.startsWith('RRULE:'));
+      if (rruleStr) {
+        recurrenceRule = this.parseRRule(rruleStr);
+      }
+    }
     
     return {
       id: `google_${googleEvent.id}`,
@@ -342,6 +660,7 @@ class GoogleCalendarManager {
       category: 'Personal', // Temporary, will be updated after classification
       subcategory: 'Activity', // Temporary, will be updated after classification
       googleEventId: googleEvent.id,
+      recurrenceRule,
     };
   }
 

@@ -183,11 +183,15 @@ export const OnboardingOverlay: React.FC = () => {
     if (step < steps.length - 1) setStep(step + 1);
     else {
       localStorage.setItem(ONBOARDING_FLAG, "true");
+      // Mark multi-calendar announcement as seen so new users don't see it
+      localStorage.setItem("multiCalendarAnnouncementSeen", "true");
       setShow(false);
     }
   };
   const handleSkip = () => {
     localStorage.setItem(ONBOARDING_FLAG, "true");
+    // Mark multi-calendar announcement as seen so new users don't see it
+    localStorage.setItem("multiCalendarAnnouncementSeen", "true");
     setShow(false);
   };
   const handleStart = () => setStep(1);

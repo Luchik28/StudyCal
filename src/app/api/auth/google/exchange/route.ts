@@ -22,58 +22,93 @@ export async function POST(request: NextRequest) {
     }
 
     // Exchange authorization code for tokens
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('OAuth token exchange failed:', error);
-      console.error('Request details:', {
-        code: code.substring(0, 10) + '...', // Only log first 10 chars for security
-        redirectUri,
-        clientId,
-        hasClientSecret: !!clientSecret
+    try {
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('OAuth token exchange failed:', error);
+        console.error('Request details:', {
+          code: code.substring(0, 10) + '...', // Only log first 10 chars for security
+          redirectUri,
+          clientId,
+          hasClientSecret: !!clientSecret
+        });
+        
+        // Try to parse the error as JSON for better error reporting
+        let parsedError;
+        try {
+          parsedError = JSON.parse(error);
+        } catch {
+          parsedError = { error: 'unknown', error_description: error };
+        }
+        
+        return NextResponse.json(
+          { 
+            error: 'Failed to exchange authorization code for tokens',
+            details: parsedError
+          },
+          { status: 400 }
+        );
+      }
+
+      const data = await response.json();
       
-      // Try to parse the error as JSON for better error reporting
-      let parsedError;
+      // Fetch the primary calendar info to get its name
+      let calendarName = 'Google Calendar';
       try {
-        parsedError = JSON.parse(error);
-      } catch {
-        parsedError = { error: 'unknown', error_description: error };
+        const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList/primary', {
+          headers: {
+            'Authorization': `Bearer ${data.access_token}`
+          }
+        });
+        if (calendarResponse.ok) {
+          const calendarData = await calendarResponse.json();
+          calendarName = calendarData.summary || calendarData.id || 'Google Calendar';
+        }
+      } catch (e) {
+        console.error('Failed to fetch calendar info:', e);
       }
       
-      return NextResponse.json(
-        { 
-          error: 'Failed to exchange authorization code for tokens',
-          details: parsedError
-        },
-        { status: 400 }
-      );
+      const config = {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiryDate: Date.now() + (data.expires_in * 1000),
+        clientId,
+        clientSecret, // Note: In production, don't send this back to frontend
+        calendarName,
+      };
+
+      return NextResponse.json(config);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'Connection timed out while contacting Google. Please check your internet connection.' },
+          { status: 504 }
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const data = await response.json();
-    
-    const config = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiryDate: Date.now() + (data.expires_in * 1000),
-      clientId,
-      clientSecret, // Note: In production, don't send this back to frontend
-    };
-
-    return NextResponse.json(config);
   } catch (error) {
     console.error('Error in OAuth token exchange:', error);
     return NextResponse.json(

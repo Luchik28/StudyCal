@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, PanelLeftClose, PanelRightClose, PanelLeft, PanelRight } from 'lucide-react';
 import { addMonths, subMonths, format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import { useEvents } from '@/contexts/EventsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatTime, formatTimeRange } from '@/utils/timeFormat';
 import { Event } from '@/types/events';
@@ -124,11 +125,23 @@ const StaticMonthCard = React.memo(({ monthDate, events, onDayClick, onEventEdit
 
 StaticMonthCard.displayName = 'StaticMonthCard';
 
-export function MonthlyCalendar({ onDaySelected, onMonthChange }: { 
+export function MonthlyCalendar({ 
+  onDaySelected, 
+  onMonthChange,
+  leftSidebarCollapsed,
+  rightSidebarCollapsed,
+  onToggleLeftSidebar,
+  onToggleRightSidebar,
+}: { 
   onDaySelected?: (date: Date) => void; 
   onMonthChange?: (monthDate: Date) => void;
+  leftSidebarCollapsed?: boolean;
+  rightSidebarCollapsed?: boolean;
+  onToggleLeftSidebar?: () => void;
+  onToggleRightSidebar?: () => void;
 }) {
-  const { events } = useEvents();
+  const { visibleEvents: allVisibleEvents } = useEvents();
+  const { visibleCalendarIds } = useCalendars();
   const { timeFormat } = useSettings();
   const [headerMonth, setHeaderMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -136,6 +149,14 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalInitialDate, setModalInitialDate] = useState<Date>();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Filter events by visible calendars and exclude deleted markers
+  const visibleEvents = useMemo(() => {
+    return allVisibleEvents.filter(event => 
+      !event.id.startsWith('deleted_') && 
+      (!event.calendarId || visibleCalendarIds.includes(event.calendarId))
+    );
+  }, [allVisibleEvents, visibleCalendarIds]);
 
   // Inline event editing state  
   const [inlineEditEvent, setInlineEditEvent] = useState<{
@@ -452,6 +473,16 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
       {/* Header with Settings Button */}
       <div className="bg-white shadow-sm border-b border-gray-200 p-3 h-16 flex items-center">
         <div className="flex items-center space-x-2 flex-1">
+          {/* Left Sidebar Toggle - Desktop Only */}
+          {onToggleLeftSidebar && (
+            <button
+              onClick={onToggleLeftSidebar}
+              className="hidden lg:flex p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900 mr-2"
+              aria-label={leftSidebarCollapsed ? 'Expand left sidebar' : 'Collapse left sidebar'}
+            >
+              {leftSidebarCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+            </button>
+          )}
           <button
             onClick={() => navigateMonth('prev')}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900"
@@ -482,6 +513,16 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings text-gray-600" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </button>
+          {/* Right Sidebar Toggle - Desktop Only */}
+          {onToggleRightSidebar && (
+            <button
+              onClick={onToggleRightSidebar}
+              className="hidden lg:flex p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-700 hover:text-gray-900 ml-2"
+              aria-label={rightSidebarCollapsed ? 'Expand right sidebar' : 'Collapse right sidebar'}
+            >
+              {rightSidebarCollapsed ? <PanelRight size={20} /> : <PanelRightClose size={20} />}
+            </button>
+          )}
           {typeof isSettingsOpen !== 'undefined' && (
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
           )}
@@ -498,7 +539,7 @@ export function MonthlyCalendar({ onDaySelected, onMonthChange }: {
           <StaticMonthCard
             key={format(monthDate, 'yyyy-MM')}
             monthDate={monthDate}
-            events={events}
+            events={visibleEvents}
             onDayClick={handleDayClick}
             onEventEdit={handleEventClick}
             timeFormat={timeFormat}
