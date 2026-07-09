@@ -77,20 +77,91 @@ export class GoogleCalendarSyncService {
     }
   }
 
+  // Sync a local event to a specific Google Calendar with its own credentials
+  async syncToGoogleForCalendar(
+    event: Event,
+    operation: 'create' | 'update' | 'delete',
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<string | null> {
+    if (!accessToken && !refreshToken) {
+      console.log('No credentials available for calendar sync');
+      return null;
+    }
+
+    try {
+      switch (operation) {
+        case 'create':
+          // Don't sync Google Calendar events back to Google
+          if (event.id.startsWith('google_')) {
+            return null;
+          }
+          const googleEventId = await googleCalendarManager.createEventWithCredentials(
+            event,
+            googleCalendarId,
+            accessToken,
+            refreshToken,
+            tokenExpiry
+          );
+          return googleEventId;
+
+        case 'update':
+          if (event.googleEventId) {
+            await googleCalendarManager.updateEventWithCredentials(
+              event.googleEventId,
+              event,
+              googleCalendarId,
+              accessToken,
+              refreshToken,
+              tokenExpiry
+            );
+            return event.googleEventId;
+          }
+          break;
+
+        case 'delete':
+          if (event.googleEventId) {
+            await googleCalendarManager.deleteEventWithCredentials(
+              event.googleEventId,
+              googleCalendarId,
+              accessToken,
+              refreshToken,
+              tokenExpiry
+            );
+          }
+          break;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Failed to sync event to Google Calendar (${operation}):`, error);
+      throw error;
+    }
+  }
+
   // Merge Google Calendar events with local events
-  mergeEvents(localEvents: Event[], googleEvents: Event[]): Event[] {
+  mergeEvents(localEvents: Event[], googleEvents: Event[], calendarId?: string): Event[] {
     // Create a map of existing events by their Google ID for deduplication
     const existingGoogleEventIds = new Set<string>();
     
-    // Collect all existing Google event IDs from local events
+    // Collect all existing Google event IDs from local events within this calendar scope
     localEvents.forEach(event => {
-      if (event.googleEventId) {
+      if (event.googleEventId && (!calendarId || event.calendarId === calendarId)) {
         existingGoogleEventIds.add(event.googleEventId);
       }
     });
 
-    // Filter out local Google events to rebuild from fresh Google data
-    const nonGoogleLocalEvents = localEvents.filter(event => !event.googleEventId);
+    // Filter out local Google events for this calendar to rebuild from fresh Google data
+    const nonGoogleLocalEvents = localEvents.filter(event => {
+      // If we're syncing a specific calendar, keep all events from other calendars
+      if (calendarId && event.calendarId !== calendarId) return true;
+      // If we're syncing the "default/global" sync, only keep non-Google events that don't have a calendarId
+      if (!calendarId && event.calendarId) return true;
+      // Otherwise, filter out Google events (they will be updated/re-added)
+      return !event.googleEventId;
+    });
     
     // Process Google events, only add ones that don't already exist
     const newGoogleEvents: Event[] = [];
@@ -104,7 +175,7 @@ export class GoogleCalendarSyncService {
 
     // Update existing Google events with fresh data from Google
     const updatedLocalEvents = localEvents.map(localEvent => {
-      if (localEvent.googleEventId) {
+      if (localEvent.googleEventId && (!calendarId || localEvent.calendarId === calendarId)) {
         // Find the corresponding Google event
         const matchingGoogleEvent = googleEvents.find(ge => ge.googleEventId === localEvent.googleEventId);
         if (matchingGoogleEvent) {
@@ -117,19 +188,20 @@ export class GoogleCalendarSyncService {
             endTime: matchingGoogleEvent.endTime,
             dayOfWeek: matchingGoogleEvent.dayOfWeek,
             color: matchingGoogleEvent.color || localEvent.color, // Keep local color if Google doesn't specify one
+            calendarId: calendarId || localEvent.calendarId // Ensure calendarId is maintained/set
           };
-        } else {
-          // Google event was deleted, remove from local
+        } else if (calendarId || !localEvent.calendarId) {
+          // Google event was deleted in the scope we're syncing, remove from local
           return null;
         }
       }
       return localEvent;
     }).filter((event): event is Event => event !== null);
 
-    // Combine non-Google local events, updated Google events, and new Google events
+    // Combine everything
     return [
       ...nonGoogleLocalEvents,
-      ...updatedLocalEvents.filter(event => event.googleEventId),
+      ...updatedLocalEvents.filter(event => event.googleEventId && (!calendarId || event.calendarId === calendarId)),
       ...newGoogleEvents,
     ];
   }
@@ -210,6 +282,53 @@ export class GoogleCalendarSyncService {
       return googleEvents;
     } catch (error) {
       console.error('Failed to force sync from Google Calendar:', error);
+      throw error;
+    } finally {
+      this.syncInProgress = false;
+    }
+  }
+
+  // Sync events from a specific Google Calendar with its own credentials
+  async syncFromGoogleForCalendar(
+    currentDate: Date,
+    calendarId: string,
+    googleCalendarId: string = 'primary',
+    accessToken?: string,
+    refreshToken?: string,
+    tokenExpiry?: number
+  ): Promise<Event[]> {
+    if (!accessToken && !refreshToken) {
+      return [];
+    }
+
+    this.syncInProgress = true;
+    
+    try {
+      // Fetch events for current week and 2 weeks before/after
+      const weekStart = startOfWeek(subWeeks(currentDate, 2));
+      const weekEnd = endOfWeek(addWeeks(currentDate, 2));
+      
+      // Use the calendar-specific credentials
+      const googleEvents = await googleCalendarManager.fetchEventsWithCredentials(
+        weekStart, 
+        weekEnd,
+        googleCalendarId,
+        accessToken,
+        refreshToken,
+        tokenExpiry
+      );
+      
+      // Tag all events with the calendar ID
+      const taggedEvents = googleEvents.map(event => ({
+        ...event,
+        calendarId,
+      }));
+      
+      this.lastSyncTime = Date.now();
+      
+      return taggedEvents;
+    } catch (error) {
+      console.error('Failed to sync from Google Calendar:', error);
       throw error;
     } finally {
       this.syncInProgress = false;

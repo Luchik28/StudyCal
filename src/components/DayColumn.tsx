@@ -145,6 +145,7 @@ interface DayColumnProps {
   events: Event[];
   onTimeSlotClick: (date: Date, hour: number, minute: number) => void;
   onEventEdit?: (event: Event, eventElement?: HTMLElement) => void;
+  editingEventId?: string;
   inlineEvent?: {
     startTime: Date;
     endTime: Date;
@@ -153,7 +154,7 @@ interface DayColumnProps {
 }
 
 export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
-  ({ date, events, onTimeSlotClick, onEventEdit, inlineEvent }, ref) => {
+  ({ date, events, onTimeSlotClick, onEventEdit, editingEventId, inlineEvent }, ref) => {
     const dayEvents = getEventsForDayWithPositions(events, date);
     const timeSlots = generateTimeSlots();
 
@@ -237,6 +238,7 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
             key={event.id} 
             event={event} 
             onEventEdit={onEventEdit}
+            isEditing={editingEventId === event.id}
           />
         ))}
         

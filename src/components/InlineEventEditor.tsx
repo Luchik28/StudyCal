@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { X, Trash2, Calendar } from 'lucide-react';
 import { useEvents } from '@/contexts/EventsContext';
+import { useCalendars } from '@/contexts/CalendarsContext';
 import { Event } from '@/types/events';
 import { format } from 'date-fns';
+import { adjustFormPosition, setupPopupResizeObserver } from '@/utils/popupPositioning';
 
 interface InlineEventEditorProps {
   event: Event;
@@ -18,6 +20,7 @@ export function InlineEventEditor({
   onCancel
 }: InlineEventEditorProps) {
   const { updateEvent, deleteEvent } = useEvents();
+  const { calendars, getCalendarById } = useCalendars();
   
   // Category and subcategory options (matching the AI classification maps)
   const categories = ['Work', 'Personal', 'Social', 'Health', 'Education', 'Travel'];
@@ -33,6 +36,7 @@ export function InlineEventEditor({
   const [endTime, setEndTime] = useState(event.endTime);
   const [category, setCategory] = useState(event.category || '');
   const [subcategory, setSubcategory] = useState(event.subcategory !== undefined ? event.subcategory : '');
+  const [selectedCalendarId, setSelectedCalendarId] = useState(event.calendarId || 'local-default');
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +47,20 @@ export function InlineEventEditor({
     top: 0,
     side: 'right'
   });
+  const [adjustedFormPosition, setAdjustedFormPosition] = useState<{ left: number; top: number }>({
+    left: 0,
+    top: 0
+  });
+  const [isPositioned, setIsPositioned] = useState(false);
+
+  // Adjust position when form renders or size changes
+  const adjustFormPositionOnResize = useCallback(() => {
+    if (formRef.current) {
+      const rect = formRef.current.getBoundingClientRect();
+      const adjusted = adjustFormPosition(formPosition, rect.width, rect.height);
+      setAdjustedFormPosition(adjusted);
+    }
+  }, [formPosition]);
 
   useEffect(() => {
     console.log('InlineEventEditor mounted/updated', { 
@@ -72,6 +90,40 @@ export function InlineEventEditor({
       }
     }
   }, [eventElement, event.title]);
+
+  // Adjust form position to keep it in viewport and monitor for size changes
+  useEffect(() => {
+    if (formRef.current && !isPositioned) {
+      // Use double RAF to ensure element is rendered and measured before showing
+      const rafId1 = requestAnimationFrame(() => {
+        const rafId2 = requestAnimationFrame(() => {
+          adjustFormPositionOnResize();
+          setIsPositioned(true);
+        });
+      });
+
+      return () => {
+        // Cleanup is handled by RAF naturally if component unmounts
+      };
+    }
+
+    // Once positioned, only adjust position without hiding
+    if (formRef.current && isPositioned) {
+      // Debounce the adjustment to prevent lag
+      let resizeTimeout: NodeJS.Timeout;
+      const debouncedAdjust = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(adjustFormPositionOnResize, 150);
+      };
+
+      const cleanup = setupPopupResizeObserver(formRef.current, debouncedAdjust);
+
+      return () => {
+        clearTimeout(resizeTimeout);
+        cleanup();
+      };
+    }
+  }, [formPosition, isPositioned, adjustFormPositionOnResize]);
 
   // Focus title input when entering edit mode
   useEffect(() => {
@@ -139,6 +191,11 @@ export function InlineEventEditor({
     updateEvent(event.id, { subcategory: newSubcategory });
   };
 
+  const handleCalendarChange = (newCalendarId: string) => {
+    setSelectedCalendarId(newCalendarId);
+    updateEvent(event.id, { calendarId: newCalendarId });
+  };
+
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this event?')) {
       deleteEvent(event.id);
@@ -159,8 +216,10 @@ export function InlineEventEditor({
         ref={formRef}
         className="fixed bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 w-80 z-[70]"
         style={{
-          left: formPosition.left,
-          top: formPosition.top,
+          left: adjustedFormPosition.left,
+          top: adjustedFormPosition.top,
+          opacity: isPositioned ? 1 : 0,
+          pointerEvents: isPositioned ? 'auto' : 'none'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -233,6 +292,30 @@ export function InlineEventEditor({
               ))}
             </select>
           </div>
+
+          {/* Calendar picker */}
+          {calendars.length > 1 && (
+            <div className="flex items-center gap-2 text-xs">
+              <Calendar size={12} className="text-gray-500" />
+              <select
+                value={selectedCalendarId}
+                onChange={(e) => handleCalendarChange(e.target.value)}
+                className="border rounded px-2 py-1 text-xs text-gray-900 bg-gray-50 cursor-pointer flex-1"
+              >
+                {calendars.map(cal => (
+                  <option key={cal.id} value={cal.id}>{cal.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Show current calendar if only one */}
+          {calendars.length === 1 && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Calendar size={12} />
+              <span>{calendars[0]?.name || 'My Calendar'}</span>
+            </div>
+          )}
 
           {/* Delete button */}
           <div className="pt-2 border-t border-gray-200">

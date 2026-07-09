@@ -1375,7 +1375,7 @@ export function Suggestions({
           <h3 className="text-lg font-bold text-gray-900 font-mono flex items-center gap-2">
             Suggestions
             <span className="relative group">
-              <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+              <span className="text-gray-600 text-base font-bold ml-1 cursor-help group-hover:text-gray-800 transition-colors" style={{opacity:0.8}} title="What is this?">?</span>
               <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{minWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
                 Get helpful suggestions to improve your productivity and balance your schedule.
               </span>
@@ -1383,7 +1383,7 @@ export function Suggestions({
           </h3>
         </div>
         <div className="flex-1 flex items-center justify-center min-h-0">
-          <div className="text-center text-gray-500 max-w-xs">
+          <div className="text-center text-gray-700 max-w-xs">
             <div className="animate-pulse">
               <div className="w-10 h-10 bg-gray-300 rounded-full mx-auto mb-3"></div>
               <div className="h-4 bg-gray-300 rounded w-3/4 mx-auto mb-2"></div>
@@ -1413,10 +1413,10 @@ export function Suggestions({
           <h3 className="text-lg font-bold text-gray-900 font-mono">Suggestions</h3>
         </div>
         <div className="flex-1 flex items-center justify-center min-h-0">
-          <div className="text-center text-gray-500 max-w-xs">
-            <Lightbulb size={40} className="mx-auto mb-3 text-gray-400" />
+          <div className="text-center text-gray-700 max-w-xs">
+            <Lightbulb size={40} className="mx-auto mb-3 text-gray-500" />
             <p className="text-base font-medium text-gray-700 mb-2">Your schedule looks great!</p>
-            <p className="text-sm text-gray-500 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed">
               Suggestions will appear here when we find opportunities to optimize your schedule or work towards your goals.
             </p>
           </div>
@@ -1432,7 +1432,7 @@ export function Suggestions({
         <h3 className="text-lg font-bold text-gray-900 font-mono flex items-center gap-2">
           Suggestions
           <span className="relative group">
-            <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="What is this?">?</span>
+            <span className="text-gray-600 text-base font-bold ml-1 cursor-help group-hover:text-gray-800 transition-colors" style={{opacity:0.8}} title="What is this?">?</span>
             <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{minWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
               Get helpful suggestions to improve your productivity and balance your schedule.
             </span>
@@ -1477,7 +1477,7 @@ export function Suggestions({
                   </button>
                   <button
                     onClick={() => dismissSuggestion(suggestion.id)}
-                    className="w-full px-4 py-2 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
                   >
                     <X size={14} />
                     <span>No thanks</span>
@@ -1506,13 +1506,13 @@ export function Suggestions({
                           {suggestion.description}
                           <br />
                           <span className="block mt-2 text-blue-700 font-semibold">Event: {suggestion.actionLabel}</span>
-                          <span className="block text-xs text-gray-400 mt-1">Click the blue button below to add this event to your schedule.</span>
+                          <span className="block text-xs text-gray-600 mt-1">Click the blue button below to add this event to your schedule.</span>
                         </>
                       ) : (
                         <>
                           {suggestion.description}
                           {suggestion.actionLabel && (
-                            <span className="block text-xs text-gray-400 mt-2">Click the blue button below to add this event to your schedule.</span>
+                            <span className="block text-xs text-gray-600 mt-2">Click the blue button below to add this event to your schedule.</span>
                           )}
                         </>
                       )}
@@ -1540,7 +1540,7 @@ export function Suggestions({
                   )}
                   <button
                     onClick={() => dismissSuggestion(suggestion.id)}
-                    className="w-full px-4 py-2 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
                   >
                     <X size={14} />
                     <span>No thanks</span>

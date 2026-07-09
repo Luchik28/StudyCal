@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { X } from "lucide-react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { X, Calendar } from "lucide-react";
 import { useEvents } from "@/contexts/EventsContext";
+import { useCalendars } from "@/contexts/CalendarsContext";
 import { HOUR_HEIGHT } from "@/utils/calendar";
+import { RecurrencePicker } from "./RecurrencePicker";
+import { RecurrenceRule } from "@/types/events";
+import { adjustFormPosition, setupPopupResizeObserver } from "@/utils/popupPositioning";
 
 interface InlineEventCreatorProps {
   date: Date;
@@ -33,15 +37,23 @@ export function InlineEventCreator({
   position
 }: InlineEventCreatorProps) {
   const { addEvent } = useEvents();
+  const { calendars, defaultCalendarId } = useCalendars();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState(initialStartTime);
   const [endTime, setEndTime] = useState(initialEndTime);
-  // ...existing code...
-  // Removed AI model and vocab logic
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string>(defaultCalendarId || calendars[0]?.id || '');
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | undefined>(undefined);
 
   const formRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Update selected calendar when default changes
+  useEffect(() => {
+    if (defaultCalendarId && !selectedCalendarId) {
+      setSelectedCalendarId(defaultCalendarId);
+    }
+  }, [defaultCalendarId, selectedCalendarId]);
 
   // Focus the title input when component mounts
   useEffect(() => {
@@ -60,6 +72,20 @@ export function InlineEventCreator({
     top: 0,
     side: 'right'
   });
+  const [adjustedFormPosition, setAdjustedFormPosition] = useState<{ left: number; top: number }>({
+    left: 0,
+    top: 0
+  });
+  const [isPositioned, setIsPositioned] = useState(false);
+
+  // Adjust position when form renders or size changes
+  const adjustFormPositionOnResize = useCallback(() => {
+    if (formRef.current) {
+      const rect = formRef.current.getBoundingClientRect();
+      const adjusted = adjustFormPosition(formPosition, rect.width, rect.height);
+      setAdjustedFormPosition(adjusted);
+    }
+  }, [formPosition]);
 
   useEffect(() => {
     if (dayColumnRef && formRef.current) {
@@ -89,6 +115,40 @@ export function InlineEventCreator({
     }
   }, [dayColumnRef, initialHour, initialMinute, weekDays, date]);
 
+  // Adjust form position to keep it in viewport and monitor for size changes
+  useEffect(() => {
+    if (formRef.current && !isPositioned) {
+      // Use double RAF to ensure element is rendered and measured before showing
+      const rafId1 = requestAnimationFrame(() => {
+        const rafId2 = requestAnimationFrame(() => {
+          adjustFormPositionOnResize();
+          setIsPositioned(true);
+        });
+      });
+
+      return () => {
+        // Cleanup is handled by RAF naturally if component unmounts
+      };
+    }
+
+    // Once positioned, only adjust position without hiding
+    if (formRef.current && isPositioned) {
+      // Debounce the adjustment to prevent lag
+      let resizeTimeout: NodeJS.Timeout;
+      const debouncedAdjust = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(adjustFormPositionOnResize, 150);
+      };
+
+      const cleanup = setupPopupResizeObserver(formRef.current, debouncedAdjust);
+
+      return () => {
+        clearTimeout(resizeTimeout);
+        cleanup();
+      };
+    }
+  }, [formPosition, isPositioned, adjustFormPositionOnResize]);
+
   // Predict duration when title changes, with historical override
   // Removed AI prediction logic
 
@@ -100,7 +160,7 @@ export function InlineEventCreator({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      addEvent(title.trim(), startTime, endTime, description.trim() || undefined);
+      addEvent(title.trim(), startTime, endTime, description.trim() || undefined, undefined, undefined, selectedCalendarId, recurrenceRule);
       onCancel();
     }
   };
@@ -131,8 +191,10 @@ export function InlineEventCreator({
         ref={formRef}
         className="fixed bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 w-80 z-[70]"
         style={{
-          left: position?.left ?? formPosition.left,
-          top: position?.top ?? formPosition.top,
+          left: position?.left ?? adjustedFormPosition.left,
+          top: position?.top ?? adjustedFormPosition.top,
+          opacity: isPositioned ? 1 : 0,
+          pointerEvents: isPositioned ? 'auto' : 'none'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -142,7 +204,7 @@ export function InlineEventCreator({
             <span className="text-lg font-semibold text-gray-900">New Event</span>
             <button
               onClick={onCancel}
-              className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
               type="button"
               aria-label="Cancel"
             >
@@ -155,32 +217,32 @@ export function InlineEventCreator({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 placeholder-gray-500"
               placeholder="Add title"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Start
               </label>
               <input
                 type="datetime-local"
                 value={formatDateTimeLocal(startTime)}
                 onChange={handleStartTimeChange}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 End
               </label>
               <input
                 type="datetime-local"
                 value={formatDateTimeLocal(endTime)}
                 onChange={handleEndTimeChange}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
               />
             </div>
           </div>
@@ -189,11 +251,39 @@ export function InlineEventCreator({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 placeholder-gray-500"
               placeholder="Add description"
               rows={2}
             />
           </div>
+
+          {/* Recurrence picker */}
+          <RecurrencePicker
+            value={recurrenceRule}
+            onChange={setRecurrenceRule}
+            startDate={startTime}
+          />
+
+          {/* Calendar picker */}
+          {calendars.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1 flex items-center gap-1">
+                <Calendar size={14} />
+                Calendar
+              </label>
+              <select
+                value={selectedCalendarId}
+                onChange={(e) => setSelectedCalendarId(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
+              >
+                {calendars.map(cal => (
+                  <option key={cal.id} value={cal.id}>
+                    {cal.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button

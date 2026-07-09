@@ -65,7 +65,7 @@ interface EventAnalyticsProps {
 const chartCategoryLabels: Record<string, string> = {};
 
 export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, selectedDate, currentWeek, currentMonth }) => {
-  const { events } = useEvents();
+  const { visibleEvents: events } = useEvents();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -168,7 +168,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
             <h2 className="font-bold font-mono text-lg text-gray-900 flex items-center gap-2">
               Analytics
               <span className="relative group">
-                <span className="text-gray-400 text-base font-bold ml-1 cursor-help group-hover:text-gray-600 transition-colors" style={{opacity:0.6}} title="How to use">?</span>
+                <span className="text-gray-600 text-base font-bold ml-1 cursor-help group-hover:text-gray-800 transition-colors" style={{opacity:0.8}} title="How to use">?</span>
                 <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 w-64 bg-white text-gray-700 text-xs rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" style={{minWidth:'200px', boxShadow:'0 2px 8px rgba(0,0,0,0.12)'}}>
                   See a breakdown of how your time is spent. Use this to reflect and adjust your schedule for better balance.
                 </span>
@@ -351,7 +351,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
           {/* Right sidebar: Category analytics (table + line chart) full height */}
           <div className="flex flex-col items-stretch w-[420px] min-w-[320px] max-w-[500px] gap-2 h-full">
             <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-5 gap-2 w-full px-2 pb-1 text-xs text-gray-500 font-semibold border-b border-gray-200 items-end">
+              <div className="grid grid-cols-5 gap-2 w-full px-2 pb-1 text-xs text-gray-700 font-semibold border-b border-gray-200 items-end">
                 <div className="text-left pl-2">Category</div>
                 <div className="text-center">Events</div>
                 <div className="text-center">This</div>
@@ -382,7 +382,7 @@ export const EventAnalytics: React.FC<EventAnalyticsProps> = ({ currentView, sel
                     <div className="text-center tabular-nums text-gray-900 font-mono">{cat.count}</div>
                     <div className="text-center tabular-nums text-gray-900 font-mono">{formatDuration(cat.minutes)}</div>
                     <div className="text-center tabular-nums text-gray-900 font-mono">{formatDuration(prevCatMinutes)}</div>
-                    <div className={`text-center tabular-nums text-xs ${percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'}`}>{prevCatMinutes > 0 ? (<>{arrow}{`${Math.abs(percentChange).toFixed(1)}%`}</>) : '—'}</div>
+                    <div className={`text-center tabular-nums text-xs ${percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-600'}`}>{prevCatMinutes > 0 ? (<>{arrow}{`${Math.abs(percentChange).toFixed(1)}%`}</>) : '—'}</div>
                   </div>
                 );
               })}
