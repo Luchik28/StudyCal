@@ -4,6 +4,27 @@ import TopBar from '../../components/TopBar';
 
 const posts = [
 	{
+		slug: 'your-sleep-schedule-is-part-of-your-study-schedule',
+		title: 'Your Sleep Schedule Is Part of Your Study Schedule',
+		date: '2026-07-09',
+		image: '/blog/ScheduledvsFree.png',
+		preview: `MIT researchers put Fitbits on 88 chemistry students for a semester. Sleep explained about a quarter of the variance in their grades — and sleep the night before a test explained none of it. What that means for how you build a week...`,
+	},
+	{
+		slug: 'cramming-vs-spacing-how-to-schedule-study-sessions',
+		title: 'Cramming vs. Spacing: When to Put Study Sessions on Your Calendar',
+		date: '2026-07-09',
+		image: '/blog/Graph.png',
+		preview: `Most study advice is about how to study. Far less is about when — which is strange, because the timing of your sessions has a larger, better-documented effect on what you remember than almost anything else. Here's how far apart they should actually be...`,
+	},
+	{
+		slug: 'why-you-always-underestimate-how-long-studying-takes',
+		title: 'Why You Always Underestimate How Long Studying Takes',
+		date: '2026-07-09',
+		image: '/blog/ListOfCategories.png',
+		preview: `You block out two hours for a problem set and it takes four. This isn't a discipline problem — it's one of the most reliably reproduced findings in psychology, and pessimism won't fix it. But something else will...`,
+	},
+	{
 		slug: 'how-to-use-studycal-analytics',
 		title: "How to Use StudyCal's new Analytics",
 		date: "2025-07-23",
