@@ -1,5 +1,6 @@
 import TopBar from '../../../components/TopBar';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function PlanningFallacyPost() {
   return (
@@ -41,7 +42,7 @@ export default function PlanningFallacyPost() {
             What works is throwing out the story and using the data. Instead of asking “how long will this problem set take?”, ask “how long did the last four problem sets take?” This is sometimes called reference-class forecasting, and it’s the same principle that makes a contractor’s estimate more useful than a homeowner’s.
           </p>
           <p className="mb-6">
-            The catch, obviously, is that most students have no idea how long the last four problem sets took. The memory of a study session compresses down to “a while.” This is a big part of why we built StudyCal’s <a href="/blog/how-to-use-studycal-analytics" className="text-blue-700 underline">analytics view</a> around actual logged time per category, with a comparison against the previous period. Not because a pie chart is intrinsically motivating, but because the number in that chart is the only honest input you have for next week’s plan.
+            The catch, obviously, is that most students have no idea how long the last four problem sets took. The memory of a study session compresses down to “a while.” This is a big part of why we built StudyCal’s <Link href="/blog/how-to-use-studycal-analytics" className="text-blue-700 underline">analytics view</Link> around actual logged time per category, with a comparison against the previous period. Not because a pie chart is intrinsically motivating, but because the number in that chart is the only honest input you have for next week’s plan.
           </p>
           <p className="mb-6">
             A rough rule that holds up well in practice: take your gut estimate, multiply by 1.5, and check it against what similar work actually cost you last month. If the two disagree, believe the log.
